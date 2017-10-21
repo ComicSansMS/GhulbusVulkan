@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.9)
 
 project(GhulbusVulkan)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if($ENV{TRAVIS})
@@ -23,6 +23,13 @@ if(GB_GENERATE_COVERAGE_INFO)
     endif()
 endif()
 
+if(MSVC)
+    option(GB_PARALLEL_BUILD "If set, uses multiple build processes in parallel." ON)
+    if(GB_PARALLEL_BUILD)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+    endif()
+endif()
+
 ###############################################################################
 ## Library gbVk
 ###############################################################################
@@ -38,6 +45,13 @@ option(BUILD_SHARED_LIBS "If checked, generate dynamic instead of static librari
 #find_package(Boost REQUIRED)
 
 find_package(Vulkan REQUIRED)
+
+find_path(GLFW3_ROOT NAMES lib/cmake/glfw3/glfw3Config.cmake
+          HINTS ENV GLFW3_ROOT)
+if(GLFW3_ROOT)
+    list(APPEND CMAKE_PREFIX_PATH ${GLFW3_ROOT})
+endif()
+find_package(glfw3 REQUIRED)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -85,6 +99,8 @@ if(NOT GB_GENERATE_COVERAGE_INFO)
     target_compile_definitions(gbVk PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
 endif()
 target_compile_options(gbVk PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
+target_compile_options(gbVk PUBLIC $<$<STREQUAL:$<CXX_COMPILER_ID>,MSVC>:/permissive->)
+target_compile_options(gbVk PUBLIC $<$<STREQUAL:$<CXX_COMPILER_ID>,MSVC>:/std:c++latest>)
 target_compile_options(gbVk PRIVATE
     $<$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>>:-pedantic -Wall>)
 target_compile_options(gbVk PRIVATE $<$<CXX_COMPILER_ID:GNU>:-pedantic -Wall>)
@@ -113,6 +129,40 @@ if(WIN32 AND BUILD_SHARED_LIBS)
         set(src_genexp "${src_genexp}$<$<CONFIG:${cfg}>:$<TARGET_PROPERTY:Ghulbus::gbBase,IMPORTED_LOCATION_${cfg_upper}>>")
     endforeach()
     add_custom_command(TARGET gbVk POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${src_genexp} $<TARGET_FILE_DIR:gbVk>)
+endif()
+
+###############################################################################
+## Tools
+###############################################################################
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+option(GB_VK_BUILD_TOOLS "Uncheck this if you do not want to build the GUI tools." ON)
+if(GB_VK_BUILD_TOOLS)
+    find_package(Qt5BaseDir)
+    if(QT5_BASE_DIR)
+        list(APPEND CMAKE_PREFIX_PATH ${QT5_BASE_DIR})
+    endif()
+    find_package(Qt5Widgets 5.8 REQUIRED)
+
+    set(GB_VK_DEVICE_EXPLORER_DIR ${PROJECT_SOURCE_DIR}/tools/device_explorer)
+    set(GB_VK_DEVICE_EXPLORER_QT_MOC_HEADER_FILES
+        ${GB_VK_DEVICE_EXPLORER_DIR}/main_window.hpp
+    )
+    qt5_wrap_cpp(GB_VK_DEVICE_EXPLORER_QT_MOC_SOURCE_FILES ${GB_VK_DEVICE_EXPLORER_QT_MOC_HEADER_FILES})
+    source_group(moc FILES ${GB_VK_DEVICE_EXPLORER_QT_MOC_SOURCE_FILES})
+    add_executable(gb_vk_device_explorer
+        ${GB_VK_DEVICE_EXPLORER_QT_MOC_HEADER_FILES}
+        ${GB_VK_DEVICE_EXPLORER_QT_MOC_SOURCE_FILES}
+        ${GB_VK_DEVICE_EXPLORER_DIR}/main_window.cpp
+        ${GB_VK_DEVICE_EXPLORER_DIR}/device_explorer.cpp)
+    target_include_directories(gb_vk_device_explorer PUBLIC ${GB_VK_DEVICE_EXPLORER_DIR})
+    target_link_libraries(gb_vk_device_explorer PUBLIC gbVk Qt5::Widgets)
+    if(WIN32)
+        set_property(TARGET gb_vk_device_explorer PROPERTY WIN32_EXECUTABLE TRUE)
+        target_link_libraries(gb_vk_device_explorer PUBLIC Qt5::WinMain)
+
+        getQt5Dlls(Qt5::Widgets qt_DLLS)
+        file(COPY ${qt_DLLS} DESTINATION ${PROJECT_BINARY_DIR})
+    endif()
 endif()
 
 ###############################################################################
@@ -169,7 +219,7 @@ if(GB_BUILD_TESTS)
 endif()
 
 add_executable(demo ${PROJECT_SOURCE_DIR}/demo/demo.cpp)
-target_link_libraries(demo PUBLIC gbVk)
+target_link_libraries(demo PUBLIC gbVk glfw)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT demo)
 
 ###############################################################################
