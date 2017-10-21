@@ -22,4 +22,6 @@
 #   define GHULBUS_VULKAN_NAMESPACE GhulbusVulkan
 #endif
 
+#define GHULBUS_VULKAN_EXPECTED_VK_HEADER_VERSION 61
+
 #endif
