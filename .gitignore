@@ -1,1 +1,4 @@
 build/*
+x64/*
+gbVk.dir/*
+gbVk_Test.dir/*
