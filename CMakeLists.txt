@@ -178,15 +178,15 @@ if(GB_BUILD_TESTS)
         if(IS_TRAVIS_BUILD)     # on travis, use git for fetching instead of wget
             set(GB_FETCH_EXTERNAL_CATCH
                 GIT_REPOSITORY https://github.com/philsquared/Catch.git
-                GIT_TAG 0c1c9fa9229c7358ce16c9910004a39290b20f5f)
+                GIT_TAG 355ab78f4a89736171d34d6ce271aa36a0ce155d)
         elseif(WIN32)
             set(GB_FETCH_EXTERNAL_CATCH
-                URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.zip
-                URL_HASH MD5=cda228922a1c9248364c99a3ff9cd9fa)
+                URL https://github.com/philsquared/Catch/archive/v2.0.0-develop.5.zip
+                URL_HASH MD5=175799e54ca5fe21f1b16a65b032797f)
         else()
             set(GB_FETCH_EXTERNAL_CATCH
-                URL https://github.com/philsquared/Catch/archive/v1.2.1-develop.12.tar.gz
-                URL_HASH MD5=a8dfb7be899a6e7fb30bd55d53426122)
+                URL https://github.com/philsquared/Catch/archive/v2.0.0-develop.5.tar.gz
+                URL_HASH MD5=58a07e5cee760af0c03fea12dfabe40f)
         endif()
         ExternalProject_Add(Catch-External
             PREFIX ${CMAKE_BINARY_DIR}/external/Catch
