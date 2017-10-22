@@ -37,8 +37,9 @@ int main(int argc, char* argv[])
     auto const layers = GhulbusVulkan::VkInstance::enumerateInstanceLayerProperties();
     std::vector<std::vector<VkExtensionProperties>> extension_props;
     for(auto const& l : layers) {
-        extension_props.emplace_back(GhulbusVulkan::VkInstance::enumerateLayerExtensionProperties(l));
+        extension_props.emplace_back(GhulbusVulkan::VkInstance::enumerateInstanceExtensionProperties(l));
     }
+    std::vector<VkExtensionProperties> instance_extension_props = GhulbusVulkan::VkInstance::enumerateInstanceExtensionProperties();
     auto instance = GhulbusVulkan::VkInstance::createInstance();
 
 

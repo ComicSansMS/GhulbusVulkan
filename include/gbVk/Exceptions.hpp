@@ -48,5 +48,12 @@ namespace Exceptions
     struct VulkanError : public GHULBUS_BASE_NAMESPACE::Exceptions::impl::ExceptionImpl
     {};
 }
+
+inline void checkVulkanError(VkResult res, char const* error_msg)
+{
+    if(res != VK_SUCCESS) {
+        GHULBUS_THROW(Exceptions::VulkanError() << Exception_Info::vulkan_error_code(res), error_msg);
+    }
+}
 }
 #endif
