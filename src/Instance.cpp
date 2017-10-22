@@ -1,4 +1,4 @@
-#include <gbVk/VkInstance.hpp>
+#include <gbVk/Instance.hpp>
 
 #include <gbVk/Exceptions.hpp>
 
@@ -9,7 +9,7 @@
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 
-std::vector<VkLayerProperties> VkInstance::enumerateInstanceLayerProperties()
+std::vector<VkLayerProperties> Instance::enumerateInstanceLayerProperties()
 {
     uint32_t layer_count = 0;
     VkResult res = vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
@@ -37,17 +37,17 @@ std::vector<VkExtensionProperties> enumerateInstanceExtensionProperties_impl(cha
 }
 }
 
-std::vector<VkExtensionProperties> VkInstance::enumerateInstanceExtensionProperties()
+std::vector<VkExtensionProperties> Instance::enumerateInstanceExtensionProperties()
 {
     return enumerateInstanceExtensionProperties_impl(nullptr);
 }
 
-std::vector<VkExtensionProperties> VkInstance::enumerateInstanceExtensionProperties(VkLayerProperties const& layer)
+std::vector<VkExtensionProperties> Instance::enumerateInstanceExtensionProperties(VkLayerProperties const& layer)
 {
     return enumerateInstanceExtensionProperties_impl(layer.layerName);
 }
 
-VkInstance VkInstance::createInstance()
+Instance Instance::createInstance()
 {
     return createInstance(nullptr, Version(),
 #ifdef NDEBUG
@@ -58,8 +58,8 @@ VkInstance VkInstance::createInstance()
         Extensions());
 }
 
-VkInstance VkInstance::createInstance(char const* application_name, Version const& application_version,
-                                      Layers const& enabled_layers, Extensions const& enabled_extensions)
+Instance Instance::createInstance(char const* application_name, Version const& application_version,
+                                  Layers const& enabled_layers, Extensions const& enabled_extensions)
 {
     VkApplicationInfo app_info = {};
     app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -84,29 +84,29 @@ VkInstance VkInstance::createInstance(char const* application_name, Version cons
     create_info.enabledExtensionCount = static_cast<uint32_t>(requested_extensions.size());
     create_info.ppEnabledExtensionNames = requested_extensions.data();
 
-    ::VkInstance instance;
+    VkInstance instance;
     VkResult res = vkCreateInstance(&create_info, nullptr, &instance);
     checkVulkanError(res, "Error in vkCreateInstance.");
     GHULBUS_ASSERT(instance);
-    return VkInstance(instance);
+    return Instance(instance);
 }
 
-VkInstance::VkInstance(::VkInstance vk_instance)
+Instance::Instance(VkInstance vk_instance)
     :m_instance(vk_instance)
 {}
 
-VkInstance::~VkInstance()
+Instance::~Instance()
 {
     if(m_instance) { vkDestroyInstance(m_instance, nullptr); }
 }
 
-VkInstance::VkInstance(VkInstance&& rhs)
+Instance::Instance(Instance&& rhs)
     :m_instance(rhs.m_instance)
 {
     rhs.m_instance = nullptr;
 }
 
-std::vector<VkPhysicalDevice> VkInstance::enumeratePhysicalDevices()
+std::vector<VkPhysicalDevice> Instance::enumeratePhysicalDevices()
 {
     uint32_t physdevcount = 0;
     VkResult res = vkEnumeratePhysicalDevices(m_instance, &physdevcount, 0);

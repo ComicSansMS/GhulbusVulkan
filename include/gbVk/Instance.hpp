@@ -1,5 +1,5 @@
-#ifndef GHULBUS_LIBRARY_INCLUDE_GUARD_VULKAN_VK_INSTANCE_HPP
-#define GHULBUS_LIBRARY_INCLUDE_GUARD_VULKAN_VK_INSTANCE_HPP
+#ifndef GHULBUS_LIBRARY_INCLUDE_GUARD_VULKAN_INSTANCE_HPP
+#define GHULBUS_LIBRARY_INCLUDE_GUARD_VULKAN_INSTANCE_HPP
 
 /** @file
 *
@@ -21,7 +21,7 @@
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 
-class VkInstance {
+class Instance {
 public:
     struct Version {
         uint32_t version;
@@ -100,22 +100,22 @@ public:
     static std::vector<VkLayerProperties> enumerateInstanceLayerProperties();
     static std::vector<VkExtensionProperties> enumerateInstanceExtensionProperties();
     static std::vector<VkExtensionProperties> enumerateInstanceExtensionProperties(VkLayerProperties const& layer);
-    static VkInstance createInstance();
-    static VkInstance createInstance(char const* application_name, Version const& application_version,
-                                     Layers const& enabled_layers, Extensions const& enabled_extensions);
+    static Instance createInstance();
+    static Instance createInstance(char const* application_name, Version const& application_version,
+                                   Layers const& enabled_layers, Extensions const& enabled_extensions);
 
 private:
-    ::VkInstance m_instance;
+    VkInstance m_instance;
 public:
 
-    VkInstance(::VkInstance vk_instance);
-    ~VkInstance();
+    Instance(VkInstance vk_instance);
+    ~Instance();
 
-    VkInstance(VkInstance const&) = delete;
-    VkInstance& operator=(VkInstance const&) = delete;
+    Instance(Instance const&) = delete;
+    Instance& operator=(Instance const&) = delete;
 
-    VkInstance(VkInstance&& rhs);
-    VkInstance& operator=(VkInstance&&) = delete;
+    Instance(Instance&& rhs);
+    Instance& operator=(Instance&&) = delete;
 
     std::vector<VkPhysicalDevice> enumeratePhysicalDevices();
 };

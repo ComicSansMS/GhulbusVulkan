@@ -1,7 +1,7 @@
 
 #include <QApplication>
 
-#include <gbVk/VkInstance.hpp>
+#include <gbVk/Instance.hpp>
 
 #include <gbBase/Finally.hpp>
 #include <gbBase/Log.hpp>
@@ -34,13 +34,13 @@ int main(int argc, char* argv[])
 #endif
     GHULBUS_LOG(Info, "Device Explorer starting...");
 
-    auto const layers = GhulbusVulkan::VkInstance::enumerateInstanceLayerProperties();
+    auto const layers = GhulbusVulkan::Instance::enumerateInstanceLayerProperties();
     std::vector<std::vector<VkExtensionProperties>> extension_props;
     for(auto const& l : layers) {
-        extension_props.emplace_back(GhulbusVulkan::VkInstance::enumerateInstanceExtensionProperties(l));
+        extension_props.emplace_back(GhulbusVulkan::Instance::enumerateInstanceExtensionProperties(l));
     }
-    std::vector<VkExtensionProperties> instance_extension_props = GhulbusVulkan::VkInstance::enumerateInstanceExtensionProperties();
-    auto instance = GhulbusVulkan::VkInstance::createInstance();
+    std::vector<VkExtensionProperties> instance_extension_props = GhulbusVulkan::Instance::enumerateInstanceExtensionProperties();
+    auto instance = GhulbusVulkan::Instance::createInstance();
 
 
     Ui::MainWindow main_window;
