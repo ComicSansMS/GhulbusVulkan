@@ -12,11 +12,31 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan.hpp>
 
+#include <vector>
+
 namespace GHULBUS_VULKAN_NAMESPACE
 {
-    /** Test function.
-     * @return The answer.
-     */
-    GHULBUS_VULKAN_API int foo();
+class PhysicalDevice {
+private:
+    VkPhysicalDevice m_physical_device;
+public:
+    PhysicalDevice(VkPhysicalDevice physical_device);
+
+    VkPhysicalDeviceProperties getProperties();
+
+    VkPhysicalDeviceFeatures getFeatures();
+
+    VkPhysicalDeviceMemoryProperties getMemoryProperties();
+
+    std::vector<VkQueueFamilyProperties> getQueueFamilyProperties();
+
+    std::vector<VkLayerProperties> enumerateDeviceLayerProperties();
+
+    std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties();
+
+    std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties(VkLayerProperties layer);
+
+    VkDevice createDevice();
+};
 }
 #endif

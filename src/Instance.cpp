@@ -1,9 +1,12 @@
 #include <gbVk/Instance.hpp>
 
 #include <gbVk/Exceptions.hpp>
+#include <gbVk/PhysicalDevice.hpp>
 
 #include <gbBase/Assert.hpp>
 
+#include <algorithm>
+#include <iterator>
 #include <limits>
 
 namespace GHULBUS_VULKAN_NAMESPACE
@@ -106,7 +109,7 @@ Instance::Instance(Instance&& rhs)
     rhs.m_instance = nullptr;
 }
 
-std::vector<VkPhysicalDevice> Instance::enumeratePhysicalDevices()
+std::vector<PhysicalDevice> Instance::enumeratePhysicalDevices()
 {
     uint32_t physdevcount = 0;
     VkResult res = vkEnumeratePhysicalDevices(m_instance, &physdevcount, 0);
@@ -116,7 +119,11 @@ std::vector<VkPhysicalDevice> Instance::enumeratePhysicalDevices()
     res = vkEnumeratePhysicalDevices(m_instance, &physdevcount, physical_devices.data());
     checkVulkanError(res, "Error in vkEnumeratePhysicalDevices.");
     GHULBUS_ASSERT_PRD(physdevcount == physical_devices.size());
-    return physical_devices;
+    std::vector<PhysicalDevice> ret;
+    ret.reserve(physdevcount);
+    std::transform(begin(physical_devices), end(physical_devices), std::back_inserter(ret),
+                   [](VkPhysicalDevice const& d) { return PhysicalDevice(d); });
+    return ret;
 }
 
 }

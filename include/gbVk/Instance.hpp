@@ -20,6 +20,7 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class PhysicalDevice;
 
 class Instance {
 public:
@@ -117,7 +118,7 @@ public:
     Instance(Instance&& rhs);
     Instance& operator=(Instance&&) = delete;
 
-    std::vector<VkPhysicalDevice> enumeratePhysicalDevices();
+    std::vector<PhysicalDevice> enumeratePhysicalDevices();
 };
 }
 #endif
