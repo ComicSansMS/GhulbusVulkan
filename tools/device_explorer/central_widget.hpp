@@ -5,9 +5,16 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QTextEdit>
+#include <QTreeWidget>
 #include <QWidget>
 
-#include <gbVk/Instance.hpp>
+#include <gbVk/PhysicalDevice.hpp>
+
+#include <memory>
+
+namespace GhulbusVulkan {
+class Instance;
+}
 
 namespace Ui
 {
@@ -16,7 +23,9 @@ class CentralWidget : public QWidget
 {
     Q_OBJECT
 private:
-    QHBoxLayout m_layout;
+    QVBoxLayout m_layout;
+
+    QHBoxLayout m_innerLayout;
 
     QVBoxLayout m_instancePaneLayout;
     QLabel* m_layersLabel;
@@ -28,18 +37,39 @@ private:
     std::vector<QString> m_extensionsDescriptionStrings;
     QTextEdit* m_extensionsDescription;
 
-    QListWidget* m_physicalDevices;
+    QVBoxLayout m_physicalDevicesPaneLayout;
+    QLabel* m_physicalDevicesLabel;
+    QListWidget* m_physicalDevicesList;
+    std::vector<GhulbusVulkan::PhysicalDevice> m_physicalDevices;
+    QTextEdit* m_physicalDeviceDescription;
+    QTreeWidget* m_physicalDeviceProperties;
 
-    GhulbusVulkan::Instance m_instance;
+    QTextEdit* m_errorConsole;
+
+    std::unique_ptr<GhulbusVulkan::Instance> m_instance;
 public:
     CentralWidget(QWidget* parent);
 
+    ~CentralWidget();
+
+signals:
+    void errorCreateInstance(QString);
+    void newInstanceCreated();
+
 public slots:
+    void logError(QString msg);
     void enumerateInstanceOptions();
     void enumeratePhysicalDevices();
+    void onInstanceConfigurationChanged();
+
 private slots:
     void onInstanceLayerSelected(int index);
     void onInstanceExtensionSelected(int index);
+    void onPhysicalDeviceSelected(int index);
+
+private:
+    void connectInstanceLayerListSignals();
+    void connectInstanceExtensionListSignals();
 
 };
 

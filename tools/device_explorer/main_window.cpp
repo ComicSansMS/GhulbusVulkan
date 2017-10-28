@@ -11,6 +11,7 @@ MainWindow::MainWindow(QWidget* parent)
     setCentralWidget(m_centralWidget);
 
     m_centralWidget->enumerateInstanceOptions();
+    m_centralWidget->onInstanceConfigurationChanged();
 }
 
 }
