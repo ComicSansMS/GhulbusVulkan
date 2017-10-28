@@ -151,6 +151,7 @@ if(GB_VK_BUILD_TOOLS)
 
     set(GB_VK_DEVICE_EXPLORER_DIR ${PROJECT_SOURCE_DIR}/tools/device_explorer)
     set(GB_VK_DEVICE_EXPLORER_QT_MOC_HEADER_FILES
+        ${GB_VK_DEVICE_EXPLORER_DIR}/central_widget.hpp
         ${GB_VK_DEVICE_EXPLORER_DIR}/main_window.hpp
     )
     qt5_wrap_cpp(GB_VK_DEVICE_EXPLORER_QT_MOC_SOURCE_FILES ${GB_VK_DEVICE_EXPLORER_QT_MOC_HEADER_FILES})
@@ -158,8 +159,10 @@ if(GB_VK_BUILD_TOOLS)
     add_executable(gb_vk_device_explorer
         ${GB_VK_DEVICE_EXPLORER_QT_MOC_HEADER_FILES}
         ${GB_VK_DEVICE_EXPLORER_QT_MOC_SOURCE_FILES}
+        ${GB_VK_DEVICE_EXPLORER_DIR}/central_widget.cpp
+        ${GB_VK_DEVICE_EXPLORER_DIR}/device_explorer.cpp
         ${GB_VK_DEVICE_EXPLORER_DIR}/main_window.cpp
-        ${GB_VK_DEVICE_EXPLORER_DIR}/device_explorer.cpp)
+    )
     target_include_directories(gb_vk_device_explorer PUBLIC ${GB_VK_DEVICE_EXPLORER_DIR})
     target_link_libraries(gb_vk_device_explorer PUBLIC gbVk Qt5::Widgets)
     if(WIN32)
