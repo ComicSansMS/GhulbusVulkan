@@ -127,6 +127,28 @@ std::string version_to_string(uint32_t v)
            std::to_string(VK_VERSION_MINOR(v)) + "." +
            std::to_string(VK_VERSION_PATCH(v));
 }
+
+std::string uuid_to_string(uint8_t uuid[VK_UUID_SIZE])
+{
+    std::string res;
+    res.reserve(36);
+
+    auto to_char = [](int i) -> char {
+           return (i <= 9) ? static_cast<char>('0' + i) : static_cast<char>('a' + (i-10));
+        };
+
+    for(int i = 0; i < VK_UUID_SIZE; ++i) {
+        auto const hi = (uuid[i] >> 4) & 0x0F;
+        auto const lo = uuid[i] & 0x0F;
+        res.push_back(to_char(hi));
+        res.push_back(to_char(lo));
+
+        if (i == 3 || i == 5 || i == 7 || i == 9) {
+            res.push_back('-');
+        }
+    }
+    return res;
+}
 }
 
 std::ostream& operator<<(std::ostream& os, VkResult r)

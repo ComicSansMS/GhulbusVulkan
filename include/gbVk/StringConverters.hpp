@@ -31,6 +31,8 @@ std::string memory_heap_properties_to_string(uint32_t propertyFlags);
 std::string memory_size_to_string(VkDeviceSize size);
 
 std::string version_to_string(uint32_t v);
+
+std::string uuid_to_string(uint8_t uuid[VK_UUID_SIZE]);
 }
 
 std::ostream& operator<<(std::ostream& os, VkResult r);
