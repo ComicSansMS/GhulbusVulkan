@@ -8,6 +8,7 @@
 */
 
 #include <gbVk/config.hpp>
+#include <gbVk/StringConverters.hpp>
 
 #include <vulkan/vulkan.h>
 
