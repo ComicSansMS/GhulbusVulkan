@@ -5,6 +5,7 @@
 
 #include <gbVk/config.hpp>
 #include <gbVk/Device.hpp>
+#include <gbVk/DeviceMemory.hpp>
 #include <gbVk/Instance.hpp>
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/StringConverters.hpp>
@@ -68,6 +69,9 @@ int main()
                 glfwSetWindowShouldClose(window, true);
             }
         });
+
+    GhulbusVulkan::DeviceMemory memory = device.allocateMemory(1024*1024*64, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    GhulbusVulkan::DeviceMemory host_memory = device.allocateMemory(1024*1024*64, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!glfwWindowShouldClose(main_window.get())) {

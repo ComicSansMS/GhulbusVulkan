@@ -5,8 +5,6 @@
 
 #include <gbBase/Assert.hpp>
 
-#include <optional>
-
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 
@@ -73,6 +71,17 @@ std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties_impl(VkPhy
     GHULBUS_ASSERT_PRD(device_extension_count == device_extension_props.size());
     return device_extension_props;
 }
+}
+
+std::optional<uint32_t> PhysicalDevice::findMemoryTypeIndex(VkMemoryPropertyFlags requested_properties)
+{
+    auto const mem_props = getMemoryProperties();
+    for(uint32_t i = 0; i < mem_props.memoryTypeCount; ++i) {
+        if((mem_props.memoryTypes[i].propertyFlags & requested_properties) == requested_properties) {
+            return i;
+        }
+    }
+    return std::nullopt;
 }
 
 std::vector<VkExtensionProperties> PhysicalDevice::enumerateDeviceExtensionProperties()
@@ -143,7 +152,7 @@ Device PhysicalDevice::createDevice()
     VkDevice device;
     VkResult res = vkCreateDevice(m_physical_device, &dev_create_info, nullptr, &device);
     checkVulkanError(res, "Error in vkCreateDevice.");
-    return Device(device);
+    return Device(m_physical_device, device);
 }
 
 }

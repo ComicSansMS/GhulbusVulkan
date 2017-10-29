@@ -14,11 +14,15 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class DeviceMemory;
+class PhysicalDevice;
+
 class Device {
 private:
     VkDevice m_device;
+    VkPhysicalDevice m_physicalDevice;
 public:
-    explicit Device(VkDevice logical_device);
+    Device(VkPhysicalDevice physical_device, VkDevice logical_device);
 
     ~Device();
 
@@ -27,6 +31,10 @@ public:
 
     Device(Device&&);
     Device& operator=(Device&&) = delete;
+
+    DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags);
+
+    PhysicalDevice getPhysicalDevice();
 };
 }
 #endif

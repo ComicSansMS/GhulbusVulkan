@@ -12,6 +12,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan.hpp>
 
+#include <optional>
 #include <vector>
 
 namespace GHULBUS_VULKAN_NAMESPACE
@@ -39,6 +40,8 @@ public:
     std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties(VkLayerProperties layer);
 
     Device createDevice();
+
+    std::optional<uint32_t> findMemoryTypeIndex(VkMemoryPropertyFlags requested_properties);
 };
 }
 #endif
