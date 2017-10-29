@@ -9,7 +9,10 @@ Device::Device(VkDevice logical_device)
 
 Device::~Device()
 {
-    if(m_device) { vkDestroyDevice(m_device, nullptr); }
+    if(m_device) {
+        vkDeviceWaitIdle(m_device);
+        vkDestroyDevice(m_device, nullptr);
+    }
 }
 
 Device::Device(Device&& rhs)
