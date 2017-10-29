@@ -12,9 +12,38 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan.hpp>
 
+#include <cstddef>
+
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 class DeviceMemory {
+public:
+    class MappedMemory {
+    private:
+        void* m_mappedMemory;
+        VkDevice m_device;
+        VkDeviceMemory m_memory;
+    public:
+        MappedMemory(VkDevice device, VkDeviceMemory memory, void* mapped_memory);
+
+        ~MappedMemory();
+
+        MappedMemory(MappedMemory&& rhs);
+        MappedMemory& operator=(MappedMemory&& rhs);
+
+        MappedMemory(MappedMemory const&) = delete;
+        MappedMemory& operator=(MappedMemory const&) = delete;
+
+        operator std::byte*();
+        std::byte& operator[](std::size_t index);
+
+        operator std::byte const*() const;
+        std::byte operator[](std::size_t index) const;
+
+        void flush();
+
+        void invalidate();
+    };
 private:
     VkDeviceMemory m_memory;
     VkDevice m_device;
@@ -30,6 +59,9 @@ public:
     DeviceMemory& operator=(DeviceMemory&&) = delete;
 
     VkDeviceSize getCommitment();
+
+    MappedMemory map();
+    MappedMemory map(VkDeviceSize offset, VkDeviceSize size);
 };
 }
 #endif

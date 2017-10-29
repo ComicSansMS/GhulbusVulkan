@@ -73,6 +73,20 @@ int main()
     GhulbusVulkan::DeviceMemory memory = device.allocateMemory(1024*1024*64, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     GhulbusVulkan::DeviceMemory host_memory = device.allocateMemory(1024*1024*64, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
+    {
+        auto mapped = host_memory.map();
+        for(int i=0; i<1024*1024*64; ++i) { mapped[i] = std::byte(i & 0xff); }
+        mapped.flush();
+    }
+    {
+        auto mapped_again = host_memory.map();
+        mapped_again.invalidate();
+        for(int i=0; i<1024; ++i) {
+            GHULBUS_LOG(Info, i << " - " << std::to_integer<int>(
+                static_cast<GhulbusVulkan::DeviceMemory::MappedMemory const&>(mapped_again)[i]));
+        }
+    }
+
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!glfwWindowShouldClose(main_window.get())) {
         glfwPollEvents();
