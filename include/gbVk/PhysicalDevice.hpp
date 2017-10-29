@@ -16,11 +16,13 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class Device;
+
 class PhysicalDevice {
 private:
     VkPhysicalDevice m_physical_device;
 public:
-    PhysicalDevice(VkPhysicalDevice physical_device);
+    explicit PhysicalDevice(VkPhysicalDevice physical_device);
 
     VkPhysicalDeviceProperties getProperties();
 
@@ -36,7 +38,7 @@ public:
 
     std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties(VkLayerProperties layer);
 
-    VkDevice createDevice();
+    Device createDevice();
 };
 }
 #endif

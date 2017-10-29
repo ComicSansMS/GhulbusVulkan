@@ -109,7 +109,7 @@ private:
     VkInstance m_instance;
 public:
 
-    Instance(VkInstance vk_instance);
+    explicit Instance(VkInstance vk_instance);
     ~Instance();
 
     Instance(Instance const&) = delete;

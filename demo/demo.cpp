@@ -4,6 +4,7 @@
 #include <gbBase/LogHandlers.hpp>
 
 #include <gbVk/config.hpp>
+#include <gbVk/Device.hpp>
 #include <gbVk/Instance.hpp>
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/StringConverters.hpp>
@@ -47,8 +48,7 @@ int main()
                       << "Driver Version " << GhulbusVulkan::version_to_string(dev_props.driverVersion)
                       << ").");
 
-    VkDevice device = phys_devices.front().createDevice();
-    auto finalizer_device = Ghulbus::finally([&device]() { vkDestroyDevice(device, nullptr); });
+    GhulbusVulkan::Device device = phys_devices.front().createDevice();
 
     glfwWindowHint(GLFW_RESIZABLE, 0);
     auto main_window =

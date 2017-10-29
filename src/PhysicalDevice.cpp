@@ -1,8 +1,11 @@
 #include <gbVk/PhysicalDevice.hpp>
 
+#include <gbVk/Device.hpp>
 #include <gbVk/Exceptions.hpp>
 
 #include <gbBase/Assert.hpp>
+
+#include <optional>
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
@@ -82,8 +85,34 @@ std::vector<VkExtensionProperties> PhysicalDevice::enumerateDeviceExtensionPrope
     return enumerateDeviceExtensionProperties_impl(m_physical_device, layer.layerName);
 }
 
-VkDevice PhysicalDevice::createDevice()
+namespace {
+std::optional<uint32_t> determineDefaultQueueFamily(PhysicalDevice& pd)
 {
+    auto const queue_props = pd.getQueueFamilyProperties();
+    bool candidate_found = false;
+    uint32_t candidate_index = 0;
+    for(auto const& qf : queue_props) {
+        if(((qf.queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) &&
+           ((qf.queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) &&
+           ((qf.queueFlags & VK_QUEUE_TRANSFER_BIT) != 0))
+        {
+            candidate_found = true;
+            break;
+        }
+        ++candidate_index;
+    }
+
+    return (candidate_found) ? std::optional<uint32_t>(candidate_index) : std::nullopt;
+}
+}
+
+Device PhysicalDevice::createDevice()
+{
+    auto queue_family = determineDefaultQueueFamily(*this);
+    if(!queue_family) {
+        GHULBUS_THROW(Ghulbus::Exceptions::ProtocolViolation(), "Cannot find a suitable queue family on device.");
+    }
+
     VkDeviceCreateInfo dev_create_info;
     dev_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     dev_create_info.pNext = nullptr;
@@ -94,9 +123,9 @@ VkDevice PhysicalDevice::createDevice()
     queue_create_infos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     queue_create_infos[0].pNext = nullptr;
     queue_create_infos[0].flags = 0;    // reserved;
-    queue_create_infos[0].queueFamilyIndex = 0;
-    queue_create_infos[0].queueCount = 4;
-    float device_queue_priorities[] = { 0.0f };
+    queue_create_infos[0].queueFamilyIndex = *queue_family;
+    queue_create_infos[0].queueCount = 1;
+    float device_queue_priorities[] = { 1.0f };
     queue_create_infos[0].pQueuePriorities = device_queue_priorities;
 
     dev_create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
@@ -108,13 +137,13 @@ VkDevice PhysicalDevice::createDevice()
 
     VkPhysicalDeviceFeatures physical_device_supported_features;
     vkGetPhysicalDeviceFeatures(m_physical_device, &physical_device_supported_features);
-    VkPhysicalDeviceFeatures requested_features = physical_device_supported_features;   // todo select only features that we use
+    VkPhysicalDeviceFeatures requested_features = {};           // @todo: select requested features
     dev_create_info.pEnabledFeatures = &requested_features;     // this is used as an in/out param by vkCreateDevice
 
     VkDevice device;
     VkResult res = vkCreateDevice(m_physical_device, &dev_create_info, nullptr, &device);
     checkVulkanError(res, "Error in vkCreateDevice.");
-    return device;
+    return Device(device);
 }
 
 }
