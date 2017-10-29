@@ -9,9 +9,17 @@
 
 #include <main_window.hpp>
 
+#if defined WIN32 && !defined NDEBUG
+#   define _CRTDBG_MAP_ALLOC
+#   include <stdlib.h>
+#   include <crtdbg.h>
+#endif
 
 int main(int argc, char* argv[])
 {
+#if defined WIN32 && !defined NDEBUG
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
     QApplication the_app(argc, argv);
 
     Ghulbus::Log::initializeLogging();
