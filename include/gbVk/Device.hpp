@@ -14,6 +14,7 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class CommandPool;
 class DeviceMemory;
 class PhysicalDevice;
 
@@ -33,6 +34,8 @@ public:
     Device& operator=(Device&&) = delete;
 
     DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags);
+
+    CommandPool createCommandPool(VkCommandPoolCreateFlags requested_flags, uint32_t queue_family_index);
 
     PhysicalDevice getPhysicalDevice();
 };

@@ -3,7 +3,8 @@
 #include <gbBase/Log.hpp>
 #include <gbBase/LogHandlers.hpp>
 
-#include <gbVk/config.hpp>
+#include <gbVk/CommandBuffer.hpp>
+#include <gbVk/CommandPool.hpp>
 #include <gbVk/Device.hpp>
 #include <gbVk/DeviceMemory.hpp>
 #include <gbVk/Instance.hpp>
@@ -82,10 +83,25 @@ int main()
         auto mapped_again = host_memory.map();
         mapped_again.invalidate();
         for(int i=0; i<1024; ++i) {
+            /*
             GHULBUS_LOG(Info, i << " - " << std::to_integer<int>(
                 static_cast<GhulbusVulkan::DeviceMemory::MappedMemory const&>(mapped_again)[i]));
+             */
         }
     }
+
+    uint32_t const queue_family = 0;    // @todo
+    auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
+    auto command_buffer = command_pool.allocateCommandBuffers();
+
+    command_buffer.begin();
+    VkBufferCopy region;
+    region.srcOffset = 0;
+    region.dstOffset = 0;
+    region.size = 1024*1024*64;
+    //vkCmdCopyBuffer(command_buffer, host_memory, memory, 1, & region);
+    command_buffer.end();
+
 
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!glfwWindowShouldClose(main_window.get())) {
