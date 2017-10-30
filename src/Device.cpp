@@ -58,6 +58,19 @@ CommandPool Device::createCommandPool(VkCommandPoolCreateFlags requested_flags, 
     return CommandPool(m_device, command_pool);
 }
 
+VkQueue Device::getQueue(uint32_t queue_family, uint32_t queue_index)
+{
+    VkQueue queue;
+    vkGetDeviceQueue(m_device, queue_family, queue_index, &queue);      //@todo this will crash if family or index are invalid
+    return queue;
+}
+
+void Device::waitIdle()
+{
+    VkResult res = vkDeviceWaitIdle(m_device);
+    checkVulkanError(res, "Error in vkDeviceWaitIdle.");
+}
+
 PhysicalDevice Device::getPhysicalDevice()
 {
     return PhysicalDevice(m_physicalDevice);

@@ -37,6 +37,10 @@ public:
 
     CommandPool createCommandPool(VkCommandPoolCreateFlags requested_flags, uint32_t queue_family_index);
 
+    VkQueue getQueue(uint32_t queue_family, uint32_t queue_index);
+
+    void waitIdle();
+
     PhysicalDevice getPhysicalDevice();
 };
 }

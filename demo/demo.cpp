@@ -102,6 +102,8 @@ int main()
     //vkCmdCopyBuffer(command_buffer, host_memory, memory, 1, & region);
     command_buffer.end();
 
+    auto queue = device.getQueue(queue_family, 0);
+    command_buffer.submit(queue);
 
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!glfwWindowShouldClose(main_window.get())) {

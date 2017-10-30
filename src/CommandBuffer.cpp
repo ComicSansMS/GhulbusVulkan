@@ -57,4 +57,24 @@ void CommandBuffer::reset(VkCommandBufferResetFlags flags)
     VkResult res = vkResetCommandBuffer(m_commandBuffer, flags);
     checkVulkanError(res, "Error in vkResetCommandBuffer.");
 }
+
+void CommandBuffer::submit(VkQueue queue)
+{
+    //@todo this should probably be a member of a queue type instead
+    VkSubmitInfo submit_info;
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.pNext = nullptr;
+    submit_info.waitSemaphoreCount = 0;
+    submit_info.pWaitSemaphores = nullptr;
+    submit_info.pWaitDstStageMask = nullptr;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &m_commandBuffer;
+    submit_info.signalSemaphoreCount = 0;
+    submit_info.pSignalSemaphores = nullptr;
+    VkFence fence = VK_NULL_HANDLE;
+    VkResult res = vkQueueSubmit(queue, 1, &submit_info, fence);
+    checkVulkanError(res, "Error in vkQueueSubmit.");
+    res = vkQueueWaitIdle(queue);
+    checkVulkanError(res, "Error in vkQueueWaitIdle.");
+}
 }
