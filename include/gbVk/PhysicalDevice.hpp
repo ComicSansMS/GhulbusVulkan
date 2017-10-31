@@ -25,6 +25,8 @@ private:
 public:
     explicit PhysicalDevice(VkPhysicalDevice physical_device);
 
+    VkPhysicalDevice getVkPhysicalDevice();
+
     VkPhysicalDeviceProperties getProperties();
 
     VkPhysicalDeviceFeatures getFeatures();

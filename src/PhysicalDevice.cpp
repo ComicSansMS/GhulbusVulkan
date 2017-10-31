@@ -13,6 +13,11 @@ PhysicalDevice::PhysicalDevice(VkPhysicalDevice physical_device)
 {
 }
 
+VkPhysicalDevice PhysicalDevice::getVkPhysicalDevice()
+{
+    return m_physical_device;
+}
+
 VkPhysicalDeviceProperties PhysicalDevice::getProperties()
 {
     VkPhysicalDeviceProperties props;
@@ -105,8 +110,13 @@ std::optional<uint32_t> determineDefaultQueueFamily(PhysicalDevice& pd)
            ((qf.queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) &&
            ((qf.queueFlags & VK_QUEUE_TRANSFER_BIT) != 0))
         {
-            candidate_found = true;
-            break;
+#ifdef GHULBUS_CONFIG_VULKAN_PLATFORM_WIN32
+            if(vkGetPhysicalDeviceWin32PresentationSupportKHR(pd.getVkPhysicalDevice(), candidate_index))
+#endif
+            {
+                candidate_found = true;
+                break;
+            }
         }
         ++candidate_index;
     }
