@@ -109,6 +109,11 @@ Instance::Instance(Instance&& rhs)
     rhs.m_instance = nullptr;
 }
 
+VkInstance Instance::getVkInstance()
+{
+    return m_instance;
+}
+
 std::vector<PhysicalDevice> Instance::enumeratePhysicalDevices()
 {
     uint32_t physdevcount = 0;

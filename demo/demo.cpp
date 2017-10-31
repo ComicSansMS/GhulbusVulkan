@@ -53,11 +53,17 @@ int main()
     GhulbusVulkan::Device device = phys_devices.front().createDevice();
 
     glfwWindowHint(GLFW_RESIZABLE, 0);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     auto main_window =
         std::unique_ptr<GLFWwindow, void(*)(GLFWwindow*)>(glfwCreateWindow(1280, 720, "Vulkan Demo", nullptr, nullptr),
                                                           glfwDestroyWindow);
     if(!main_window) {
         return 1;
+    }
+    VkSurfaceKHR surface;
+    VkResult res = glfwCreateWindowSurface(instance.getVkInstance(), main_window.get(), nullptr, &surface);
+    if(res != VK_SUCCESS) {
+        GHULBUS_LOG(Error, "Unable to create Vulkan surface.");
     }
 
     DemoState state;

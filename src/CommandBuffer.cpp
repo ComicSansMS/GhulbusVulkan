@@ -20,7 +20,7 @@ CommandBuffer::CommandBuffer(CommandBuffer&& rhs)
     rhs.m_commandBuffer = nullptr;
 }
 
-CommandBuffer::operator VkCommandBuffer()
+VkCommandBuffer CommandBuffer::getVkCommandBuffer()
 {
     return m_commandBuffer;
 }

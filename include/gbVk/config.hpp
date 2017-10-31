@@ -24,4 +24,14 @@
 
 #define GHULBUS_VULKAN_EXPECTED_VK_HEADER_VERSION 61
 
+#ifdef GHULBUS_CONFIG_VULKAN_PLATFORM_WIN32
+#   define VK_USE_PLATFORM_WIN32_KHR
+#   ifndef WIN32_LEAN_AND_MEAN
+#      define WIN32_LEAN_AND_MEAN
+#   endif
+#   ifndef NOMINMAX
+#      define NOMINMAX
+#   endif
+#endif
+
 #endif

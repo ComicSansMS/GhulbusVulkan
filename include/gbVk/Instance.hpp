@@ -77,9 +77,17 @@ public:
     };
 
     struct Extensions {
+        struct DeactivateSurfaceExtensions {};
+        bool enable_surface_extension;
+        bool enable_platform_specific_surface_extension;
         std::vector<char const*> additional_extensions;
 
         Extensions()
+            :enable_surface_extension(true), enable_platform_specific_surface_extension(true)
+        {}
+
+        Extensions(DeactivateSurfaceExtensions)
+            :enable_surface_extension(false), enable_platform_specific_surface_extension(false)
         {}
 
         void addExtension(VkExtensionProperties const& extension)
@@ -94,7 +102,15 @@ public:
 
         std::vector<char const*> getRequestedExtensions() const
         {
-            return additional_extensions;
+            std::vector<char const*> requested_extensions;
+            if(enable_surface_extension) { requested_extensions.push_back("VK_KHR_surface"); }
+            if(enable_platform_specific_surface_extension) {
+#               ifdef GHULBUS_CONFIG_VULKAN_PLATFORM_WIN32
+                requested_extensions.push_back("VK_KHR_win32_surface");
+#               endif
+            }
+            requested_extensions.insert(end(requested_extensions), begin(additional_extensions), end(additional_extensions));
+            return requested_extensions;
         }
     };
 
@@ -117,6 +133,8 @@ public:
 
     Instance(Instance&& rhs);
     Instance& operator=(Instance&&) = delete;
+
+    VkInstance getVkInstance();
 
     std::vector<PhysicalDevice> enumeratePhysicalDevices();
 };

@@ -28,7 +28,7 @@ public:
     CommandBuffer(CommandBuffer&& rhs);
     CommandBuffer& operator=(CommandBuffer&& rhs) = delete;
 
-    operator VkCommandBuffer();
+    VkCommandBuffer getVkCommandBuffer();
 
     void begin();
     void begin(VkCommandBufferUsageFlags flags);

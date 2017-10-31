@@ -11,6 +11,10 @@
 
 #include <sstream>
 
+namespace {
+QList<QTreeWidgetItem*> buildLimitsList(VkPhysicalDeviceLimits limits);
+}
+
 namespace Ui
 {
 
@@ -170,15 +174,75 @@ void CentralWidget::onInstanceExtensionSelected(int index)
     }
 }
 
+void CentralWidget::onPhysicalDeviceSelected(int index)
+{
+    if(index < 0 || index >= m_physicalDevices.size()) {
+        m_physicalDeviceDescription->clear();
+        m_physicalDeviceProperties->clear();
+    } else {
+        auto& pd = m_physicalDevices[index];
+        auto props = pd.getProperties();
+        std::stringstream sstr;
+        sstr << props.deviceName << " (" << props.deviceType << ")\n\n"
+             << "Vendor ID: " << props.vendorID << "\n"
+             << "Device ID: " << props.deviceID << "\n"
+             << "Pipeline Cache UUID: " << GhulbusVulkan::uuid_to_string(props.pipelineCacheUUID) << "\n"
+             << "API Version: " << GhulbusVulkan::version_to_string(props.apiVersion) << "\n"
+             << "Driver Version: " << GhulbusVulkan::version_to_string(props.driverVersion);
+        m_physicalDeviceDescription->setText(QString::fromStdString(sstr.str()));
+
+        m_physicalDeviceProperties->setColumnCount(2);
+        m_physicalDeviceProperties->addTopLevelItems(buildLimitsList(props.limits));
+    }
+}
+
+void CentralWidget::onInstanceConfigurationChanged()
+{
+    m_instance.reset();
+
+    GhulbusVulkan::Instance::Layers layers;
+    std::vector<std::string> layer_storage;
+    for(int i = 0; i < m_layersList->count(); ++i) {
+        auto item = m_layersList->item(i);
+        if(item->checkState() == Qt::Checked) {
+            layer_storage.emplace_back(item->text().toStdString());
+        }
+    }
+    for(auto const& l :layer_storage) { layers.addLayer(l.c_str()); }
+    GhulbusVulkan::Instance::Extensions extensions(GhulbusVulkan::Instance::Extensions::DeactivateSurfaceExtensions{});
+    std::vector<std::string> extensions_storage;
+    for(int i = 0; i < m_extensionsList->count(); ++i) {
+        auto item = m_extensionsList->item(i);
+        if(item->checkState() == Qt::Checked) {
+            extensions_storage.emplace_back(item->text().toStdString());
+        }
+    }
+    for(auto const& e : extensions_storage) { extensions.addExtension(e.c_str()); }
+
+    try {
+        m_instance = std::make_unique<GhulbusVulkan::Instance>(
+            GhulbusVulkan::Instance::createInstance(
+                "gbVk Device Explorer", GhulbusVulkan::Instance::Version(1, 0, 0), layers, extensions));
+    } catch(GhulbusVulkan::Exceptions::VulkanError& e) {
+        auto desc = boost::get_error_info<GhulbusVulkan::Exception_Info::description>(e);
+        auto vkres = boost::get_error_info<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
+        emit errorCreateInstance(QString::fromStdString(*desc) % " - " % GhulbusVulkan::to_string(*vkres));
+        return;
+    }
+    emit newInstanceCreated();
+}
+}
+
+namespace {
 QList<QTreeWidgetItem*> buildLimitsList(VkPhysicalDeviceLimits limits)
 {
     QList<QTreeWidgetItem*> ret;
     auto add_item = [&ret](char const* label, std::string const& value) {
-            QStringList qsl;
-            qsl.push_back(QString::fromUtf8(label));
-            qsl.push_back(QString::fromStdString(value));
-            ret.push_back(new QTreeWidgetItem(qsl));
-        };
+        QStringList qsl;
+        qsl.push_back(QString::fromUtf8(label));
+        qsl.push_back(QString::fromStdString(value));
+        ret.push_back(new QTreeWidgetItem(qsl));
+    };
 #define ADD_ITEM(field) add_item(#field, std::to_string(limits.field))
 #define ADD_ITEM_SIZE(field) add_item(#field, GhulbusVulkan::memory_size_to_string(limits.field))
     ADD_ITEM(maxImageDimension1D);
@@ -291,63 +355,4 @@ QList<QTreeWidgetItem*> buildLimitsList(VkPhysicalDeviceLimits limits)
 #undef ADD_ITEM_SIZE
     return ret;
 }
-
-void CentralWidget::onPhysicalDeviceSelected(int index)
-{
-    if(index < 0 || index >= m_physicalDevices.size()) {
-        m_physicalDeviceDescription->clear();
-        m_physicalDeviceProperties->clear();
-    } else {
-        auto& pd = m_physicalDevices[index];
-        auto props = pd.getProperties();
-        std::stringstream sstr;
-        sstr << props.deviceName << " (" << props.deviceType << ")\n\n"
-             << "Vendor ID: " << props.vendorID << "\n"
-             << "Device ID: " << props.deviceID << "\n"
-             << "Pipeline Cache UUID: " << GhulbusVulkan::uuid_to_string(props.pipelineCacheUUID) << "\n"
-             << "API Version: " << GhulbusVulkan::version_to_string(props.apiVersion) << "\n"
-             << "Driver Version: " << GhulbusVulkan::version_to_string(props.driverVersion);
-        m_physicalDeviceDescription->setText(QString::fromStdString(sstr.str()));
-
-        m_physicalDeviceProperties->setColumnCount(2);
-        m_physicalDeviceProperties->addTopLevelItems(buildLimitsList(props.limits));
-    }
-}
-
-void CentralWidget::onInstanceConfigurationChanged()
-{
-    m_instance.reset();
-
-    GhulbusVulkan::Instance::Layers layers;
-    std::vector<std::string> layer_storage;
-    for(int i = 0; i < m_layersList->count(); ++i) {
-        auto item = m_layersList->item(i);
-        if(item->checkState() == Qt::Checked) {
-            layer_storage.emplace_back(item->text().toStdString());
-        }
-    }
-    for(auto const& l :layer_storage) { layers.addLayer(l.c_str()); }
-    GhulbusVulkan::Instance::Extensions extensions;
-    std::vector<std::string> extensions_storage;
-    for(int i = 0; i < m_extensionsList->count(); ++i) {
-        auto item = m_extensionsList->item(i);
-        if(item->checkState() == Qt::Checked) {
-            extensions_storage.emplace_back(item->text().toStdString());
-        }
-    }
-    for(auto const& e : extensions_storage) { extensions.addExtension(e.c_str()); }
-
-    try {
-        m_instance = std::make_unique<GhulbusVulkan::Instance>(
-            GhulbusVulkan::Instance::createInstance(
-                "gbVk Device Explorer", GhulbusVulkan::Instance::Version(1, 0, 0), layers, extensions));
-    } catch(GhulbusVulkan::Exceptions::VulkanError& e) {
-        auto desc = boost::get_error_info<GhulbusVulkan::Exception_Info::description>(e);
-        auto vkres = boost::get_error_info<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
-        emit errorCreateInstance(QString::fromStdString(*desc) % " - " % GhulbusVulkan::to_string(*vkres));
-        return;
-    }
-    emit newInstanceCreated();
-}
-
 }
