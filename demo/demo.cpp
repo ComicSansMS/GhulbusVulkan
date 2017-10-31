@@ -10,7 +10,7 @@
 #include <gbVk/Instance.hpp>
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/StringConverters.hpp>
-
+#include <gbVk/Swapchain.hpp>
 
 #include <GLFW/glfw3.h>
 
@@ -97,6 +97,9 @@ int main()
     }
 
     uint32_t const queue_family = 0;    // @todo
+
+    auto swapchain = device.createSwapChain(surface, queue_family);
+
     auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
     auto command_buffer = command_pool.allocateCommandBuffers();
 

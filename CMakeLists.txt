@@ -78,6 +78,7 @@ set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/Instance.cpp
     ${GB_VK_SOURCE_DIR}/PhysicalDevice.cpp
     ${GB_VK_SOURCE_DIR}/StringConverters.cpp
+    ${GB_VK_SOURCE_DIR}/Swapchain.cpp
 )
 
 set(GB_VK_HEADER_FILES
@@ -90,6 +91,7 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/Instance.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/PhysicalDevice.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/StringConverters.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/Swapchain.hpp
 )
 
 set(GB_VK_TEST_SOURCES

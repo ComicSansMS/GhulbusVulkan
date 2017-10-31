@@ -17,6 +17,7 @@ namespace GHULBUS_VULKAN_NAMESPACE
 class CommandPool;
 class DeviceMemory;
 class PhysicalDevice;
+class Swapchain;
 
 class Device {
 private:
@@ -30,8 +31,14 @@ public:
     Device(Device const&) = delete;
     Device& operator=(Device const&) = delete;
 
-    Device(Device&&);
+    Device(Device&& rhs);
     Device& operator=(Device&&) = delete;
+
+    VkDevice getVkDevice();
+
+    PhysicalDevice getPhysicalDevice();
+
+    Swapchain createSwapChain(VkSurfaceKHR surface, uint32_t queue_family);
 
     DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags);
 
@@ -40,8 +47,6 @@ public:
     VkQueue getQueue(uint32_t queue_family, uint32_t queue_index);
 
     void waitIdle();
-
-    PhysicalDevice getPhysicalDevice();
 };
 }
 #endif

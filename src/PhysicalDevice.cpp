@@ -151,8 +151,10 @@ Device PhysicalDevice::createDevice()
     dev_create_info.pQueueCreateInfos = queue_create_infos.data();
     dev_create_info.enabledLayerCount = 0;
     dev_create_info.ppEnabledLayerNames = nullptr;
-    dev_create_info.enabledExtensionCount = 0;
-    dev_create_info.ppEnabledExtensionNames = nullptr;
+    std::vector<char const*> extensions;
+    extensions.push_back("VK_KHR_swapchain");
+    dev_create_info.enabledExtensionCount = 1;
+    dev_create_info.ppEnabledExtensionNames = extensions.data();
 
     VkPhysicalDeviceFeatures physical_device_supported_features;
     vkGetPhysicalDeviceFeatures(m_physical_device, &physical_device_supported_features);
