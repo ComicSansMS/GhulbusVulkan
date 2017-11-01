@@ -42,4 +42,18 @@ std::vector<VkImage> Swapchain::getImages()
 
     return ret;
 }
+
+std::optional<uint32_t> Swapchain::acquireNextImage()
+{
+    return acquireNextImage(std::chrono::milliseconds(0));
+}
+
+std::optional<uint32_t> Swapchain::acquireNextImage(std::chrono::nanoseconds timeout)
+{
+    uint32_t ret;
+    VkResult res = vkAcquireNextImageKHR(m_device, m_swapchain, timeout.count(), nullptr, nullptr, &ret);
+    if(res == VK_NOT_READY) { return std::nullopt; }
+    checkVulkanError(res, "Error in vkAcquireNextImageKHR.");
+    return ret;
+}
 }

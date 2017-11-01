@@ -12,6 +12,8 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan.hpp>
 
+#include <chrono>
+#include <optional>
 #include <vector>
 
 namespace GHULBUS_VULKAN_NAMESPACE
@@ -34,6 +36,10 @@ public:
     VkSwapchainKHR getVkSwapchainKHR();
 
     std::vector<VkImage> getImages();
+
+    std::optional<uint32_t> acquireNextImage();
+
+    std::optional<uint32_t> acquireNextImage(std::chrono::nanoseconds timeout);
 };
 }
 #endif

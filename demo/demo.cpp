@@ -98,6 +98,10 @@ int main()
 
     uint32_t const queue_family = 0;    // @todo
 
+    if(!phys_devices.front().getSurfaceSupport(queue_family, surface)) {
+        GHULBUS_LOG(Error, "Selected queue does not support presentation for this surface.");
+    }
+
     auto swapchain = device.createSwapChain(surface, queue_family);
 
     auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
@@ -113,6 +117,57 @@ int main()
 
     auto queue = device.getQueue(queue_family, 0);
     command_buffer.submit(queue);
+    vkQueueWaitIdle(queue);
+    command_buffer.reset();
+
+    command_buffer.begin();
+    auto images = swapchain.getImages();
+    auto const image_index = swapchain.acquireNextImage();
+    auto image = images[*image_index];
+
+    VkImageMemoryBarrier image_barr;
+    image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    image_barr.pNext = nullptr;
+    image_barr.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    image_barr.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    image_barr.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    image_barr.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    image_barr.srcQueueFamilyIndex = 0;
+    image_barr.dstQueueFamilyIndex = 0;
+    image_barr.image = image;
+    image_barr.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    image_barr.subresourceRange.baseMipLevel = 0;
+    image_barr.subresourceRange.levelCount = 1;
+    image_barr.subresourceRange.baseArrayLayer = 0;
+    image_barr.subresourceRange.layerCount = 1;
+    vkCmdPipelineBarrier(command_buffer.getVkCommandBuffer(),
+                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                         0, 0, nullptr, 0, nullptr,
+                         1, &image_barr);
+    command_buffer.end();
+    command_buffer.submit(queue);
+    vkQueueWaitIdle(queue);
+    command_buffer.reset();
+
+    command_buffer.begin();
+    VkPresentInfoKHR present_info;
+    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    present_info.pNext = nullptr;
+    present_info.waitSemaphoreCount = 0;
+    present_info.pWaitSemaphores = nullptr;
+    present_info.swapchainCount = 1;
+    VkSwapchainKHR the_swapchain = swapchain.getVkSwapchainKHR();
+    present_info.pSwapchains = &the_swapchain;
+    uint32_t the_image_index = *image_index;
+    present_info.pImageIndices = &the_image_index;
+    VkResult the_result;
+    present_info.pResults = &the_result;
+    vkQueuePresentKHR(queue, &present_info);
+    command_buffer.end();
+    command_buffer.submit(queue);
+    vkQueueWaitIdle(queue);
+    command_buffer.reset();
+
 
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!glfwWindowShouldClose(main_window.get())) {

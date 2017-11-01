@@ -50,6 +50,25 @@ std::vector<VkQueueFamilyProperties> PhysicalDevice::getQueueFamilyProperties()
     return queue_family_props;
 }
 
+std::optional<uint32_t> PhysicalDevice::findMemoryTypeIndex(VkMemoryPropertyFlags requested_properties)
+{
+    auto const mem_props = getMemoryProperties();
+    for(uint32_t i = 0; i < mem_props.memoryTypeCount; ++i) {
+        if((mem_props.memoryTypes[i].propertyFlags & requested_properties) == requested_properties) {
+            return i;
+        }
+    }
+    return std::nullopt;
+}
+
+bool PhysicalDevice::getSurfaceSupport(uint32_t queue_family, VkSurfaceKHR surface)
+{
+    VkBool32 ret;
+    VkResult res = vkGetPhysicalDeviceSurfaceSupportKHR(m_physical_device, queue_family, surface, &ret);
+    checkVulkanError(res, "Error in vkGetPhysicalDeviceSurfaceSupportKHR.");
+    return (ret == VK_TRUE) ? true : false;
+}
+
 std::vector<VkLayerProperties> PhysicalDevice::enumerateDeviceLayerProperties()
 {
     uint32_t device_layer_count = 0;
@@ -76,17 +95,6 @@ std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties_impl(VkPhy
     GHULBUS_ASSERT_PRD(device_extension_count == device_extension_props.size());
     return device_extension_props;
 }
-}
-
-std::optional<uint32_t> PhysicalDevice::findMemoryTypeIndex(VkMemoryPropertyFlags requested_properties)
-{
-    auto const mem_props = getMemoryProperties();
-    for(uint32_t i = 0; i < mem_props.memoryTypeCount; ++i) {
-        if((mem_props.memoryTypes[i].propertyFlags & requested_properties) == requested_properties) {
-            return i;
-        }
-    }
-    return std::nullopt;
 }
 
 std::vector<VkExtensionProperties> PhysicalDevice::enumerateDeviceExtensionProperties()

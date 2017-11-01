@@ -35,6 +35,10 @@ public:
 
     std::vector<VkQueueFamilyProperties> getQueueFamilyProperties();
 
+    std::optional<uint32_t> findMemoryTypeIndex(VkMemoryPropertyFlags requested_properties);
+
+    bool getSurfaceSupport(uint32_t queue_family, VkSurfaceKHR surface);
+
     std::vector<VkLayerProperties> enumerateDeviceLayerProperties();
 
     std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties();
@@ -42,8 +46,6 @@ public:
     std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties(VkLayerProperties layer);
 
     Device createDevice();
-
-    std::optional<uint32_t> findMemoryTypeIndex(VkMemoryPropertyFlags requested_properties);
 };
 }
 #endif
