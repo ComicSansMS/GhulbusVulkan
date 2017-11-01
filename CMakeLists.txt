@@ -75,6 +75,7 @@ set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/CommandPool.cpp
     ${GB_VK_SOURCE_DIR}/Device.cpp
     ${GB_VK_SOURCE_DIR}/DeviceMemory.cpp
+    ${GB_VK_SOURCE_DIR}/Fence.cpp
     ${GB_VK_SOURCE_DIR}/Instance.cpp
     ${GB_VK_SOURCE_DIR}/PhysicalDevice.cpp
     ${GB_VK_SOURCE_DIR}/StringConverters.cpp
@@ -88,6 +89,7 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/Device.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceMemory.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Exceptions.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/Fence.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Instance.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/PhysicalDevice.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/StringConverters.hpp

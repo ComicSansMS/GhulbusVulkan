@@ -2,6 +2,7 @@
 
 #include <gbVk/CommandPool.hpp>
 #include <gbVk/Exceptions.hpp>
+#include <gbVk/Fence.hpp>
 #include <gbVk/DeviceMemory.hpp>
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/Swapchain.hpp>
@@ -108,6 +109,23 @@ Swapchain Device::createSwapChain(VkSurfaceKHR surface, uint32_t queue_family)
     checkVulkanError(res, "Error in vkCreateSwapchainKHR.");
 
     return Swapchain(m_device, swapchain);
+}
+
+Fence Device::createFence()
+{
+    return createFence(0);
+}
+
+Fence Device::createFence(VkFenceCreateFlags flags)
+{
+    VkFenceCreateInfo create_info;
+    create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    create_info.pNext = nullptr;
+    create_info.flags = flags;
+    VkFence fence;
+    VkResult res = vkCreateFence(m_device, &create_info, nullptr, &fence);
+    checkVulkanError(res, "Error in vkCreateFence.");
+    return Fence(m_device, fence);
 }
 
 DeviceMemory Device::allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags)

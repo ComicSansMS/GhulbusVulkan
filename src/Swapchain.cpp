@@ -1,6 +1,7 @@
 #include <gbVk/Swapchain.hpp>
 
 #include <gbVk/Exceptions.hpp>
+#include <gbVk/Fence.hpp>
 
 #include <gbBase/Assert.hpp>
 
@@ -43,15 +44,15 @@ std::vector<VkImage> Swapchain::getImages()
     return ret;
 }
 
-std::optional<uint32_t> Swapchain::acquireNextImage()
+std::optional<uint32_t> Swapchain::acquireNextImage(Fence& fence)
 {
-    return acquireNextImage(std::chrono::milliseconds(0));
+    return acquireNextImage(fence, std::chrono::nanoseconds::max());
 }
 
-std::optional<uint32_t> Swapchain::acquireNextImage(std::chrono::nanoseconds timeout)
+std::optional<uint32_t> Swapchain::acquireNextImage(Fence& fence, std::chrono::nanoseconds timeout)
 {
     uint32_t ret;
-    VkResult res = vkAcquireNextImageKHR(m_device, m_swapchain, timeout.count(), nullptr, nullptr, &ret);
+    VkResult res = vkAcquireNextImageKHR(m_device, m_swapchain, timeout.count(), nullptr, fence.getVkFence(), &ret);
     if(res == VK_NOT_READY) { return std::nullopt; }
     checkVulkanError(res, "Error in vkAcquireNextImageKHR.");
     return ret;

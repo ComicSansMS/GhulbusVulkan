@@ -16,6 +16,7 @@ namespace GHULBUS_VULKAN_NAMESPACE
 {
 class CommandPool;
 class DeviceMemory;
+class Fence;
 class PhysicalDevice;
 class Swapchain;
 
@@ -39,6 +40,10 @@ public:
     PhysicalDevice getPhysicalDevice();
 
     Swapchain createSwapChain(VkSurfaceKHR surface, uint32_t queue_family);
+
+    Fence createFence();
+
+    Fence createFence(VkFenceCreateFlags flags);
 
     DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags);
 

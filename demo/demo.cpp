@@ -7,6 +7,7 @@
 #include <gbVk/CommandPool.hpp>
 #include <gbVk/Device.hpp>
 #include <gbVk/DeviceMemory.hpp>
+#include <gbVk/Fence.hpp>
 #include <gbVk/Instance.hpp>
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/StringConverters.hpp>
@@ -120,11 +121,13 @@ int main()
     vkQueueWaitIdle(queue);
     command_buffer.reset();
 
-    command_buffer.begin();
+    auto fence = device.createFence();
     auto images = swapchain.getImages();
-    auto const image_index = swapchain.acquireNextImage();
+    auto const image_index = swapchain.acquireNextImage(fence);
     auto image = images[*image_index];
+    fence.wait();
 
+    command_buffer.begin();
     VkImageMemoryBarrier image_barr;
     image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     image_barr.pNext = nullptr;

@@ -18,6 +18,8 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class Fence;
+
 class Swapchain {
 private:
     VkSwapchainKHR m_swapchain;
@@ -30,16 +32,16 @@ public:
     Swapchain(Swapchain const&) = delete;
     Swapchain& operator=(Swapchain const&) = delete;
 
-    Swapchain(Swapchain&&);
+    Swapchain(Swapchain&& rhs);
     Swapchain& operator=(Swapchain&&) = delete;
 
     VkSwapchainKHR getVkSwapchainKHR();
 
     std::vector<VkImage> getImages();
 
-    std::optional<uint32_t> acquireNextImage();
+    std::optional<uint32_t> acquireNextImage(Fence& fence);
 
-    std::optional<uint32_t> acquireNextImage(std::chrono::nanoseconds timeout);
+    std::optional<uint32_t> acquireNextImage(Fence& fence, std::chrono::nanoseconds timeout);
 };
 }
 #endif
