@@ -99,7 +99,7 @@ int main()
 
     uint32_t const queue_family = 0;    // @todo
 
-    if(!phys_devices.front().getSurfaceSupport(queue_family, surface)) {
+    if(!device.getPhysicalDevice().getSurfaceSupport(queue_family, surface)) {
         GHULBUS_LOG(Error, "Selected queue does not support presentation for this surface.");
     }
 

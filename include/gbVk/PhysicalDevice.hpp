@@ -35,6 +35,11 @@ public:
 
     std::vector<VkQueueFamilyProperties> getQueueFamilyProperties();
 
+    VkFormatProperties getFormatProperties(VkFormat format);
+
+    VkImageFormatProperties getImageFormatProperties(VkFormat format, VkImageType type,
+        VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags create_flags);
+
     std::optional<uint32_t> findMemoryTypeIndex(VkMemoryPropertyFlags requested_properties);
 
     bool getSurfaceSupport(uint32_t queue_family, VkSurfaceKHR surface);

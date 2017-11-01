@@ -14,9 +14,11 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class Buffer;
 class CommandPool;
 class DeviceMemory;
 class Fence;
+class Image;
 class PhysicalDevice;
 class Swapchain;
 
@@ -44,6 +46,10 @@ public:
     Fence createFence();
 
     Fence createFence(VkFenceCreateFlags flags);
+
+    Buffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags);
+
+    Image createImage();
 
     DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags);
 

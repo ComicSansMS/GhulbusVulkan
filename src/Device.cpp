@@ -1,9 +1,11 @@
 #include <gbVk/Device.hpp>
 
+#include <gbVk/Buffer.hpp>
 #include <gbVk/CommandPool.hpp>
+#include <gbVk/DeviceMemory.hpp>
 #include <gbVk/Exceptions.hpp>
 #include <gbVk/Fence.hpp>
-#include <gbVk/DeviceMemory.hpp>
+#include <gbVk/Image.hpp>
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/Swapchain.hpp>
 
@@ -126,6 +128,49 @@ Fence Device::createFence(VkFenceCreateFlags flags)
     VkResult res = vkCreateFence(m_device, &create_info, nullptr, &fence);
     checkVulkanError(res, "Error in vkCreateFence.");
     return Fence(m_device, fence);
+}
+
+Buffer Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags)
+{
+    VkBufferCreateInfo create_info;
+    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    create_info.pNext = nullptr;
+    create_info.flags = 0;
+    create_info.size = size;
+    create_info.usage = usage_flags;
+    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    create_info.queueFamilyIndexCount = 0;
+    create_info.pQueueFamilyIndices = nullptr;
+    VkBuffer buffer;
+    VkResult res = vkCreateBuffer(m_device, &create_info, nullptr, &buffer);
+    checkVulkanError(res, "Error in vkCreateBuffer.");
+    return Buffer(m_device, buffer);
+}
+
+Image Device::createImage()
+{
+    VkImageCreateInfo create_info;
+    create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    create_info.pNext = nullptr;
+    create_info.flags = 0;
+    create_info.imageType = VK_IMAGE_TYPE_2D;
+    create_info.format = VK_FORMAT_B8G8R8A8_UNORM;
+    create_info.extent.width = 1280;
+    create_info.extent.height = 720;
+    create_info.extent.depth = 1;
+    create_info.mipLevels = 0;
+    create_info.arrayLayers = 1;
+    create_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    create_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    create_info.queueFamilyIndexCount = 0;
+    create_info.pQueueFamilyIndices = nullptr;
+    create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    VkImage image;
+    VkResult res = vkCreateImage(m_device, &create_info, nullptr, &image);
+    checkVulkanError(res, "Error in vkCreateImage.");
+    return Image(m_device, image);
 }
 
 DeviceMemory Device::allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags)

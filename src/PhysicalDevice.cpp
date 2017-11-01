@@ -50,6 +50,22 @@ std::vector<VkQueueFamilyProperties> PhysicalDevice::getQueueFamilyProperties()
     return queue_family_props;
 }
 
+VkFormatProperties PhysicalDevice::getFormatProperties(VkFormat format)
+{
+    VkFormatProperties ret;
+    vkGetPhysicalDeviceFormatProperties(m_physical_device, format, &ret);
+    return ret;
+}
+
+VkImageFormatProperties PhysicalDevice::getImageFormatProperties(VkFormat format, VkImageType type,
+    VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags create_flags)
+{
+    VkImageFormatProperties ret;
+    VkResult res = vkGetPhysicalDeviceImageFormatProperties(m_physical_device, format, type, tiling, usage, create_flags, &ret);
+    checkVulkanError(res, "Error in vkGetPhysicalDeviceImageFormatProperties.");
+    return ret;
+}
+
 std::optional<uint32_t> PhysicalDevice::findMemoryTypeIndex(VkMemoryPropertyFlags requested_properties)
 {
     auto const mem_props = getMemoryProperties();
