@@ -77,6 +77,21 @@ std::optional<uint32_t> PhysicalDevice::findMemoryTypeIndex(VkMemoryPropertyFlag
     return std::nullopt;
 }
 
+std::optional<uint32_t> PhysicalDevice::findMemoryTypeIndex(VkMemoryPropertyFlags requested_properties,
+                                                            VkMemoryRequirements const& requirements)
+{
+    auto mem_props = getMemoryProperties();
+    for(std::uint32_t i = 0; i < mem_props.memoryTypeCount; ++i) {
+        if(requirements.memoryTypeBits & (1 << i)) {
+            auto const& candidate = mem_props.memoryTypes[i];
+            if((candidate.propertyFlags & requested_properties) == requested_properties) {
+                return i;
+            }
+        }
+    }
+    return std::nullopt;
+}
+
 bool PhysicalDevice::getSurfaceSupport(uint32_t queue_family, VkSurfaceKHR surface)
 {
     VkBool32 ret;

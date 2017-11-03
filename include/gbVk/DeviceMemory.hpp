@@ -58,6 +58,8 @@ public:
     DeviceMemory(DeviceMemory&&);
     DeviceMemory& operator=(DeviceMemory&&) = delete;
 
+    VkDeviceMemory getVkDeviceMemory();
+
     VkDeviceSize getCommitment();
 
     MappedMemory map();

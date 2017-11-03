@@ -101,6 +101,11 @@ DeviceMemory::DeviceMemory(DeviceMemory&& rhs)
     rhs.m_device = nullptr;
 }
 
+VkDeviceMemory DeviceMemory::getVkDeviceMemory()
+{
+    return m_memory;
+}
+
 VkDeviceSize DeviceMemory::getCommitment()
 {
     VkDeviceSize ret;

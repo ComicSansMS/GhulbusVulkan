@@ -53,6 +53,9 @@ public:
 
     DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags);
 
+    DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags required_flags,
+                                VkMemoryRequirements const& requirements);
+
     CommandPool createCommandPool(VkCommandPoolCreateFlags requested_flags, uint32_t queue_family_index);
 
     VkQueue getQueue(uint32_t queue_family, uint32_t queue_index);

@@ -158,10 +158,10 @@ Image Device::createImage()
     create_info.extent.width = 1280;
     create_info.extent.height = 720;
     create_info.extent.depth = 1;
-    create_info.mipLevels = 0;
+    create_info.mipLevels = 1;
     create_info.arrayLayers = 1;
     create_info.samples = VK_SAMPLE_COUNT_1_BIT;
-    create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+    create_info.tiling = VK_IMAGE_TILING_LINEAR;
     create_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     create_info.queueFamilyIndexCount = 0;
@@ -176,6 +176,25 @@ Image Device::createImage()
 DeviceMemory Device::allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags)
 {
     auto const memory_type_index = PhysicalDevice(m_physicalDevice).findMemoryTypeIndex(flags);
+    if(!memory_type_index) {
+        GHULBUS_THROW(Exceptions::ProtocolViolation(), "No matching memory type available.");
+    }
+    VkMemoryAllocateInfo alloc_info;
+    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    alloc_info.pNext = nullptr;
+    alloc_info.allocationSize = requested_size;
+    alloc_info.memoryTypeIndex = *memory_type_index;
+
+    VkDeviceMemory mem;
+    VkResult res = vkAllocateMemory(m_device, &alloc_info, nullptr, &mem);
+    checkVulkanError(res, "Error in vkAllocateMemory.");
+    return DeviceMemory(m_device, mem);
+}
+
+DeviceMemory Device::allocateMemory(size_t requested_size, VkMemoryPropertyFlags required_flags,
+                                    VkMemoryRequirements const& requirements)
+{
+    auto const memory_type_index = PhysicalDevice(m_physicalDevice).findMemoryTypeIndex(required_flags, requirements);
     if(!memory_type_index) {
         GHULBUS_THROW(Exceptions::ProtocolViolation(), "No matching memory type available.");
     }
