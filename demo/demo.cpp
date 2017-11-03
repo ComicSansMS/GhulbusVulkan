@@ -133,10 +133,10 @@ int main()
     image_barr.pNext = nullptr;
     image_barr.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     image_barr.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    image_barr.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    image_barr.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     image_barr.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    image_barr.srcQueueFamilyIndex = 0;
-    image_barr.dstQueueFamilyIndex = 0;
+    image_barr.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    image_barr.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     image_barr.image = image;
     image_barr.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     image_barr.subresourceRange.baseMipLevel = 0;
