@@ -49,7 +49,11 @@ public:
 
     Buffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags);
 
-    Image createImage();
+    Image createImage(uint32_t width, uint32_t height);
+    Image createImage(VkExtent3D const& extent, VkFormat format);
+    Image createImage(VkExtent3D const& extent, VkFormat format, uint32_t mip_levels, uint32_t array_layers,
+                      VkImageTiling tiling, VkImageUsageFlags usage_flags);
+
 
     DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags);
 

@@ -110,7 +110,7 @@ Swapchain Device::createSwapChain(VkSurfaceKHR surface, uint32_t queue_family)
     res = vkCreateSwapchainKHR(m_device, &create_info, nullptr, &swapchain);
     checkVulkanError(res, "Error in vkCreateSwapchainKHR.");
 
-    return Swapchain(m_device, swapchain);
+    return Swapchain(m_device, swapchain, create_info.imageExtent, create_info.imageFormat);
 }
 
 Fence Device::createFence()
@@ -147,22 +147,37 @@ Buffer Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags)
     return Buffer(m_device, buffer);
 }
 
-Image Device::createImage()
+Image Device::createImage(uint32_t width, uint32_t height)
+{
+    VkExtent3D extent;
+    extent.width = width;
+    extent.height = height;
+    extent.depth = 1;
+    return createImage(extent, VK_FORMAT_R8G8B8A8_UNORM);
+}
+
+Image Device::createImage(VkExtent3D const& extent, VkFormat format)
+{
+    return createImage(extent, format, 1, 1, VK_IMAGE_TILING_LINEAR,
+                       VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+}
+
+Image Device::createImage(VkExtent3D const& extent, VkFormat format, uint32_t mip_levels, uint32_t array_layers,
+                          VkImageTiling tiling, VkImageUsageFlags usage_flags)
 {
     VkImageCreateInfo create_info;
     create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     create_info.pNext = nullptr;
     create_info.flags = 0;
-    create_info.imageType = VK_IMAGE_TYPE_2D;
-    create_info.format = VK_FORMAT_R8G8B8A8_UNORM;
-    create_info.extent.width = 1280;
-    create_info.extent.height = 720;
-    create_info.extent.depth = 1;
-    create_info.mipLevels = 1;
-    create_info.arrayLayers = 1;
+    create_info.imageType = ((extent.depth == 1) ?
+                                ((extent.height == 1) ? VK_IMAGE_TYPE_1D : VK_IMAGE_TYPE_2D) : VK_IMAGE_TYPE_3D);
+    create_info.format = format;
+    create_info.extent = extent;
+    create_info.mipLevels = mip_levels;
+    create_info.arrayLayers = array_layers;
     create_info.samples = VK_SAMPLE_COUNT_1_BIT;
-    create_info.tiling = VK_IMAGE_TILING_LINEAR;
-    create_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    create_info.tiling = tiling;
+    create_info.usage = usage_flags;
     create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     create_info.queueFamilyIndexCount = 0;
     create_info.pQueueFamilyIndices = nullptr;
@@ -170,7 +185,7 @@ Image Device::createImage()
     VkImage image;
     VkResult res = vkCreateImage(m_device, &create_info, nullptr, &image);
     checkVulkanError(res, "Error in vkCreateImage.");
-    return Image(m_device, image);
+    return Image(m_device, image, extent, format);
 }
 
 DeviceMemory Device::allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags)

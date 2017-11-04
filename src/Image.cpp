@@ -1,22 +1,43 @@
 #include <gbVk/Image.hpp>
 
+#include <gbVk/CommandBuffer.hpp>
+#include <gbVk/DeviceMemory.hpp>
+#include <gbVk/Exceptions.hpp>
+
+#include <gbBase/Assert.hpp>
+
 namespace GHULBUS_VULKAN_NAMESPACE
 {
-Image::Image(VkDevice logical_device, VkImage image)
-    :m_image(image), m_device(logical_device)
+Image::Image(VkDevice logical_device, VkImage image, VkExtent3D const& extent, VkFormat format)
+    :m_image(image), m_device(logical_device), m_extent(extent), m_format(format), m_currentAccessMask(0),
+     m_currentLayout(VK_IMAGE_LAYOUT_UNDEFINED), m_currentQueue(VK_QUEUE_FAMILY_IGNORED), m_hasOwnership(true)
 {
+}
+
+Image::Image(VkDevice logical_device, VkImage image, VkExtent3D const& extent, VkFormat format, NoOwnership)
+    :Image(logical_device, image, extent, format)
+{
+    m_hasOwnership = false;
 }
 
 Image::~Image()
 {
-    if(m_image) { vkDestroyImage(m_device, m_image, nullptr); }
+    if(m_hasOwnership && m_image) { vkDestroyImage(m_device, m_image, nullptr); }
 }
 
 Image::Image(Image&& rhs)
-    :m_image(rhs.m_image), m_device(rhs.m_device)
+    :m_image(rhs.m_image), m_device(rhs.m_device), m_extent(rhs.m_extent), m_format(rhs.m_format),
+     m_currentAccessMask(rhs.m_currentAccessMask), m_currentLayout(rhs.m_currentLayout),
+     m_currentQueue(rhs.m_currentQueue), m_hasOwnership(rhs.m_hasOwnership)
 {
     rhs.m_image = nullptr;
     rhs.m_device = nullptr;
+    rhs.m_extent = { 0, 0, 0 };
+    rhs.m_format = VK_FORMAT_UNDEFINED;
+    rhs.m_currentAccessMask = static_cast<VkAccessFlags>(0);
+    rhs.m_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    rhs.m_currentQueue = 0;
+    rhs.m_hasOwnership = false;
 }
 
 VkImage Image::getVkImage()
@@ -29,5 +50,121 @@ VkMemoryRequirements Image::getMemoryRequirements()
     VkMemoryRequirements ret;
     vkGetImageMemoryRequirements(m_device, m_image, &ret);
     return ret;
+}
+
+void Image::bindMemory(DeviceMemory& memory, VkDeviceSize memory_offset)
+{
+    VkResult res = vkBindImageMemory(m_device, m_image, memory.getVkDeviceMemory(), memory_offset);
+    checkVulkanError(res, "Error in vkBindImageMemory.");
+}
+
+void Image::transition(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage,
+                       VkAccessFlags access_mask, VkImageLayout layout)
+{
+    VkImageSubresourceRange range;
+    range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    range.baseMipLevel = 0;
+    range.levelCount = 1;
+    range.baseArrayLayer = 0;
+    range.layerCount = 1;
+    transition(command_buffer, src_stage, dst_stage, access_mask, layout, VK_QUEUE_FAMILY_IGNORED, range);
+}
+
+void Image::transition(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage,
+                       VkAccessFlags access_mask, VkImageLayout layout,
+                       uint32_t queue_family, VkImageSubresourceRange const& subresource_range)
+{
+    VkImageMemoryBarrier image_barr;
+    image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    image_barr.pNext = nullptr;
+    image_barr.srcAccessMask = m_currentAccessMask;
+    image_barr.dstAccessMask = access_mask;
+    image_barr.oldLayout = m_currentLayout;
+    image_barr.newLayout = layout;
+    image_barr.srcQueueFamilyIndex = m_currentQueue;
+    image_barr.dstQueueFamilyIndex = queue_family;
+    image_barr.image = m_image;
+    image_barr.subresourceRange = subresource_range;
+    vkCmdPipelineBarrier(command_buffer.getVkCommandBuffer(), src_stage, dst_stage, 0,
+                         0, nullptr, 0, nullptr, 1, &image_barr);
+
+    m_currentAccessMask = access_mask;
+    m_currentLayout = layout;
+    m_currentQueue = queue_family;
+}
+
+uint32_t Image::getWidth() const
+{
+    return m_extent.width;
+}
+
+uint32_t Image::getHeight() const
+{
+    return m_extent.height;
+}
+
+uint32_t Image::getDepth() const
+{
+    return m_extent.depth;
+}
+
+VkFormat Image::getFormat() const
+{
+    return m_format;
+}
+
+void Image::copy(CommandBuffer& command_buffer, Image& source_image, Image& destination_image)
+{
+    GHULBUS_PRECONDITION(source_image.m_format == destination_image.m_format);
+    GHULBUS_PRECONDITION(source_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    GHULBUS_PRECONDITION(destination_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    GHULBUS_PRECONDITION(source_image.m_extent.width == destination_image.m_extent.width);
+    GHULBUS_PRECONDITION(source_image.m_extent.height == destination_image.m_extent.height);
+    GHULBUS_PRECONDITION(source_image.m_extent.depth == destination_image.m_extent.depth);
+
+    VkImageCopy region;
+    region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.srcSubresource.mipLevel = 0;
+    region.srcSubresource.baseArrayLayer = 0;
+    region.srcSubresource.layerCount = 1;
+    region.srcOffset.x = 0;
+    region.srcOffset.y = 0;
+    region.srcOffset.z = 0;
+    region.dstSubresource = region.srcSubresource;
+    region.dstOffset = region.srcOffset;
+    region.extent.width = source_image.m_extent.width;
+    region.extent.height = source_image.m_extent.height;
+    region.extent.depth = source_image.m_extent.depth;
+    vkCmdCopyImage(command_buffer.getVkCommandBuffer(),
+                   source_image.m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                   destination_image.m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                   1, &region);
+}
+
+void Image::blit(CommandBuffer& command_buffer, Image& source_image, Image& destination_image)
+{
+    GHULBUS_PRECONDITION(source_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    GHULBUS_PRECONDITION(destination_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    VkImageBlit region;
+    region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.srcSubresource.mipLevel = 0;
+    region.srcSubresource.baseArrayLayer = 0;
+    region.srcSubresource.layerCount = 1;
+    region.srcOffsets[0].x = 0;
+    region.srcOffsets[0].y = 0;
+    region.srcOffsets[0].z = 0;
+    region.srcOffsets[1].x = source_image.m_extent.width;
+    region.srcOffsets[1].y = source_image.m_extent.height;
+    region.srcOffsets[1].z = source_image.m_extent.depth;
+    region.dstSubresource = region.srcSubresource;
+    region.dstOffsets[0] = region.srcOffsets[0];
+    region.dstOffsets[1].x = destination_image.m_extent.width;
+    region.dstOffsets[1].y = destination_image.m_extent.height;
+    region.dstOffsets[1].z = destination_image.m_extent.depth;
+    vkCmdBlitImage(command_buffer.getVkCommandBuffer(),
+                   source_image.m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                   destination_image.m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                   1, &region, VK_FILTER_NEAREST);
 }
 }

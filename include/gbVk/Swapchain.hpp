@@ -9,11 +9,12 @@
 
 #include <gbVk/config.hpp>
 
+#include <gbVk/Image.hpp>
+
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan.hpp>
 
 #include <chrono>
-#include <optional>
 #include <vector>
 
 namespace GHULBUS_VULKAN_NAMESPACE
@@ -21,11 +22,34 @@ namespace GHULBUS_VULKAN_NAMESPACE
 class Fence;
 
 class Swapchain {
+public:
+    class AcquiredImage
+    {
+        friend class Swapchain;
+    private:
+        Image* m_image;
+        uint32_t m_swapchainIndex;
+    private:
+        AcquiredImage(Image& image, uint32_t swapchain_index);
+    public:
+        AcquiredImage();
+
+        AcquiredImage(AcquiredImage const&) = delete;
+        AcquiredImage& operator=(AcquiredImage const&) = delete;
+
+        AcquiredImage(AcquiredImage&& rhs);
+
+        Image* operator->();
+        Image& operator*();
+
+        operator bool() const;
+    };
 private:
     VkSwapchainKHR m_swapchain;
     VkDevice m_device;
+    std::vector<Image> m_images;
 public:
-    Swapchain(VkDevice logical_device, VkSwapchainKHR swapchain);
+    Swapchain(VkDevice logical_device, VkSwapchainKHR swapchain, VkExtent2D const& extent, VkFormat format);
 
     ~Swapchain();
 
@@ -39,9 +63,11 @@ public:
 
     std::vector<VkImage> getImages();
 
-    std::optional<uint32_t> acquireNextImage(Fence& fence);
+    AcquiredImage acquireNextImage(Fence& fence);
 
-    std::optional<uint32_t> acquireNextImage(Fence& fence, std::chrono::nanoseconds timeout);
+    AcquiredImage acquireNextImage(Fence& fence, std::chrono::nanoseconds timeout);
+
+    void present(VkQueue queue, AcquiredImage&& image);
 };
 }
 #endif

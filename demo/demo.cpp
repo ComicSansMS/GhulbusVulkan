@@ -59,8 +59,11 @@ int main()
 
     glfwWindowHint(GLFW_RESIZABLE, 0);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    int const WINDOW_WIDTH = 1280;
+    int const WINDOW_HEIGHT = 720;
     auto main_window =
-        std::unique_ptr<GLFWwindow, void(*)(GLFWwindow*)>(glfwCreateWindow(1280, 720, "Vulkan Demo", nullptr, nullptr),
+        std::unique_ptr<GLFWwindow, void(*)(GLFWwindow*)>(glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan Demo",
+                                                                           nullptr, nullptr),
                                                           glfwDestroyWindow);
     if(!main_window) {
         return 1;
@@ -127,19 +130,19 @@ int main()
 
     auto fence = device.createFence();
     auto images = swapchain.getImages();
-    auto const image_index = swapchain.acquireNextImage(fence);
-    auto image = images[*image_index];
+    auto swapchain_image = swapchain.acquireNextImage(fence);
+    if(!swapchain_image) {
+        GHULBUS_LOG(Error, "Unable to acquire image from swap chain.");
+        return 1;
+    }
     fence.wait();
 
     command_buffer.begin();
 
-    auto source_image = device.createImage();
+    auto source_image = device.createImage(WINDOW_WIDTH, WINDOW_HEIGHT);
     auto mem_reqs = source_image.getMemoryRequirements();
     auto source_image_memory = device.allocateMemory(mem_reqs.size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, mem_reqs);
-    res = vkBindImageMemory(device.getVkDevice(), source_image.getVkImage(), source_image_memory.getVkDeviceMemory(), 0);
-    if(res != VK_SUCCESS) {
-        GHULBUS_LOG(Error, "Unable to bind image memory.");
-    }
+    source_image.bindMemory(source_image_memory, 0);
 
     // create image view
     /*
@@ -159,7 +162,7 @@ int main()
     color_image_view.subresourceRange.layerCount = 1;
     color_image_view.viewType = VK_IMAGE_VIEW_TYPE_2D;
     color_image_view.flags = 0;
-    color_image_view.image = image;
+    color_image_view.image = swapchain_image->getVkImage();
 
     res = vkCreateImageView(device.getVkDevice(), &color_image_view, NULL, &image_view);
     if(res != VK_SUCCESS) {
@@ -169,35 +172,16 @@ int main()
     */
 
 
-    // set host image layout
-    {
-        VkImageMemoryBarrier image_barr;
-        image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        image_barr.pNext = nullptr;
-        image_barr.srcAccessMask = 0;
-        image_barr.dstAccessMask = VK_ACCESS_HOST_WRITE_BIT;
-        image_barr.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        image_barr.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-        image_barr.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        image_barr.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        image_barr.image = source_image.getVkImage();
-        image_barr.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        image_barr.subresourceRange.baseMipLevel = 0;
-        image_barr.subresourceRange.levelCount = 1;
-        image_barr.subresourceRange.baseArrayLayer = 0;
-        image_barr.subresourceRange.layerCount = 1;
-        vkCmdPipelineBarrier(command_buffer.getVkCommandBuffer(),
-            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-            0, 0, nullptr, 0, nullptr,
-            1, &image_barr);
-    }
+    // fill host image
+    source_image.transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                            VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
     {
         struct ImageDim { int x,y,comp; } dim;
         auto img_data = stbi_load("image.jpg", &dim.x, &dim.y, &dim.comp, 0);
         auto mapped = source_image_memory.map();
         for(int i=0; i<mem_reqs.size/4; ++i) {
-            int ix = i % 1280;
-            int iy = i / 1280;
+            int ix = i % WINDOW_WIDTH;
+            int iy = i / WINDOW_WIDTH;
             if(!img_data || ix >= dim.x || iy >= dim.y || (dim.comp != 3 && dim.comp != 4)) {
                 mapped[i * 4] = std::byte(255);           //R
                 mapped[i * 4 + 1] = std::byte(0);         //G
@@ -214,138 +198,24 @@ int main()
         mapped.flush();
         stbi_image_free(img_data);
     }
-    {
-        VkImageMemoryBarrier image_barr;
-        image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        image_barr.pNext = nullptr;
-        image_barr.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
-        image_barr.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        image_barr.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        image_barr.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        image_barr.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        image_barr.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        image_barr.image = source_image.getVkImage();
-        image_barr.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        image_barr.subresourceRange.baseMipLevel = 0;
-        image_barr.subresourceRange.levelCount = 1;
-        image_barr.subresourceRange.baseArrayLayer = 0;
-        image_barr.subresourceRange.layerCount = 1;
-        vkCmdPipelineBarrier(command_buffer.getVkCommandBuffer(),
-            VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-            0, 0, nullptr, 0, nullptr,
-            1, &image_barr);
-    }
 
-    // set swapchain image layout
-    {
-        VkImageMemoryBarrier image_barr;
-        image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        image_barr.pNext = nullptr;
-        image_barr.srcAccessMask = 0;
-        image_barr.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        image_barr.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        image_barr.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        image_barr.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        image_barr.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        image_barr.image = image;
-        image_barr.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        image_barr.subresourceRange.baseMipLevel = 0;
-        image_barr.subresourceRange.levelCount = 1;
-        image_barr.subresourceRange.baseArrayLayer = 0;
-        image_barr.subresourceRange.layerCount = 1;
-        vkCmdPipelineBarrier(command_buffer.getVkCommandBuffer(),
-                             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                             0, 0, nullptr, 0, nullptr,
-                             1, &image_barr);
-    }
     // copy
-    /*
-    {
-        VkImageCopy region;
-        region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        region.srcSubresource.mipLevel = 0;
-        region.srcSubresource.baseArrayLayer = 0;
-        region.srcSubresource.layerCount = 1;
-        region.srcOffset.x = 0;
-        region.srcOffset.y = 0;
-        region.srcOffset.z = 0;
-        region.dstSubresource = region.srcSubresource;
-        region.dstOffset = region.srcOffset;
-        region.extent.width = 1280;
-        region.extent.height = 720;
-        region.extent.depth = 1;
-        vkCmdCopyImage(command_buffer.getVkCommandBuffer(),
-                       source_image.getVkImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                       image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                       1, &region);
-    }
-    /*/
-    {
-        VkImageBlit region;
-        region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        region.srcSubresource.mipLevel = 0;
-        region.srcSubresource.baseArrayLayer = 0;
-        region.srcSubresource.layerCount = 1;
-        region.srcOffsets[0].x = 0;
-        region.srcOffsets[0].y = 0;
-        region.srcOffsets[0].z = 0;
-        region.srcOffsets[1].x = 1280;
-        region.srcOffsets[1].y = 720;
-        region.srcOffsets[1].z = 1;
-        region.dstSubresource = region.srcSubresource;
-        region.dstOffsets[0] = region.srcOffsets[0];
-        region.dstOffsets[1] = region.srcOffsets[1];
-        vkCmdBlitImage(command_buffer.getVkCommandBuffer(),
-                       source_image.getVkImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                       image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region, VK_FILTER_NEAREST);
-    }
-    //*/
+    source_image.transition(command_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                            VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    GhulbusVulkan::Image::blit(command_buffer, source_image, *swapchain_image);
+
     // presentation
-    {
-        VkImageMemoryBarrier image_barr;
-        image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        image_barr.pNext = nullptr;
-        image_barr.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        image_barr.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-        image_barr.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        image_barr.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        image_barr.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        image_barr.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        image_barr.image = image;
-        image_barr.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        image_barr.subresourceRange.baseMipLevel = 0;
-        image_barr.subresourceRange.levelCount = 1;
-        image_barr.subresourceRange.baseArrayLayer = 0;
-        image_barr.subresourceRange.layerCount = 1;
-        vkCmdPipelineBarrier(command_buffer.getVkCommandBuffer(),
-                             VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                             0, 0, nullptr, 0, nullptr,
-                             1, &image_barr);
-    }
+    swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
     command_buffer.end();
     command_buffer.submit(queue);
-    vkQueueWaitIdle(queue);
     command_buffer.reset();
 
-    command_buffer.begin();
-    VkPresentInfoKHR present_info;
-    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    present_info.pNext = nullptr;
-    present_info.waitSemaphoreCount = 0;
-    present_info.pWaitSemaphores = nullptr;
-    present_info.swapchainCount = 1;
-    VkSwapchainKHR the_swapchain = swapchain.getVkSwapchainKHR();
-    present_info.pSwapchains = &the_swapchain;
-    uint32_t the_image_index = *image_index;
-    present_info.pImageIndices = &the_image_index;
-    VkResult the_result;
-    present_info.pResults = &the_result;
-    vkQueuePresentKHR(queue, &present_info);
-    command_buffer.end();
-    command_buffer.submit(queue);
+    swapchain.present(queue, std::move(swapchain_image));
     vkQueueWaitIdle(queue);
-    command_buffer.reset();
-
 
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!glfwWindowShouldClose(main_window.get())) {
