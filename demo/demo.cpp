@@ -137,16 +137,6 @@ int main()
     if(res != VK_SUCCESS) {
         GHULBUS_LOG(Error, "Unable to bind image memory.");
     }
-    {
-        auto mapped = source_image_memory.map();
-        for(int i=0; i<mem_reqs.size/4; ++i) {
-            mapped[i * 4] = std::byte(0);           //B
-            mapped[i * 4 + 1] = std::byte(0);       //G
-            mapped[i * 4 + 2] = std::byte(255);     //R
-            mapped[i * 4 + 3] = std::byte(0);       //A
-        }
-        mapped.flush();
-    }
 
     // create image view
     /*
@@ -182,8 +172,39 @@ int main()
         image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         image_barr.pNext = nullptr;
         image_barr.srcAccessMask = 0;
+        image_barr.dstAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+        image_barr.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        image_barr.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+        image_barr.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        image_barr.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        image_barr.image = source_image.getVkImage();
+        image_barr.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        image_barr.subresourceRange.baseMipLevel = 0;
+        image_barr.subresourceRange.levelCount = 1;
+        image_barr.subresourceRange.baseArrayLayer = 0;
+        image_barr.subresourceRange.layerCount = 1;
+        vkCmdPipelineBarrier(command_buffer.getVkCommandBuffer(),
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+            0, 0, nullptr, 0, nullptr,
+            1, &image_barr);
+    }
+    {
+        auto mapped = source_image_memory.map();
+        for(int i=0; i<mem_reqs.size/4; ++i) {
+            mapped[i * 4] = std::byte(0);           //B
+            mapped[i * 4 + 1] = std::byte(0);       //G
+            mapped[i * 4 + 2] = std::byte(255);     //R
+            mapped[i * 4 + 3] = std::byte(0);       //A
+        }
+        mapped.flush();
+    }
+    {
+        VkImageMemoryBarrier image_barr;
+        image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        image_barr.pNext = nullptr;
+        image_barr.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
         image_barr.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        image_barr.oldLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+        image_barr.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         image_barr.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         image_barr.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         image_barr.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -194,7 +215,7 @@ int main()
         image_barr.subresourceRange.baseArrayLayer = 0;
         image_barr.subresourceRange.layerCount = 1;
         vkCmdPipelineBarrier(command_buffer.getVkCommandBuffer(),
-            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
             0, 0, nullptr, 0, nullptr,
             1, &image_barr);
     }
