@@ -154,7 +154,7 @@ Image Device::createImage()
     create_info.pNext = nullptr;
     create_info.flags = 0;
     create_info.imageType = VK_IMAGE_TYPE_2D;
-    create_info.format = VK_FORMAT_B8G8R8A8_UNORM;
+    create_info.format = VK_FORMAT_R8G8B8A8_UNORM;
     create_info.extent.width = 1280;
     create_info.extent.height = 720;
     create_info.extent.depth = 1;

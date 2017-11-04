@@ -191,10 +191,10 @@ int main()
     {
         auto mapped = source_image_memory.map();
         for(int i=0; i<mem_reqs.size/4; ++i) {
-            mapped[i * 4] = std::byte(0);           //B
-            mapped[i * 4 + 1] = std::byte(0);       //G
-            mapped[i * 4 + 2] = std::byte(255);     //R
-            mapped[i * 4 + 3] = std::byte(0);       //A
+            mapped[i * 4] = std::byte(255);           //R
+            mapped[i * 4 + 1] = std::byte(0);         //G
+            mapped[i * 4 + 2] = std::byte(0);         //B
+            mapped[i * 4 + 3] = std::byte(255);       //A
         }
         mapped.flush();
     }
@@ -243,6 +243,7 @@ int main()
                              1, &image_barr);
     }
     // copy
+    /*
     {
         VkImageCopy region;
         region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -262,6 +263,27 @@ int main()
                        image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                        1, &region);
     }
+    /*/
+    {
+        VkImageBlit region;
+        region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.srcSubresource.mipLevel = 0;
+        region.srcSubresource.baseArrayLayer = 0;
+        region.srcSubresource.layerCount = 1;
+        region.srcOffsets[0].x = 0;
+        region.srcOffsets[0].y = 0;
+        region.srcOffsets[0].z = 0;
+        region.srcOffsets[1].x = 1280;
+        region.srcOffsets[1].y = 720;
+        region.srcOffsets[1].z = 1;
+        region.dstSubresource = region.srcSubresource;
+        region.dstOffsets[0] = region.srcOffsets[0];
+        region.dstOffsets[1] = region.srcOffsets[1];
+        vkCmdBlitImage(command_buffer.getVkCommandBuffer(),
+                       source_image.getVkImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                       image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region, VK_FILTER_NEAREST);
+    }
+    //*/
     // presentation
     {
         VkImageMemoryBarrier image_barr;
