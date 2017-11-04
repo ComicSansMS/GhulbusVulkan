@@ -16,6 +16,9 @@
 
 #include <GLFW/glfw3.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <external/stb_image.h>
+
 #include <cstring>
 #include <memory>
 #include <vector>
@@ -189,14 +192,27 @@ int main()
             1, &image_barr);
     }
     {
+        struct ImageDim { int x,y,comp; } dim;
+        auto img_data = stbi_load("image.jpg", &dim.x, &dim.y, &dim.comp, 0);
         auto mapped = source_image_memory.map();
         for(int i=0; i<mem_reqs.size/4; ++i) {
-            mapped[i * 4] = std::byte(255);           //R
-            mapped[i * 4 + 1] = std::byte(0);         //G
-            mapped[i * 4 + 2] = std::byte(0);         //B
-            mapped[i * 4 + 3] = std::byte(255);       //A
+            int ix = i % 1280;
+            int iy = i / 1280;
+            if(!img_data || ix >= dim.x || iy >= dim.y || (dim.comp != 3 && dim.comp != 4)) {
+                mapped[i * 4] = std::byte(255);           //R
+                mapped[i * 4 + 1] = std::byte(0);         //G
+                mapped[i * 4 + 2] = std::byte(0);         //B
+                mapped[i * 4 + 3] = std::byte(255);       //A
+            } else {
+                auto const pixel_index = (iy * dim.x + ix) * dim.comp;
+                mapped[i * 4] = std::byte(img_data[pixel_index]);           //R
+                mapped[i * 4 + 1] = std::byte(img_data[pixel_index + 1]);         //G
+                mapped[i * 4 + 2] = std::byte(img_data[pixel_index + 2]);         //B
+                mapped[i * 4 + 3] = std::byte((dim.comp == 4) ? img_data[pixel_index + 3] : 255);       //A
+            }
         }
         mapped.flush();
+        stbi_image_free(img_data);
     }
     {
         VkImageMemoryBarrier image_barr;

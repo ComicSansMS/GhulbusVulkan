@@ -246,6 +246,7 @@ endif()
 
 add_executable(demo ${PROJECT_SOURCE_DIR}/demo/demo.cpp)
 target_link_libraries(demo PUBLIC gbVk glfw)
+target_include_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/demo)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT demo)
 
 ###############################################################################
