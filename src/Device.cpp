@@ -7,6 +7,8 @@
 #include <gbVk/Fence.hpp>
 #include <gbVk/Image.hpp>
 #include <gbVk/PhysicalDevice.hpp>
+#include <gbVk/ShaderModule.hpp>
+#include <gbVk/Spirv.hpp>
 #include <gbVk/Swapchain.hpp>
 
 #include <gbBase/Assert.hpp>
@@ -243,6 +245,20 @@ VkQueue Device::getQueue(uint32_t queue_family, uint32_t queue_index)
     VkQueue queue;
     vkGetDeviceQueue(m_device, queue_family, queue_index, &queue);      //@todo this will crash if family or index are invalid
     return queue;
+}
+
+ShaderModule Device::createShaderModule(Spirv::Code const& code)
+{
+    VkShaderModuleCreateInfo create_info;
+    create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    create_info.pNext = nullptr;
+    create_info.flags = 0;
+    create_info.codeSize = code.getSize();
+    create_info.pCode = code.getCode();
+    VkShaderModule shader_module;
+    VkResult res = vkCreateShaderModule(m_device, &create_info, nullptr, &shader_module);
+    checkVulkanError(res, "Error in vkCreateShaderModule.");
+    return ShaderModule(m_device, shader_module);
 }
 
 void Device::waitIdle()

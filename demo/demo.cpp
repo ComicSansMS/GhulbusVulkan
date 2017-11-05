@@ -11,6 +11,8 @@
 #include <gbVk/Image.hpp>
 #include <gbVk/Instance.hpp>
 #include <gbVk/PhysicalDevice.hpp>
+#include <gbVk/ShaderModule.hpp>
+#include <gbVk/Spirv.hpp>
 #include <gbVk/StringConverters.hpp>
 #include <gbVk/Swapchain.hpp>
 
@@ -216,6 +218,11 @@ int main()
 
     swapchain.present(queue, std::move(swapchain_image));
     vkQueueWaitIdle(queue);
+
+    auto spirv_code = GhulbusVulkan::Spirv::load("../demo/shaders/simple.spv");
+    auto version = spirv_code.getSpirvVersion();
+    auto bound = spirv_code.getBound();
+    auto shader_module = device.createShaderModule(spirv_code);
 
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!glfwWindowShouldClose(main_window.get())) {

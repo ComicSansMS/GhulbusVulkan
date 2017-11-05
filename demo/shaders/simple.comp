@@ -1,0 +1,12 @@
+#version 450 core
+
+int foo(void)
+{
+    return 42;
+}
+
+void main(void)
+{
+    // nothing here!
+    foo();
+}
