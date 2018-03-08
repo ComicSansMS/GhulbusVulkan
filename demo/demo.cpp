@@ -51,13 +51,14 @@ int main()
     GhulbusVulkan::Instance instance = GhulbusVulkan::Instance::createInstance();
 
     auto phys_devices = instance.enumeratePhysicalDevices();
-    auto dev_props = phys_devices.front().getProperties();
+    auto& physical_device = phys_devices.front();
+    auto dev_props = physical_device.getProperties();
     GHULBUS_LOG(Info, "Using device " << dev_props.deviceName << " ("
                       << "Vulkan Version " << GhulbusVulkan::version_to_string(dev_props.apiVersion) << ", "
                       << "Driver Version " << GhulbusVulkan::version_to_string(dev_props.driverVersion)
                       << ").");
 
-    GhulbusVulkan::Device device = phys_devices.front().createDevice();
+    GhulbusVulkan::Device device = physical_device.createDevice();
 
     glfwWindowHint(GLFW_RESIZABLE, 0);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -106,11 +107,27 @@ int main()
         }
     }
 
-    uint32_t const queue_family = 0;    // @todo
 
-    if(!device.getPhysicalDevice().getSurfaceSupport(queue_family, surface)) {
-        GHULBUS_LOG(Error, "Selected queue does not support presentation for this surface.");
+    // find queue family
+    auto const opt_queue_family = [&device, &surface]() -> std::optional<uint32_t> {
+        uint32_t i = 0;
+        for(auto const& qfp : device.getPhysicalDevice().getQueueFamilyProperties()) {
+            if((qfp.queueCount > 0) && (qfp.queueFlags | VK_QUEUE_GRAPHICS_BIT)) {
+                // @todo: graphics and presentation might only be available on separate queues
+                if(device.getPhysicalDevice().getSurfaceSupport(i, surface)) {
+                    return i;
+                }
+            }
+            ++i;
+        }
+        GHULBUS_LOG(Error, "No suitable queue family found.");
+        return std::nullopt;
+    }();
+    if(!opt_queue_family) {
+        return 1;
     }
+
+    uint32_t const queue_family = *opt_queue_family;
 
     auto swapchain = device.createSwapChain(surface, queue_family);
 
