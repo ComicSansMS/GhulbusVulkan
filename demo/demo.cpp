@@ -112,7 +112,7 @@ int main()
     auto const opt_queue_family = [&device, &surface]() -> std::optional<uint32_t> {
         uint32_t i = 0;
         for(auto const& qfp : device.getPhysicalDevice().getQueueFamilyProperties()) {
-            if((qfp.queueCount > 0) && (qfp.queueFlags | VK_QUEUE_GRAPHICS_BIT)) {
+            if((qfp.queueCount > 0) && (qfp.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
                 // @todo: graphics and presentation might only be available on separate queues
                 if(device.getPhysicalDevice().getSurfaceSupport(i, surface)) {
                     return i;
