@@ -241,6 +241,208 @@ int main()
     auto bound = spirv_code.getBound();
     auto shader_module = device.createShaderModule(spirv_code);
 
+    auto vert_spirv_code = GhulbusVulkan::Spirv::load("../demo/shaders/vert.spv");
+    auto vert_shader_module = device.createShaderModule(spirv_code);
+    VkPipelineShaderStageCreateInfo vert_shader_stage_ci;
+    vert_shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vert_shader_stage_ci.pNext = nullptr;
+    vert_shader_stage_ci.flags = 0;
+    vert_shader_stage_ci.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vert_shader_stage_ci.module = vert_shader_module.getVkShaderModule();
+    vert_shader_stage_ci.pName = "main";
+    vert_shader_stage_ci.pSpecializationInfo = nullptr;
+
+    auto frag_spirv_code = GhulbusVulkan::Spirv::load("../demo/shaders/frag.spv");
+    auto frag_shader_module = device.createShaderModule(spirv_code);
+    VkPipelineShaderStageCreateInfo frag_shader_stage_ci;
+    frag_shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    frag_shader_stage_ci.pNext = nullptr;
+    frag_shader_stage_ci.flags = 0;
+    frag_shader_stage_ci.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    frag_shader_stage_ci.module = frag_shader_module.getVkShaderModule();
+    frag_shader_stage_ci.pName = "main";
+    frag_shader_stage_ci.pSpecializationInfo = nullptr;
+
+    std::vector<VkPipelineShaderStageCreateInfo> shader_stage_cis{ vert_shader_stage_ci, frag_shader_stage_ci };
+
+    // render pass
+    VkAttachmentDescription renderpass_color_attachment;
+    renderpass_color_attachment.flags = 0;
+    renderpass_color_attachment.format = swapchain_image->getFormat();
+    renderpass_color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    renderpass_color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    renderpass_color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    renderpass_color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    renderpass_color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    renderpass_color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    renderpass_color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    VkAttachmentReference renderpass_color_attachment_ref;
+    renderpass_color_attachment_ref.attachment = 0;
+    renderpass_color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkSubpassDescription renderpass_subpass_desc;
+    renderpass_subpass_desc.flags = 0;
+    renderpass_subpass_desc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    renderpass_subpass_desc.inputAttachmentCount = 0;
+    renderpass_subpass_desc.pInputAttachments = nullptr;
+    renderpass_subpass_desc.colorAttachmentCount = 1;
+    renderpass_subpass_desc.pColorAttachments = &renderpass_color_attachment_ref;
+    renderpass_subpass_desc.pResolveAttachments = nullptr;
+    renderpass_subpass_desc.pDepthStencilAttachment = nullptr;
+    renderpass_subpass_desc.preserveAttachmentCount = 0;
+    renderpass_subpass_desc.pPreserveAttachments = nullptr;
+    VkRenderPassCreateInfo render_pass_ci;
+    render_pass_ci.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    render_pass_ci.pNext = nullptr;
+    render_pass_ci.flags = 0;
+    render_pass_ci.attachmentCount = 1;
+    render_pass_ci.pAttachments = &renderpass_color_attachment;
+    render_pass_ci.subpassCount = 1;
+    render_pass_ci.pSubpasses = &renderpass_subpass_desc;
+    render_pass_ci.dependencyCount = 0;
+    render_pass_ci.pDependencies = nullptr;
+    VkRenderPass render_pass;
+    vkCreateRenderPass(device.getVkDevice(), &render_pass_ci, nullptr, &render_pass);
+    std::unique_ptr<VkRenderPass, std::function<void(VkRenderPass*)>> guard_render_pass(&render_pass,
+        [&device](VkRenderPass* r) { vkDestroyRenderPass(device.getVkDevice(), *r, nullptr); });
+
+
+    // vertex input
+    VkPipelineVertexInputStateCreateInfo vertex_input_ci;
+    vertex_input_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertex_input_ci.pNext = nullptr;
+    vertex_input_ci.flags = 0;
+    vertex_input_ci.vertexBindingDescriptionCount = 0;
+    vertex_input_ci.pVertexBindingDescriptions = nullptr;
+    vertex_input_ci.vertexAttributeDescriptionCount = 0;
+    vertex_input_ci.pVertexAttributeDescriptions = nullptr;
+
+    // input assembly
+    VkPipelineInputAssemblyStateCreateInfo input_assembly_ci;
+    input_assembly_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    input_assembly_ci.pNext = nullptr;
+    input_assembly_ci.flags = 0;
+    input_assembly_ci.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    input_assembly_ci.primitiveRestartEnable = VK_FALSE;
+
+    // viewport
+    VkViewport viewport;
+    viewport.x = 0;
+    viewport.y = 0;
+    viewport.width = static_cast<float>(swapchain_image->getWidth());
+    viewport.height = static_cast<float>(swapchain_image->getHeight());
+    viewport.minDepth = 0.f;
+    viewport.maxDepth = 1.f;
+    VkRect2D scissor;
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    scissor.extent.width = swapchain_image->getWidth();
+    scissor.extent.height = swapchain_image->getHeight();
+    VkPipelineViewportStateCreateInfo viewport_ci;
+    viewport_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewport_ci.pNext = nullptr;
+    viewport_ci.flags = 0;
+    viewport_ci.viewportCount = 1;
+    viewport_ci.pViewports = &viewport;
+    viewport_ci.scissorCount = 1;
+    viewport_ci.pScissors = &scissor;
+
+    // rasterizer
+    VkPipelineRasterizationStateCreateInfo rasterizer_ci;
+    rasterizer_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer_ci.pNext = nullptr;
+    rasterizer_ci.flags = 0;
+    rasterizer_ci.depthClampEnable = VK_FALSE;
+    rasterizer_ci.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer_ci.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer_ci.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer_ci.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer_ci.depthBiasEnable = VK_FALSE;
+    rasterizer_ci.depthBiasConstantFactor = 0.f;
+    rasterizer_ci.depthBiasClamp = 0.f;
+    rasterizer_ci.depthBiasSlopeFactor = 0.f;
+    rasterizer_ci.lineWidth = 1.f;
+
+    // multisampling
+    VkPipelineMultisampleStateCreateInfo multisample_ci;
+    multisample_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisample_ci.pNext = nullptr;
+    multisample_ci.flags = 0;
+    multisample_ci.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisample_ci.sampleShadingEnable = VK_FALSE;
+    multisample_ci.minSampleShading = 1.f;
+    multisample_ci.pSampleMask = nullptr;
+    multisample_ci.alphaToCoverageEnable = VK_FALSE;
+    multisample_ci.alphaToOneEnable = VK_FALSE;
+
+    // depth/stencil
+    //not yet
+
+    // color blending
+    VkPipelineColorBlendAttachmentState color_blend_attach_state;
+    color_blend_attach_state.blendEnable = VK_FALSE;
+    color_blend_attach_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    color_blend_attach_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_blend_attach_state.colorBlendOp = VK_BLEND_OP_ADD;
+    color_blend_attach_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    color_blend_attach_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    color_blend_attach_state.alphaBlendOp = VK_BLEND_OP_ADD;
+    color_blend_attach_state.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
+                                              VK_COLOR_COMPONENT_G_BIT |
+                                              VK_COLOR_COMPONENT_B_BIT |
+                                              VK_COLOR_COMPONENT_A_BIT;
+    VkPipelineColorBlendStateCreateInfo color_blend_ci;
+    color_blend_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    color_blend_ci.pNext = nullptr;
+    color_blend_ci.flags = 0;
+    color_blend_ci.logicOpEnable = VK_FALSE;
+    color_blend_ci.logicOp = VK_LOGIC_OP_COPY;
+    color_blend_ci.attachmentCount = 1;
+    color_blend_ci.pAttachments = &color_blend_attach_state;
+    color_blend_ci.blendConstants[0] = 0.f;
+    color_blend_ci.blendConstants[1] = 0.f;
+    color_blend_ci.blendConstants[2] = 0.f;
+    color_blend_ci.blendConstants[3] = 0.f;
+
+    // pipeline layout
+    VkPipelineLayoutCreateInfo pipeline_layout_ci;
+    pipeline_layout_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipeline_layout_ci.pNext = nullptr;
+    pipeline_layout_ci.flags = 0;
+    pipeline_layout_ci.setLayoutCount = 0;
+    pipeline_layout_ci.pSetLayouts = nullptr;
+    pipeline_layout_ci.pushConstantRangeCount = 0;
+    pipeline_layout_ci.pPushConstantRanges = nullptr;
+    VkPipelineLayout pipeline_layout;
+    vkCreatePipelineLayout(device.getVkDevice(), &pipeline_layout_ci, nullptr, &pipeline_layout);
+    std::unique_ptr<VkPipelineLayout, std::function<void(VkPipelineLayout*)>> guard_pipeline_layout(&pipeline_layout,
+        [&device](VkPipelineLayout* p) { vkDestroyPipelineLayout(device.getVkDevice(), *p, nullptr); });
+
+    // pipeline
+    VkGraphicsPipelineCreateInfo pipeline_ci;
+    pipeline_ci.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipeline_ci.pNext = nullptr;
+    pipeline_ci.flags = 0;
+    pipeline_ci.stageCount = 2;
+    pipeline_ci.pStages = shader_stage_cis.data();
+    pipeline_ci.pVertexInputState = &vertex_input_ci;
+    pipeline_ci.pInputAssemblyState = &input_assembly_ci;
+    pipeline_ci.pTessellationState = nullptr;
+    pipeline_ci.pViewportState = &viewport_ci;
+    pipeline_ci.pRasterizationState = &rasterizer_ci;
+    pipeline_ci.pMultisampleState = &multisample_ci;
+    pipeline_ci.pDepthStencilState = nullptr;
+    pipeline_ci.pColorBlendState = &color_blend_ci;
+    pipeline_ci.pDynamicState = nullptr;
+    pipeline_ci.layout = pipeline_layout;
+    pipeline_ci.renderPass = render_pass;
+    pipeline_ci.subpass = 0;
+    pipeline_ci.basePipelineHandle = VK_NULL_HANDLE;
+    pipeline_ci.basePipelineIndex = -1;
+    VkPipeline pipeline;
+    vkCreateGraphicsPipelines(device.getVkDevice(), VK_NULL_HANDLE, 1, &pipeline_ci, nullptr, &pipeline);
+    std::unique_ptr<VkPipeline, std::function<void(VkPipeline*)>> guard_pipeline(&pipeline,
+        [&device](VkPipeline* p) { vkDestroyPipeline(device.getVkDevice(), *p, nullptr); });
+
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!glfwWindowShouldClose(main_window.get())) {
         glfwPollEvents();
