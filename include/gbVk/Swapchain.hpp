@@ -86,8 +86,12 @@ public:
 
     void present(VkQueue queue, AcquiredImage&& image);
 
+    void present(VkQueue queue, Semaphore& semaphore, AcquiredImage&& image);
+
 private:
     AcquiredImage acquireNextImage_impl(Fence* fence, Semaphore* semaphore, std::chrono::nanoseconds* timeout);
+
+    void present_impl(VkQueue queue, Semaphore* semaphore, AcquiredImage&& image);
 };
 }
 #endif

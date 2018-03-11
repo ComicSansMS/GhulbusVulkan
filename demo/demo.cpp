@@ -295,6 +295,14 @@ int main()
     render_pass_subpass_desc.pDepthStencilAttachment = nullptr;
     render_pass_subpass_desc.preserveAttachmentCount = 0;
     render_pass_subpass_desc.pPreserveAttachments = nullptr;
+    VkSubpassDependency render_pass_subpass_dep;
+    render_pass_subpass_dep.srcSubpass = VK_SUBPASS_EXTERNAL;
+    render_pass_subpass_dep.dstSubpass = 0;
+    render_pass_subpass_dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    render_pass_subpass_dep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    render_pass_subpass_dep.srcAccessMask = 0;
+    render_pass_subpass_dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    render_pass_subpass_dep.dependencyFlags = 0;
     VkRenderPassCreateInfo render_pass_ci;
     render_pass_ci.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     render_pass_ci.pNext = nullptr;
@@ -303,8 +311,8 @@ int main()
     render_pass_ci.pAttachments = &render_pass_color_attachment;
     render_pass_ci.subpassCount = 1;
     render_pass_ci.pSubpasses = &render_pass_subpass_desc;
-    render_pass_ci.dependencyCount = 0;
-    render_pass_ci.pDependencies = nullptr;
+    render_pass_ci.dependencyCount = 1;
+    render_pass_ci.pDependencies = &render_pass_subpass_dep;
     VkRenderPass render_pass;
     res = vkCreateRenderPass(device.getVkDevice(), &render_pass_ci, nullptr, &render_pass);
     if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkCreateRenderPass: " << res); return 1; }
@@ -491,9 +499,9 @@ int main()
         render_pass_info.renderArea.extent.width = swapchain_image->getWidth();
         render_pass_info.renderArea.extent.height = swapchain_image->getHeight();
         VkClearValue clear_color;
-        clear_color.color.float32[0] = 0.f;
+        clear_color.color.float32[0] = 0.5f;
         clear_color.color.float32[1] = 0.f;
-        clear_color.color.float32[2] = 1.f;
+        clear_color.color.float32[2] = 0.5f;
         clear_color.color.float32[3] = 1.f;
         render_pass_info.clearValueCount = 1;
         render_pass_info.pClearValues = &clear_color;
@@ -506,8 +514,31 @@ int main()
         local_command_buffer.end();
     }
 
+    GhulbusVulkan::Semaphore semaphore_image_available = device.createSemaphore();
+    GhulbusVulkan::Semaphore semaphore_render_finished = device.createSemaphore();
+
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!glfwWindowShouldClose(main_window.get())) {
         glfwPollEvents();
+
+        auto frame_image = swapchain.acquireNextImage(semaphore_image_available);
+        VkSubmitInfo submit_info;
+        submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit_info.pNext = nullptr;
+        VkSemaphore wait_semaphores[] = { semaphore_image_available.getVkSemaphore() };
+        VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        submit_info.waitSemaphoreCount = 1;
+        submit_info.pWaitSemaphores = wait_semaphores;
+        submit_info.pWaitDstStageMask = wait_stages;
+        submit_info.commandBufferCount = 1;
+        VkCommandBuffer cb = triangle_draw_command_buffers.getCommandBuffer(frame_image.getSwapchainIndex()).getVkCommandBuffer();
+        submit_info.pCommandBuffers = &cb;
+        VkSemaphore signal_semaphores[] = { semaphore_render_finished.getVkSemaphore() };
+        submit_info.signalSemaphoreCount = 1;
+        submit_info.pSignalSemaphores = signal_semaphores;
+        res = vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE);
+        if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkQueueSubmit: " << res); return 1; }
+        swapchain.present(queue, semaphore_render_finished, std::move(frame_image));
+        vkQueueWaitIdle(queue);
     }
 }

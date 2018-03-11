@@ -181,12 +181,23 @@ Swapchain::AcquiredImage Swapchain::acquireNextImage(Fence& fence, Semaphore& se
 
 void Swapchain::present(VkQueue queue, AcquiredImage&& image)
 {
+    present_impl(queue, nullptr, std::move(image));
+}
+
+void Swapchain::present(VkQueue queue, Semaphore& semaphore, AcquiredImage&& image)
+{
+    present_impl(queue, &semaphore, std::move(image));
+}
+
+void Swapchain::present_impl(VkQueue queue, Semaphore* semaphore, AcquiredImage&& image)
+{
     GHULBUS_PRECONDITION_PRD(image);
     VkPresentInfoKHR present_info;
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     present_info.pNext = nullptr;
-    present_info.waitSemaphoreCount = 0;
-    present_info.pWaitSemaphores = nullptr;
+    VkSemaphore semaph = (semaphore ? semaphore->getVkSemaphore() : VK_NULL_HANDLE);
+    present_info.waitSemaphoreCount = (semaphore ? 1 : 0);
+    present_info.pWaitSemaphores = (semaphore ? &semaph : nullptr);
     present_info.swapchainCount = 1;
     present_info.pSwapchains = &m_swapchain;
     present_info.pImageIndices = &image.m_swapchainIndex;
