@@ -1,7 +1,9 @@
 #include <gbVk/CommandPool.hpp>
 
-#include <gbVk/CommandBuffer.hpp>
+#include <gbVk/CommandBuffers.hpp>
 #include <gbVk/Exceptions.hpp>
+
+#include <gbBase/Assert.hpp>
 
 #include <vector>
 
@@ -24,18 +26,20 @@ CommandPool::CommandPool(CommandPool&& rhs)
     rhs.m_device = nullptr;
 }
 
-CommandBuffer CommandPool::allocateCommandBuffers()
+CommandBuffers CommandPool::allocateCommandBuffers(std::uint32_t command_buffer_count)
 {
+    GHULBUS_PRECONDITION_DBG(command_buffer_count > 0);
     VkCommandBufferAllocateInfo alloc_info;
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info.pNext = nullptr;
     alloc_info.commandPool = m_commandPool;
     alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    alloc_info.commandBufferCount = 1;
-    VkCommandBuffer buffer;
-    VkResult res = vkAllocateCommandBuffers(m_device, &alloc_info, &buffer);
+    alloc_info.commandBufferCount = command_buffer_count;
+    std::vector<VkCommandBuffer> buffers;
+    buffers.resize(command_buffer_count);
+    VkResult res = vkAllocateCommandBuffers(m_device, &alloc_info, buffers.data());
     checkVulkanError(res, "Error in vkAllocateCommandBuffers.");
-    return CommandBuffer(buffer);
+    return CommandBuffers(m_device, m_commandPool, std::move(buffers));
 }
 
 void CommandPool::reset()

@@ -16,7 +16,7 @@ namespace GHULBUS_VULKAN_NAMESPACE
 {
 class ImageView {
 private:
-    VkImageView m_image_view;
+    VkImageView m_imageView;
     VkDevice m_device;
 public:
     ImageView(VkDevice logical_device, VkImageView image_view);

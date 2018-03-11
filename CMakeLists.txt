@@ -73,6 +73,7 @@ set(GB_VK_TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/Buffer.cpp
     ${GB_VK_SOURCE_DIR}/CommandBuffer.cpp
+    ${GB_VK_SOURCE_DIR}/CommandBuffers.cpp
     ${GB_VK_SOURCE_DIR}/CommandPool.cpp
     ${GB_VK_SOURCE_DIR}/Device.cpp
     ${GB_VK_SOURCE_DIR}/DeviceMemory.cpp
@@ -81,6 +82,7 @@ set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/ImageView.cpp
     ${GB_VK_SOURCE_DIR}/Instance.cpp
     ${GB_VK_SOURCE_DIR}/PhysicalDevice.cpp
+    ${GB_VK_SOURCE_DIR}/Semaphore.cpp
     ${GB_VK_SOURCE_DIR}/ShaderModule.cpp
     ${GB_VK_SOURCE_DIR}/Spirv.cpp
     ${GB_VK_SOURCE_DIR}/StringConverters.cpp
@@ -90,6 +92,7 @@ set(GB_VK_SOURCE_FILES
 set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/Buffer.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/CommandBuffer.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/CommandBuffers.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/CommandPool.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/config.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Device.hpp
@@ -100,6 +103,7 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/ImageView.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Instance.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/PhysicalDevice.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/Semaphore.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/ShaderModule.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Spirv.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/StringConverters.hpp

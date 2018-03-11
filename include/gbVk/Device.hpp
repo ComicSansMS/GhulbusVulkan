@@ -20,6 +20,7 @@ class DeviceMemory;
 class Fence;
 class Image;
 class PhysicalDevice;
+class Semaphore;
 class ShaderModule;
 class Swapchain;
 namespace Spirv
@@ -51,6 +52,8 @@ public:
     Fence createFence();
 
     Fence createFence(VkFenceCreateFlags flags);
+
+    Semaphore createSemaphore();
 
     Buffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags);
 

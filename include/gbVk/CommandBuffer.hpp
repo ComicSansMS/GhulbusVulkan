@@ -14,7 +14,6 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
-
 class CommandBuffer {
 private:
     VkCommandBuffer m_commandBuffer;

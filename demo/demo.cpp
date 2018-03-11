@@ -4,6 +4,7 @@
 #include <gbBase/LogHandlers.hpp>
 
 #include <gbVk/CommandBuffer.hpp>
+#include <gbVk/CommandBuffers.hpp>
 #include <gbVk/CommandPool.hpp>
 #include <gbVk/Device.hpp>
 #include <gbVk/DeviceMemory.hpp>
@@ -12,6 +13,7 @@
 #include <gbVk/ImageView.hpp>
 #include <gbVk/Instance.hpp>
 #include <gbVk/PhysicalDevice.hpp>
+#include <gbVk/Semaphore.hpp>
 #include <gbVk/ShaderModule.hpp>
 #include <gbVk/Spirv.hpp>
 #include <gbVk/StringConverters.hpp>
@@ -132,9 +134,10 @@ int main()
 
     auto swapchain = device.createSwapChain(surface, queue_family);
 
-    auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | 
+    auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT |
                                                  VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
-    auto command_buffer = command_pool.allocateCommandBuffers();
+    auto command_buffers = command_pool.allocateCommandBuffers(1);
+    auto command_buffer = command_buffers.getCommandBuffer(0);
 
     command_buffer.begin();
     VkBufferCopy region;
@@ -268,38 +271,38 @@ int main()
     std::vector<VkPipelineShaderStageCreateInfo> shader_stage_cis{ vert_shader_stage_ci, frag_shader_stage_ci };
 
     // render pass
-    VkAttachmentDescription renderpass_color_attachment;
-    renderpass_color_attachment.flags = 0;
-    renderpass_color_attachment.format = swapchain_image->getFormat();
-    renderpass_color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    renderpass_color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    renderpass_color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    renderpass_color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    renderpass_color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    renderpass_color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    renderpass_color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    VkAttachmentReference renderpass_color_attachment_ref;
-    renderpass_color_attachment_ref.attachment = 0;
-    renderpass_color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    VkSubpassDescription renderpass_subpass_desc;
-    renderpass_subpass_desc.flags = 0;
-    renderpass_subpass_desc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    renderpass_subpass_desc.inputAttachmentCount = 0;
-    renderpass_subpass_desc.pInputAttachments = nullptr;
-    renderpass_subpass_desc.colorAttachmentCount = 1;
-    renderpass_subpass_desc.pColorAttachments = &renderpass_color_attachment_ref;
-    renderpass_subpass_desc.pResolveAttachments = nullptr;
-    renderpass_subpass_desc.pDepthStencilAttachment = nullptr;
-    renderpass_subpass_desc.preserveAttachmentCount = 0;
-    renderpass_subpass_desc.pPreserveAttachments = nullptr;
+    VkAttachmentDescription render_pass_color_attachment;
+    render_pass_color_attachment.flags = 0;
+    render_pass_color_attachment.format = swapchain_image->getFormat();
+    render_pass_color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    render_pass_color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    render_pass_color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    render_pass_color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    render_pass_color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    render_pass_color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    render_pass_color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    VkAttachmentReference render_pass_color_attachment_ref;
+    render_pass_color_attachment_ref.attachment = 0;
+    render_pass_color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkSubpassDescription render_pass_subpass_desc;
+    render_pass_subpass_desc.flags = 0;
+    render_pass_subpass_desc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    render_pass_subpass_desc.inputAttachmentCount = 0;
+    render_pass_subpass_desc.pInputAttachments = nullptr;
+    render_pass_subpass_desc.colorAttachmentCount = 1;
+    render_pass_subpass_desc.pColorAttachments = &render_pass_color_attachment_ref;
+    render_pass_subpass_desc.pResolveAttachments = nullptr;
+    render_pass_subpass_desc.pDepthStencilAttachment = nullptr;
+    render_pass_subpass_desc.preserveAttachmentCount = 0;
+    render_pass_subpass_desc.pPreserveAttachments = nullptr;
     VkRenderPassCreateInfo render_pass_ci;
     render_pass_ci.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     render_pass_ci.pNext = nullptr;
     render_pass_ci.flags = 0;
     render_pass_ci.attachmentCount = 1;
-    render_pass_ci.pAttachments = &renderpass_color_attachment;
+    render_pass_ci.pAttachments = &render_pass_color_attachment;
     render_pass_ci.subpassCount = 1;
-    render_pass_ci.pSubpasses = &renderpass_subpass_desc;
+    render_pass_ci.pSubpasses = &render_pass_subpass_desc;
     render_pass_ci.dependencyCount = 0;
     render_pass_ci.pDependencies = nullptr;
     VkRenderPass render_pass;
@@ -465,13 +468,43 @@ int main()
         framebuffer_ci.width = swapchain_image->getWidth();
         framebuffer_ci.height = swapchain_image->getHeight();
         framebuffer_ci.layers = 1;
-        VkFramebuffer framebuffer;
-        res = vkCreateFramebuffer(device.getVkDevice(), &framebuffer_ci, nullptr, &framebuffer);
+        res = vkCreateFramebuffer(device.getVkDevice(), &framebuffer_ci, nullptr, &framebuffers[i]);
         if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkCreateFramebuffer: " << res); return 1; }
-        framebuffers.push_back(framebuffer);
     }
     std::unique_ptr<std::vector<VkFramebuffer>, std::function<void(std::vector<VkFramebuffer>*)>> guard_framebuffers(&framebuffers,
         [&device](std::vector<VkFramebuffer>* f) { for(auto& fb : *f) { vkDestroyFramebuffer(device.getVkDevice(), fb, nullptr); } });
+
+    GhulbusVulkan::CommandBuffers triangle_draw_command_buffers =
+        command_pool.allocateCommandBuffers(swapchain.getNumberOfImages());
+
+    for(uint32_t i = 0; i < triangle_draw_command_buffers.size(); ++i) {
+        auto local_command_buffer = triangle_draw_command_buffers.getCommandBuffer(i);
+        local_command_buffer.begin(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+
+        VkRenderPassBeginInfo render_pass_info;
+        render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        render_pass_info.pNext = nullptr;
+        render_pass_info.renderPass = render_pass;
+        render_pass_info.framebuffer = framebuffers[i];
+        render_pass_info.renderArea.offset.x = 0;
+        render_pass_info.renderArea.offset.y = 0;
+        render_pass_info.renderArea.extent.width = swapchain_image->getWidth();
+        render_pass_info.renderArea.extent.height = swapchain_image->getHeight();
+        VkClearValue clear_color;
+        clear_color.color.float32[0] = 0.f;
+        clear_color.color.float32[1] = 0.f;
+        clear_color.color.float32[2] = 1.f;
+        clear_color.color.float32[3] = 1.f;
+        render_pass_info.clearValueCount = 1;
+        render_pass_info.pClearValues = &clear_color;
+
+        vkCmdBeginRenderPass(local_command_buffer.getVkCommandBuffer(),
+                             &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBindPipeline(local_command_buffer.getVkCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        vkCmdDraw(local_command_buffer.getVkCommandBuffer(), 3, 1, 0, 0);
+        vkCmdEndRenderPass(local_command_buffer.getVkCommandBuffer());
+        local_command_buffer.end();
+    }
 
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!glfwWindowShouldClose(main_window.get())) {

@@ -7,6 +7,7 @@
 #include <gbVk/Fence.hpp>
 #include <gbVk/Image.hpp>
 #include <gbVk/PhysicalDevice.hpp>
+#include <gbVk/Semaphore.hpp>
 #include <gbVk/ShaderModule.hpp>
 #include <gbVk/Spirv.hpp>
 #include <gbVk/Swapchain.hpp>
@@ -130,6 +131,18 @@ Fence Device::createFence(VkFenceCreateFlags flags)
     VkResult res = vkCreateFence(m_device, &create_info, nullptr, &fence);
     checkVulkanError(res, "Error in vkCreateFence.");
     return Fence(m_device, fence);
+}
+
+Semaphore Device::createSemaphore()
+{
+    VkSemaphoreCreateInfo semaphore_ci;
+    semaphore_ci.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    semaphore_ci.pNext = nullptr;
+    semaphore_ci.flags = 0;
+    VkSemaphore semaphore;
+    VkResult res = vkCreateSemaphore(m_device, &semaphore_ci, nullptr, &semaphore);
+    checkVulkanError(res, "Error in vkCreateSemaphore.");
+    return Semaphore(m_device, semaphore);
 }
 
 Buffer Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags)

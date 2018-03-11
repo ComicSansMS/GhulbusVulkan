@@ -21,6 +21,7 @@ namespace GHULBUS_VULKAN_NAMESPACE
 {
 class Fence;
 class ImageView;
+class Semaphore;
 
 class Swapchain {
 public:
@@ -39,11 +40,14 @@ public:
         AcquiredImage& operator=(AcquiredImage const&) = delete;
 
         AcquiredImage(AcquiredImage&& rhs);
+        AcquiredImage& operator=(AcquiredImage&&) = delete;
 
         Image* operator->();
         Image& operator*();
 
         operator bool() const;
+
+        uint32_t getSwapchainIndex() const;
     };
 private:
     VkSwapchainKHR m_swapchain;
@@ -62,7 +66,7 @@ public:
 
     VkSwapchainKHR getVkSwapchainKHR();
 
-    uint32_t getNumberOfImages;
+    uint32_t getNumberOfImages() const;
 
     std::vector<ImageView> getImageViews();
 
@@ -72,7 +76,18 @@ public:
 
     AcquiredImage acquireNextImage(Fence& fence, std::chrono::nanoseconds timeout);
 
+    AcquiredImage acquireNextImage(Semaphore& semaphore);
+
+    AcquiredImage acquireNextImage(Semaphore& semaphore, std::chrono::nanoseconds timeout);
+
+    AcquiredImage acquireNextImage(Fence& fence, Semaphore& semaphore);
+
+    AcquiredImage acquireNextImage(Fence& fence, Semaphore& semaphore, std::chrono::nanoseconds timeout);
+
     void present(VkQueue queue, AcquiredImage&& image);
+
+private:
+    AcquiredImage acquireNextImage_impl(Fence* fence, Semaphore* semaphore, std::chrono::nanoseconds* timeout);
 };
 }
 #endif

@@ -14,7 +14,7 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
-class CommandBuffer;
+class CommandBuffers;
 
 class CommandPool {
 private:
@@ -30,7 +30,7 @@ public:
     CommandPool(CommandPool&& rhs);
     CommandPool& operator=(CommandPool&& rhs) = delete;
 
-    CommandBuffer allocateCommandBuffers();
+    CommandBuffers allocateCommandBuffers(std::uint32_t command_buffer_count);
 
     void reset();
     void reset(VkCommandPoolResetFlags flags);

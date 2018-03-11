@@ -4,15 +4,12 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
-
 CommandBuffer::CommandBuffer(VkCommandBuffer command_buffer)
     :m_commandBuffer(command_buffer)
 {}
 
 CommandBuffer::~CommandBuffer()
-{
-    // @todo where to free?
-}
+{}
 
 CommandBuffer::CommandBuffer(CommandBuffer&& rhs)
     :m_commandBuffer(rhs.m_commandBuffer)

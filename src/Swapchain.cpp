@@ -3,6 +3,7 @@
 #include <gbVk/Exceptions.hpp>
 #include <gbVk/Fence.hpp>
 #include <gbVk/ImageView.hpp>
+#include <gbVk/Semaphore.hpp>
 
 #include <gbBase/Assert.hpp>
 
@@ -42,6 +43,11 @@ Image& Swapchain::AcquiredImage::operator*()
 Swapchain::AcquiredImage::operator bool() const
 {
     return m_image != nullptr;
+}
+
+uint32_t Swapchain::AcquiredImage::getSwapchainIndex() const
+{
+    return m_swapchainIndex;
 }
 
 Swapchain::Swapchain(VkDevice logical_device, VkSwapchainKHR swapchain, VkExtent2D const& extent, VkFormat format)
@@ -84,6 +90,11 @@ VkSwapchainKHR Swapchain::getVkSwapchainKHR()
     return m_swapchain;
 }
 
+uint32_t Swapchain::getNumberOfImages() const
+{
+    return static_cast<uint32_t>(m_images.size());
+}
+
 std::vector<ImageView> Swapchain::getImageViews()
 {
     std::vector<ImageView> ret;
@@ -122,19 +133,50 @@ std::vector<VkImage> Swapchain::getVkImages()
     return ret;
 }
 
-Swapchain::AcquiredImage Swapchain::acquireNextImage(Fence& fence)
-{
-    return acquireNextImage(fence, std::chrono::nanoseconds::max());
-}
-
-Swapchain::AcquiredImage Swapchain::acquireNextImage(Fence& fence, std::chrono::nanoseconds timeout)
+Swapchain::AcquiredImage Swapchain::acquireNextImage_impl(Fence* fence, Semaphore* semaphore,
+                                               std::chrono::nanoseconds* timeout)
 {
     uint32_t index;
-    VkResult res = vkAcquireNextImageKHR(m_device, m_swapchain, timeout.count(), nullptr, fence.getVkFence(), &index);
+    VkResult res = vkAcquireNextImageKHR(m_device, m_swapchain,
+        (timeout   ? timeout->count()            : std::numeric_limits<uint64_t>::max()),
+        (semaphore ? semaphore->getVkSemaphore() : VK_NULL_HANDLE),
+        (fence     ? fence->getVkFence()         : VK_NULL_HANDLE),
+        &index);
     if(res == VK_NOT_READY) { return AcquiredImage(); }
     checkVulkanError(res, "Error in vkAcquireNextImageKHR.");
     GHULBUS_ASSERT((index >= 0) && (index < m_images.size()));
     return AcquiredImage(m_images[index], index);
+}
+
+Swapchain::AcquiredImage Swapchain::acquireNextImage(Fence& fence)
+{
+    return acquireNextImage_impl(&fence, nullptr, nullptr);
+}
+
+Swapchain::AcquiredImage Swapchain::acquireNextImage(Fence& fence, std::chrono::nanoseconds timeout)
+{
+    return acquireNextImage_impl(&fence, nullptr, &timeout);
+}
+
+Swapchain::AcquiredImage Swapchain::acquireNextImage(Semaphore& semaphore)
+{
+    return acquireNextImage_impl(nullptr, &semaphore, nullptr);
+}
+
+Swapchain::AcquiredImage Swapchain::acquireNextImage(Semaphore& semaphore, std::chrono::nanoseconds timeout)
+{
+    return acquireNextImage_impl(nullptr, &semaphore, &timeout);
+}
+
+Swapchain::AcquiredImage Swapchain::acquireNextImage(Fence& fence, Semaphore& semaphore)
+{
+    return acquireNextImage_impl(&fence, &semaphore, nullptr);
+}
+
+Swapchain::AcquiredImage Swapchain::acquireNextImage(Fence& fence, Semaphore& semaphore,
+                                                     std::chrono::nanoseconds timeout)
+{
+    return acquireNextImage_impl(&fence, &semaphore, &timeout);
 }
 
 void Swapchain::present(VkQueue queue, AcquiredImage&& image)
