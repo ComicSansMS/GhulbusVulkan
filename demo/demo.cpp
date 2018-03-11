@@ -9,6 +9,7 @@
 #include <gbVk/DeviceMemory.hpp>
 #include <gbVk/Fence.hpp>
 #include <gbVk/Image.hpp>
+#include <gbVk/ImageView.hpp>
 #include <gbVk/Instance.hpp>
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/ShaderModule.hpp>
@@ -131,7 +132,8 @@ int main()
 
     auto swapchain = device.createSwapChain(surface, queue_family);
 
-    auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
+    auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | 
+                                                 VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
     auto command_buffer = command_pool.allocateCommandBuffers();
 
     command_buffer.begin();
@@ -148,7 +150,7 @@ int main()
     command_buffer.reset();
 
     auto fence = device.createFence();
-    auto images = swapchain.getImages();
+    auto images = swapchain.getVkImages();
     auto swapchain_image = swapchain.acquireNextImage(fence);
     if(!swapchain_image) {
         GHULBUS_LOG(Error, "Unable to acquire image from swap chain.");
@@ -445,6 +447,31 @@ int main()
     if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkCreateGraphicsPipelines: " << res); return 1; }
     std::unique_ptr<VkPipeline, std::function<void(VkPipeline*)>> guard_pipeline(&pipeline,
         [&device](VkPipeline* p) { vkDestroyPipeline(device.getVkDevice(), *p, nullptr); });
+
+
+    // framebuffer creation
+    std::vector<GhulbusVulkan::ImageView> image_views = swapchain.getImageViews();
+    std::vector<VkFramebuffer> framebuffers;
+    framebuffers.resize(images.size());
+    for(std::size_t i = 0; i < image_views.size(); ++i) {
+        VkImageView attachments[] = { image_views[i].getVkImageView() };
+        VkFramebufferCreateInfo framebuffer_ci;
+        framebuffer_ci.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebuffer_ci.pNext = nullptr;
+        framebuffer_ci.flags = 0;
+        framebuffer_ci.renderPass = render_pass;
+        framebuffer_ci.attachmentCount = 1;
+        framebuffer_ci.pAttachments = attachments;
+        framebuffer_ci.width = swapchain_image->getWidth();
+        framebuffer_ci.height = swapchain_image->getHeight();
+        framebuffer_ci.layers = 1;
+        VkFramebuffer framebuffer;
+        res = vkCreateFramebuffer(device.getVkDevice(), &framebuffer_ci, nullptr, &framebuffer);
+        if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkCreateFramebuffer: " << res); return 1; }
+        framebuffers.push_back(framebuffer);
+    }
+    std::unique_ptr<std::vector<VkFramebuffer>, std::function<void(std::vector<VkFramebuffer>*)>> guard_framebuffers(&framebuffers,
+        [&device](std::vector<VkFramebuffer>* f) { for(auto& fb : *f) { vkDestroyFramebuffer(device.getVkDevice(), fb, nullptr); } });
 
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!glfwWindowShouldClose(main_window.get())) {

@@ -20,6 +20,7 @@
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 class Fence;
+class ImageView;
 
 class Swapchain {
 public:
@@ -61,7 +62,11 @@ public:
 
     VkSwapchainKHR getVkSwapchainKHR();
 
-    std::vector<VkImage> getImages();
+    uint32_t getNumberOfImages;
+
+    std::vector<ImageView> getImageViews();
+
+    std::vector<VkImage> getVkImages();
 
     AcquiredImage acquireNextImage(Fence& fence);
 
