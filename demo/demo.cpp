@@ -242,7 +242,7 @@ int main()
     auto shader_module = device.createShaderModule(spirv_code);
 
     auto vert_spirv_code = GhulbusVulkan::Spirv::load("../demo/shaders/vert.spv");
-    auto vert_shader_module = device.createShaderModule(spirv_code);
+    auto vert_shader_module = device.createShaderModule(vert_spirv_code);
     VkPipelineShaderStageCreateInfo vert_shader_stage_ci;
     vert_shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vert_shader_stage_ci.pNext = nullptr;
@@ -253,7 +253,7 @@ int main()
     vert_shader_stage_ci.pSpecializationInfo = nullptr;
 
     auto frag_spirv_code = GhulbusVulkan::Spirv::load("../demo/shaders/frag.spv");
-    auto frag_shader_module = device.createShaderModule(spirv_code);
+    auto frag_shader_module = device.createShaderModule(frag_spirv_code);
     VkPipelineShaderStageCreateInfo frag_shader_stage_ci;
     frag_shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     frag_shader_stage_ci.pNext = nullptr;
@@ -301,7 +301,8 @@ int main()
     render_pass_ci.dependencyCount = 0;
     render_pass_ci.pDependencies = nullptr;
     VkRenderPass render_pass;
-    vkCreateRenderPass(device.getVkDevice(), &render_pass_ci, nullptr, &render_pass);
+    res = vkCreateRenderPass(device.getVkDevice(), &render_pass_ci, nullptr, &render_pass);
+    if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkCreateRenderPass: " << res); return 1; }
     std::unique_ptr<VkRenderPass, std::function<void(VkRenderPass*)>> guard_render_pass(&render_pass,
         [&device](VkRenderPass* r) { vkDestroyRenderPass(device.getVkDevice(), *r, nullptr); });
 
@@ -413,7 +414,8 @@ int main()
     pipeline_layout_ci.pushConstantRangeCount = 0;
     pipeline_layout_ci.pPushConstantRanges = nullptr;
     VkPipelineLayout pipeline_layout;
-    vkCreatePipelineLayout(device.getVkDevice(), &pipeline_layout_ci, nullptr, &pipeline_layout);
+    res = vkCreatePipelineLayout(device.getVkDevice(), &pipeline_layout_ci, nullptr, &pipeline_layout);
+    if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkCreatePipelineLayout: " << res); return 1; }
     std::unique_ptr<VkPipelineLayout, std::function<void(VkPipelineLayout*)>> guard_pipeline_layout(&pipeline_layout,
         [&device](VkPipelineLayout* p) { vkDestroyPipelineLayout(device.getVkDevice(), *p, nullptr); });
 
@@ -422,7 +424,7 @@ int main()
     pipeline_ci.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipeline_ci.pNext = nullptr;
     pipeline_ci.flags = 0;
-    pipeline_ci.stageCount = 2;
+    pipeline_ci.stageCount = static_cast<std::uint32_t>(shader_stage_cis.size());
     pipeline_ci.pStages = shader_stage_cis.data();
     pipeline_ci.pVertexInputState = &vertex_input_ci;
     pipeline_ci.pInputAssemblyState = &input_assembly_ci;
@@ -439,7 +441,8 @@ int main()
     pipeline_ci.basePipelineHandle = VK_NULL_HANDLE;
     pipeline_ci.basePipelineIndex = -1;
     VkPipeline pipeline;
-    vkCreateGraphicsPipelines(device.getVkDevice(), VK_NULL_HANDLE, 1, &pipeline_ci, nullptr, &pipeline);
+    res = vkCreateGraphicsPipelines(device.getVkDevice(), VK_NULL_HANDLE, 1, &pipeline_ci, nullptr, &pipeline);
+    if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkCreateGraphicsPipelines: " << res); return 1; }
     std::unique_ptr<VkPipeline, std::function<void(VkPipeline*)>> guard_pipeline(&pipeline,
         [&device](VkPipeline* p) { vkDestroyPipeline(device.getVkDevice(), *p, nullptr); });
 
