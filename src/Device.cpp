@@ -7,6 +7,7 @@
 #include <gbVk/Fence.hpp>
 #include <gbVk/Image.hpp>
 #include <gbVk/PhysicalDevice.hpp>
+#include <gbVk/RenderPassBuilder.hpp>
 #include <gbVk/Semaphore.hpp>
 #include <gbVk/ShaderModule.hpp>
 #include <gbVk/Spirv.hpp>
@@ -272,6 +273,11 @@ ShaderModule Device::createShaderModule(Spirv::Code const& code)
     VkResult res = vkCreateShaderModule(m_device, &create_info, nullptr, &shader_module);
     checkVulkanError(res, "Error in vkCreateShaderModule.");
     return ShaderModule(m_device, shader_module);
+}
+
+RenderPassBuilder Device::createRenderPassBuilder()
+{
+    return RenderPassBuilder(m_device);
 }
 
 void Device::waitIdle()

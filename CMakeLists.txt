@@ -82,6 +82,8 @@ set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/ImageView.cpp
     ${GB_VK_SOURCE_DIR}/Instance.cpp
     ${GB_VK_SOURCE_DIR}/PhysicalDevice.cpp
+    ${GB_VK_SOURCE_DIR}/RenderPass.cpp
+    ${GB_VK_SOURCE_DIR}/RenderPassBuilder.cpp
     ${GB_VK_SOURCE_DIR}/Semaphore.cpp
     ${GB_VK_SOURCE_DIR}/ShaderModule.cpp
     ${GB_VK_SOURCE_DIR}/Spirv.cpp
@@ -103,6 +105,8 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/ImageView.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Instance.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/PhysicalDevice.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/RenderPass.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/RenderPassBuilder.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Semaphore.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/ShaderModule.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Spirv.hpp

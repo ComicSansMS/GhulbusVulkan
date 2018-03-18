@@ -20,6 +20,7 @@ class DeviceMemory;
 class Fence;
 class Image;
 class PhysicalDevice;
+class RenderPassBuilder;
 class Semaphore;
 class ShaderModule;
 class Swapchain;
@@ -72,6 +73,8 @@ public:
     VkQueue getQueue(uint32_t queue_family, uint32_t queue_index);
 
     ShaderModule createShaderModule(Spirv::Code const& code);
+
+    RenderPassBuilder createRenderPassBuilder();
 
     void waitIdle();
 };

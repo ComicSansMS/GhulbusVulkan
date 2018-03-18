@@ -13,6 +13,8 @@
 #include <gbVk/ImageView.hpp>
 #include <gbVk/Instance.hpp>
 #include <gbVk/PhysicalDevice.hpp>
+#include <gbVk/RenderPass.hpp>
+#include <gbVk/RenderPassBuilder.hpp>
 #include <gbVk/Semaphore.hpp>
 #include <gbVk/ShaderModule.hpp>
 #include <gbVk/Spirv.hpp>
@@ -271,53 +273,12 @@ int main()
     std::vector<VkPipelineShaderStageCreateInfo> shader_stage_cis{ vert_shader_stage_ci, frag_shader_stage_ci };
 
     // render pass
-    VkAttachmentDescription render_pass_color_attachment;
-    render_pass_color_attachment.flags = 0;
-    render_pass_color_attachment.format = swapchain_image->getFormat();
-    render_pass_color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    render_pass_color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    render_pass_color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    render_pass_color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    render_pass_color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    render_pass_color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    render_pass_color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    VkAttachmentReference render_pass_color_attachment_ref;
-    render_pass_color_attachment_ref.attachment = 0;
-    render_pass_color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    VkSubpassDescription render_pass_subpass_desc;
-    render_pass_subpass_desc.flags = 0;
-    render_pass_subpass_desc.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    render_pass_subpass_desc.inputAttachmentCount = 0;
-    render_pass_subpass_desc.pInputAttachments = nullptr;
-    render_pass_subpass_desc.colorAttachmentCount = 1;
-    render_pass_subpass_desc.pColorAttachments = &render_pass_color_attachment_ref;
-    render_pass_subpass_desc.pResolveAttachments = nullptr;
-    render_pass_subpass_desc.pDepthStencilAttachment = nullptr;
-    render_pass_subpass_desc.preserveAttachmentCount = 0;
-    render_pass_subpass_desc.pPreserveAttachments = nullptr;
-    VkSubpassDependency render_pass_subpass_dep;
-    render_pass_subpass_dep.srcSubpass = VK_SUBPASS_EXTERNAL;
-    render_pass_subpass_dep.dstSubpass = 0;
-    render_pass_subpass_dep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    render_pass_subpass_dep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    render_pass_subpass_dep.srcAccessMask = 0;
-    render_pass_subpass_dep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    render_pass_subpass_dep.dependencyFlags = 0;
-    VkRenderPassCreateInfo render_pass_ci;
-    render_pass_ci.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    render_pass_ci.pNext = nullptr;
-    render_pass_ci.flags = 0;
-    render_pass_ci.attachmentCount = 1;
-    render_pass_ci.pAttachments = &render_pass_color_attachment;
-    render_pass_ci.subpassCount = 1;
-    render_pass_ci.pSubpasses = &render_pass_subpass_desc;
-    render_pass_ci.dependencyCount = 1;
-    render_pass_ci.pDependencies = &render_pass_subpass_dep;
-    VkRenderPass render_pass;
-    res = vkCreateRenderPass(device.getVkDevice(), &render_pass_ci, nullptr, &render_pass);
-    if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkCreateRenderPass: " << res); return 1; }
-    std::unique_ptr<VkRenderPass, std::function<void(VkRenderPass*)>> guard_render_pass(&render_pass,
-        [&device](VkRenderPass* r) { vkDestroyRenderPass(device.getVkDevice(), *r, nullptr); });
+    GhulbusVulkan::RenderPass render_pass = [&device, &swapchain_image]() {
+            auto builder = device.createRenderPassBuilder();
+            builder.addSubpassGraphics();
+            builder.addColorAttachment(swapchain_image->getFormat());
+            return builder.create();
+        }();
 
 
     // vertex input
@@ -449,7 +410,7 @@ int main()
     pipeline_ci.pColorBlendState = &color_blend_ci;
     pipeline_ci.pDynamicState = nullptr;
     pipeline_ci.layout = pipeline_layout;
-    pipeline_ci.renderPass = render_pass;
+    pipeline_ci.renderPass = render_pass.getVkRenderPass();
     pipeline_ci.subpass = 0;
     pipeline_ci.basePipelineHandle = VK_NULL_HANDLE;
     pipeline_ci.basePipelineIndex = -1;
@@ -470,7 +431,7 @@ int main()
         framebuffer_ci.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebuffer_ci.pNext = nullptr;
         framebuffer_ci.flags = 0;
-        framebuffer_ci.renderPass = render_pass;
+        framebuffer_ci.renderPass = render_pass.getVkRenderPass();
         framebuffer_ci.attachmentCount = 1;
         framebuffer_ci.pAttachments = attachments;
         framebuffer_ci.width = swapchain_image->getWidth();
@@ -492,7 +453,7 @@ int main()
         VkRenderPassBeginInfo render_pass_info;
         render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         render_pass_info.pNext = nullptr;
-        render_pass_info.renderPass = render_pass;
+        render_pass_info.renderPass = render_pass.getVkRenderPass();
         render_pass_info.framebuffer = framebuffers[i];
         render_pass_info.renderArea.offset.x = 0;
         render_pass_info.renderArea.offset.y = 0;
