@@ -46,7 +46,7 @@ public:
     uint32_t getBound() const;
 };
 
-Code load(std::experimental::filesystem::path const& spirv_file);
+Code load(std::filesystem::path const& spirv_file);
 Code load(std::istream& is);
 Code load(std::byte const* data, uint32_t data_size);
 }

@@ -81,6 +81,7 @@ int main()
     if(res != VK_SUCCESS) {
         GHULBUS_LOG(Error, "Unable to create Vulkan surface.");
     }
+    auto guard_surface = Ghulbus::finally([&instance, surface]() { vkDestroySurfaceKHR(instance.getVkInstance(), surface, nullptr); });
 
     DemoState state;
     glfwSetWindowUserPointer(main_window.get(), &state);

@@ -35,21 +35,19 @@ public:
     };
     struct Layers {
         struct ActivateValidationLayers {};
+        bool KHRONOS_validation;
         bool LUNARG_api_dump;
         bool LUNARG_monitor;
-        bool LUNARG_core_validation;
-        bool LUNARG_object_tracker;
-        bool LUNARG_parameter_validation;
-        bool GOOGLE_threading;
+        bool LUNARG_standard_validation;
         std::vector<char const*> additional_layers;
         Layers()
-            :LUNARG_api_dump(false), LUNARG_monitor(false), LUNARG_core_validation(false),
-             LUNARG_object_tracker(false), LUNARG_parameter_validation(false), GOOGLE_threading(false)
+            :KHRONOS_validation(false), LUNARG_api_dump(false), LUNARG_monitor(false),
+             LUNARG_standard_validation(false)
         {}
 
         Layers(ActivateValidationLayers)
-            :LUNARG_api_dump(false), LUNARG_monitor(false), LUNARG_core_validation(true),
-             LUNARG_object_tracker(true), LUNARG_parameter_validation(true), GOOGLE_threading(true)
+            :KHRONOS_validation(true), LUNARG_api_dump(false), LUNARG_monitor(false),
+             LUNARG_standard_validation(true)
         {}
 
         void addLayer(VkLayerProperties const& layer)
@@ -65,12 +63,10 @@ public:
         std::vector<char const*> getRequestedLayers() const
         {
             std::vector<char const*> requested_layers;
+            if(KHRONOS_validation) { requested_layers.push_back("VK_LAYER_KHRONOS_validation"); }
             if(LUNARG_api_dump) { requested_layers.push_back("VK_LAYER_LUNARG_api_dump"); }
             if(LUNARG_monitor) { requested_layers.push_back("VK_LAYER_LUNARG_monitor"); }
-            if(LUNARG_core_validation) { requested_layers.push_back("VK_LAYER_LUNARG_core_validation"); }
-            if(LUNARG_object_tracker) { requested_layers.push_back("VK_LAYER_LUNARG_object_tracker"); }
-            if(LUNARG_parameter_validation) { requested_layers.push_back("VK_LAYER_LUNARG_parameter_validation"); }
-            if(GOOGLE_threading) { requested_layers.push_back("VK_LAYER_GOOGLE_threading"); }
+            if(LUNARG_standard_validation) { requested_layers.push_back("VK_LAYER_LUNARG_standard_validation"); }
             requested_layers.insert(end(requested_layers), begin(additional_layers), end(additional_layers));
             return requested_layers;
         }

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.14)
 
 project(GhulbusVulkan)
 
@@ -46,11 +46,6 @@ option(BUILD_SHARED_LIBS "If checked, generate dynamic instead of static librari
 
 find_package(Vulkan REQUIRED)
 
-find_path(GLFW3_ROOT NAMES lib/cmake/glfw3/glfw3Config.cmake
-          HINTS ENV GLFW3_ROOT)
-if(GLFW3_ROOT)
-    list(APPEND CMAKE_PREFIX_PATH ${GLFW3_ROOT})
-endif()
 find_package(glfw3 REQUIRED)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)

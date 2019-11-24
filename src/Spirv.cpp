@@ -35,7 +35,7 @@ uint32_t Code::getBound() const
     return m_data[3];
 }
 
-Code load(std::experimental::filesystem::path const& spirv_file)
+Code load(std::filesystem::path const& spirv_file)
 {
     std::ifstream fin(spirv_file, std::ios_base::binary);
     if(!fin) {
