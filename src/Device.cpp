@@ -7,6 +7,8 @@
 #include <gbVk/Fence.hpp>
 #include <gbVk/Image.hpp>
 #include <gbVk/PhysicalDevice.hpp>
+#include <gbVk/Pipeline.hpp>
+#include <gbVk/PipelineBuilder.hpp>
 #include <gbVk/RenderPassBuilder.hpp>
 #include <gbVk/Semaphore.hpp>
 #include <gbVk/ShaderModule.hpp>
@@ -278,6 +280,38 @@ ShaderModule Device::createShaderModule(Spirv::Code const& code)
 RenderPassBuilder Device::createRenderPassBuilder()
 {
     return RenderPassBuilder(m_device);
+}
+
+Pipeline Device::createGraphicsPipeline(PipelineBuilder const& builder, VkPipelineLayout layout,
+                                        VkPipelineShaderStageCreateInfo* shader_stages, uint32_t shader_stages_size,
+                                        VkRenderPass render_pass)
+{
+    auto value_ptr = [](auto opt) { return (opt.has_value()) ? (&opt.value()) : nullptr; };
+    VkGraphicsPipelineCreateInfo create_info;
+    create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    create_info.pNext = nullptr;
+    create_info.flags = 0;
+    create_info.stageCount = shader_stages_size;
+    create_info.pStages = shader_stages;
+    create_info.pVertexInputState = value_ptr(builder.stage.vertex_input);
+    create_info.pInputAssemblyState = value_ptr(builder.stage.input_assembly);
+    create_info.pTessellationState = value_ptr(builder.stage.tesselation);
+    create_info.pViewportState = (builder.stage.viewport.has_value()) ? (&builder.stage.viewport->ci) : nullptr;
+    create_info.pRasterizationState = &builder.stage.rasterization;
+    create_info.pMultisampleState = value_ptr(builder.stage.multisample);
+    create_info.pDepthStencilState = value_ptr(builder.stage.depth_stencil);
+    create_info.pColorBlendState = (builder.stage.color_blend.has_value()) ? (&builder.stage.color_blend->ci) : nullptr;
+    create_info.pDynamicState = nullptr;
+    create_info.layout = layout;
+    create_info.renderPass = render_pass;
+    create_info.subpass = 0;
+    create_info.basePipelineHandle = VK_NULL_HANDLE;
+    create_info.basePipelineIndex = -1;
+
+    VkPipeline pipeline;
+    VkResult res = vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &create_info, nullptr, &pipeline);
+    checkVulkanError(res, "Error in vkCreateGraphicsPipeline.");
+    return Pipeline(m_device, pipeline);
 }
 
 void Device::waitIdle()
