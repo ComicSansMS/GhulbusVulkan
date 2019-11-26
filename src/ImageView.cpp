@@ -6,7 +6,6 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
-
 ImageView::ImageView(VkDevice logical_device, VkImageView image_view)
     :m_imageView(image_view), m_device(logical_device)
 {

@@ -15,6 +15,7 @@
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/Pipeline.hpp>
 #include <gbVk/PipelineBuilder.hpp>
+#include <gbVk/PipelineLayout.hpp>
 #include <gbVk/RenderPass.hpp>
 #include <gbVk/RenderPassBuilder.hpp>
 #include <gbVk/Semaphore.hpp>
@@ -283,20 +284,8 @@ int main()
             return builder.create();
         }();
 
-    // pipeline layout
-    VkPipelineLayoutCreateInfo pipeline_layout_ci;
-    pipeline_layout_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_ci.pNext = nullptr;
-    pipeline_layout_ci.flags = 0;
-    pipeline_layout_ci.setLayoutCount = 0;
-    pipeline_layout_ci.pSetLayouts = nullptr;
-    pipeline_layout_ci.pushConstantRangeCount = 0;
-    pipeline_layout_ci.pPushConstantRanges = nullptr;
-    VkPipelineLayout pipeline_layout;
-    res = vkCreatePipelineLayout(device.getVkDevice(), &pipeline_layout_ci, nullptr, &pipeline_layout);
-    if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkCreatePipelineLayout: " << res); return 1; }
-    std::unique_ptr<VkPipelineLayout, std::function<void(VkPipelineLayout*)>> guard_pipeline_layout(&pipeline_layout,
-        [&device](VkPipelineLayout* p) { vkDestroyPipelineLayout(device.getVkDevice(), *p, nullptr); });
+    // pipeline
+    GhulbusVulkan::PipelineLayout pipeline_layout = device.createPipelineLayout();
 
     GhulbusVulkan::Pipeline pipeline = [&device, &swapchain_image, &pipeline_layout,
                                         &shader_stage_cis, &render_pass]() {

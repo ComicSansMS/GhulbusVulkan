@@ -1,6 +1,7 @@
 #include <gbVk/PipelineBuilder.hpp>
 
 #include <gbVk/Pipeline.hpp>
+#include <gbVk/PipelineLayout.hpp>
 
 #include <gbVk/Exceptions.hpp>
 
@@ -184,7 +185,7 @@ PipelineBuilder::PipelineBuilder(VkDevice logical_device, uint32_t viewport_widt
     stage.color_blend->ci.blendConstants[3] = 0.f;
 }
 
-Pipeline PipelineBuilder::create(VkPipelineLayout layout, VkPipelineShaderStageCreateInfo* shader_stages,
+Pipeline PipelineBuilder::create(PipelineLayout& layout, VkPipelineShaderStageCreateInfo* shader_stages,
                                  uint32_t shader_stages_size, VkRenderPass render_pass)
 {
     auto value_ptr = [](auto opt) { return (opt.has_value()) ? (&opt.value()) : nullptr; };
@@ -203,7 +204,7 @@ Pipeline PipelineBuilder::create(VkPipelineLayout layout, VkPipelineShaderStageC
     create_info.pDepthStencilState = value_ptr(stage.depth_stencil);
     create_info.pColorBlendState = (stage.color_blend.has_value()) ? (&stage.color_blend->ci) : nullptr;
     create_info.pDynamicState = nullptr;
-    create_info.layout = layout;
+    create_info.layout = layout.getVkPipelineLayout();
     create_info.renderPass = render_pass;
     create_info.subpass = 0;
     create_info.basePipelineHandle = VK_NULL_HANDLE;

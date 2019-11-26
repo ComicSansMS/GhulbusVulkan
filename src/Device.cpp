@@ -8,6 +8,7 @@
 #include <gbVk/Image.hpp>
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/PipelineBuilder.hpp>
+#include <gbVk/PipelineLayout.hpp>
 #include <gbVk/RenderPassBuilder.hpp>
 #include <gbVk/Semaphore.hpp>
 #include <gbVk/ShaderModule.hpp>
@@ -279,6 +280,22 @@ ShaderModule Device::createShaderModule(Spirv::Code const& code)
 RenderPassBuilder Device::createRenderPassBuilder()
 {
     return RenderPassBuilder(m_device);
+}
+
+PipelineLayout Device::createPipelineLayout()
+{
+    VkPipelineLayoutCreateInfo create_info;
+    create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    create_info.pNext = nullptr;
+    create_info.flags = 0;
+    create_info.setLayoutCount = 0;
+    create_info.pSetLayouts = nullptr;
+    create_info.pushConstantRangeCount = 0;
+    create_info.pPushConstantRanges = nullptr;
+    VkPipelineLayout pipeline_layout;
+    VkResult res = vkCreatePipelineLayout(m_device, &create_info, nullptr, &pipeline_layout);
+    checkVulkanError(res, "Error in vkCreatePipelineLayout.");
+    return PipelineLayout(m_device, pipeline_layout);
 }
 
 PipelineBuilder Device::createGraphicsPipelineBuilder(uint32_t viewport_width, uint32_t viewport_height)

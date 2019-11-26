@@ -21,6 +21,7 @@ class Fence;
 class Image;
 class PhysicalDevice;
 class PipelineBuilder;
+class PipelineLayout;
 class RenderPassBuilder;
 class Semaphore;
 class ShaderModule;
@@ -76,6 +77,8 @@ public:
     ShaderModule createShaderModule(Spirv::Code const& code);
 
     RenderPassBuilder createRenderPassBuilder();
+
+    PipelineLayout createPipelineLayout();
 
     PipelineBuilder createGraphicsPipelineBuilder(uint32_t viewport_width, uint32_t viewport_height);
 
