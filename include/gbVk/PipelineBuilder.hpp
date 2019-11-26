@@ -16,6 +16,7 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class Pipeline;
 
 class PipelineBuilder {
 public:
@@ -53,7 +54,14 @@ public:
         std::optional<ColorBlend> color_blend;
     } stage;
 
-    static PipelineBuilder graphicsPipeline(int viewport_width, int viewport_height);
+private:
+    VkDevice m_device;
+public:
+
+    PipelineBuilder(VkDevice logical_device, uint32_t viewport_width, uint32_t viewport_height);
+
+    Pipeline create(VkPipelineLayout layout, VkPipelineShaderStageCreateInfo* shader_stages,
+                    uint32_t shader_stages_size, VkRenderPass render_pass);
 };
 }
 #endif

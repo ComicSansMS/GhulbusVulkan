@@ -298,11 +298,14 @@ int main()
     std::unique_ptr<VkPipelineLayout, std::function<void(VkPipelineLayout*)>> guard_pipeline_layout(&pipeline_layout,
         [&device](VkPipelineLayout* p) { vkDestroyPipelineLayout(device.getVkDevice(), *p, nullptr); });
 
-    auto pipeline_builder = 
-        GhulbusVulkan::PipelineBuilder::graphicsPipeline(swapchain_image->getWidth(), swapchain_image->getHeight());
-    auto pipeline = device.createGraphicsPipeline(pipeline_builder, pipeline_layout, shader_stage_cis.data(),
-                                                  static_cast<std::uint32_t>(shader_stage_cis.size()),
-                                                  render_pass.getVkRenderPass());
+    GhulbusVulkan::Pipeline pipeline = [&device, &swapchain_image, &pipeline_layout,
+                                        &shader_stage_cis, &render_pass]() {
+        auto builder = device.createGraphicsPipelineBuilder(swapchain_image->getWidth(),
+                                                            swapchain_image->getHeight());
+        return builder.create(pipeline_layout, shader_stage_cis.data(),
+                              static_cast<std::uint32_t>(shader_stage_cis.size()),
+                              render_pass.getVkRenderPass());
+    }();
 
 
     // framebuffer creation

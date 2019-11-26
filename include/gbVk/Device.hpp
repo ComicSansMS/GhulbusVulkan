@@ -20,7 +20,6 @@ class DeviceMemory;
 class Fence;
 class Image;
 class PhysicalDevice;
-class Pipeline;
 class PipelineBuilder;
 class RenderPassBuilder;
 class Semaphore;
@@ -78,9 +77,7 @@ public:
 
     RenderPassBuilder createRenderPassBuilder();
 
-    Pipeline createGraphicsPipeline(PipelineBuilder const& builder, VkPipelineLayout layout,
-                                    VkPipelineShaderStageCreateInfo* shader_stages, uint32_t shader_stages_size,
-                                    VkRenderPass render_pass);
+    PipelineBuilder createGraphicsPipelineBuilder(uint32_t viewport_width, uint32_t viewport_height);
 
     void waitIdle();
 };

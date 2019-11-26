@@ -1,5 +1,7 @@
 #include <gbVk/PipelineBuilder.hpp>
 
+#include <gbVk/Pipeline.hpp>
+
 #include <gbVk/Exceptions.hpp>
 
 #include <gbBase/Assert.hpp>
@@ -87,103 +89,130 @@ void PipelineBuilder::Stages::ColorBlend::refreshReferences()
     ci.pAttachments = attachments.data();
 }
 
-PipelineBuilder PipelineBuilder::graphicsPipeline(int viewport_width, int viewport_height)
+PipelineBuilder::PipelineBuilder(VkDevice logical_device, uint32_t viewport_width, uint32_t viewport_height)
+    :m_device(logical_device)
 {
-    PipelineBuilder ret;
-    ret.stage.vertex_input = VkPipelineVertexInputStateCreateInfo{};
-    ret.stage.vertex_input->sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    ret.stage.vertex_input->pNext = nullptr;
-    ret.stage.vertex_input->flags = 0;
-    ret.stage.vertex_input->vertexBindingDescriptionCount = 0;
-    ret.stage.vertex_input->pVertexBindingDescriptions = nullptr;
-    ret.stage.vertex_input->vertexAttributeDescriptionCount = 0;
-    ret.stage.vertex_input->pVertexAttributeDescriptions = nullptr;
+    stage.vertex_input = VkPipelineVertexInputStateCreateInfo{};
+    stage.vertex_input->sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    stage.vertex_input->pNext = nullptr;
+    stage.vertex_input->flags = 0;
+    stage.vertex_input->vertexBindingDescriptionCount = 0;
+    stage.vertex_input->pVertexBindingDescriptions = nullptr;
+    stage.vertex_input->vertexAttributeDescriptionCount = 0;
+    stage.vertex_input->pVertexAttributeDescriptions = nullptr;
 
-    ret.stage.input_assembly = VkPipelineInputAssemblyStateCreateInfo{};
-    ret.stage.input_assembly->sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    ret.stage.input_assembly->pNext = nullptr;
-    ret.stage.input_assembly->flags = 0;
-    ret.stage.input_assembly->topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    ret.stage.input_assembly->primitiveRestartEnable = VK_FALSE;
+    stage.input_assembly = VkPipelineInputAssemblyStateCreateInfo{};
+    stage.input_assembly->sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    stage.input_assembly->pNext = nullptr;
+    stage.input_assembly->flags = 0;
+    stage.input_assembly->topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    stage.input_assembly->primitiveRestartEnable = VK_FALSE;
 
-    ret.stage.viewport = PipelineBuilder::Stages::Viewport{};
-    ret.stage.viewport->viewports.push_back(VkViewport{});
-    ret.stage.viewport->viewports.back().x = 0;
-    ret.stage.viewport->viewports.back().y = 0;
-    ret.stage.viewport->viewports.back().width = static_cast<float>(viewport_width);
-    ret.stage.viewport->viewports.back().height = static_cast<float>(viewport_height);
-    ret.stage.viewport->viewports.back().minDepth = 0.f;
-    ret.stage.viewport->viewports.back().maxDepth = 1.f;
-    ret.stage.viewport->scissors.push_back(VkRect2D{});
-    ret.stage.viewport->scissors.back().offset.x = 0;
-    ret.stage.viewport->scissors.back().offset.y = 0;
-    ret.stage.viewport->scissors.back().extent.width = viewport_width;
-    ret.stage.viewport->scissors.back().extent.height = viewport_height;
+    stage.viewport = PipelineBuilder::Stages::Viewport{};
+    stage.viewport->viewports.push_back(VkViewport{});
+    stage.viewport->viewports.back().x = 0;
+    stage.viewport->viewports.back().y = 0;
+    stage.viewport->viewports.back().width = static_cast<float>(viewport_width);
+    stage.viewport->viewports.back().height = static_cast<float>(viewport_height);
+    stage.viewport->viewports.back().minDepth = 0.f;
+    stage.viewport->viewports.back().maxDepth = 1.f;
+    stage.viewport->scissors.push_back(VkRect2D{});
+    stage.viewport->scissors.back().offset.x = 0;
+    stage.viewport->scissors.back().offset.y = 0;
+    stage.viewport->scissors.back().extent.width = viewport_width;
+    stage.viewport->scissors.back().extent.height = viewport_height;
 
-    ret.stage.viewport->ci.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    ret.stage.viewport->ci.pNext = nullptr;
-    ret.stage.viewport->ci.flags = 0;
-    ret.stage.viewport->ci.viewportCount = static_cast<std::uint32_t>(ret.stage.viewport->viewports.size());
-    ret.stage.viewport->ci.pViewports = ret.stage.viewport->viewports.data();
-    ret.stage.viewport->ci.scissorCount = static_cast<std::uint32_t>(ret.stage.viewport->scissors.size());
-    ret.stage.viewport->ci.pScissors = ret.stage.viewport->scissors.data();
+    stage.viewport->ci.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    stage.viewport->ci.pNext = nullptr;
+    stage.viewport->ci.flags = 0;
+    stage.viewport->ci.viewportCount = static_cast<std::uint32_t>(stage.viewport->viewports.size());
+    stage.viewport->ci.pViewports = stage.viewport->viewports.data();
+    stage.viewport->ci.scissorCount = static_cast<std::uint32_t>(stage.viewport->scissors.size());
+    stage.viewport->ci.pScissors = stage.viewport->scissors.data();
 
-    ret.stage.rasterization.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    ret.stage.rasterization.pNext = nullptr;
-    ret.stage.rasterization.flags = 0;
-    ret.stage.rasterization.depthClampEnable = VK_FALSE;
-    ret.stage.rasterization.rasterizerDiscardEnable = VK_FALSE;
-    ret.stage.rasterization.polygonMode = VK_POLYGON_MODE_FILL;
-    ret.stage.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
-    ret.stage.rasterization.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    ret.stage.rasterization.depthBiasEnable = VK_FALSE;
-    ret.stage.rasterization.depthBiasConstantFactor = 0.f;
-    ret.stage.rasterization.depthBiasClamp = 0.f;
-    ret.stage.rasterization.depthBiasSlopeFactor = 0.f;
-    ret.stage.rasterization.lineWidth = 1.f;
+    stage.rasterization.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    stage.rasterization.pNext = nullptr;
+    stage.rasterization.flags = 0;
+    stage.rasterization.depthClampEnable = VK_FALSE;
+    stage.rasterization.rasterizerDiscardEnable = VK_FALSE;
+    stage.rasterization.polygonMode = VK_POLYGON_MODE_FILL;
+    stage.rasterization.cullMode = VK_CULL_MODE_BACK_BIT;
+    stage.rasterization.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    stage.rasterization.depthBiasEnable = VK_FALSE;
+    stage.rasterization.depthBiasConstantFactor = 0.f;
+    stage.rasterization.depthBiasClamp = 0.f;
+    stage.rasterization.depthBiasSlopeFactor = 0.f;
+    stage.rasterization.lineWidth = 1.f;
 
-    ret.stage.multisample = VkPipelineMultisampleStateCreateInfo{};
-    ret.stage.multisample->sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    ret.stage.multisample->pNext = nullptr;
-    ret.stage.multisample->flags = 0;
-    ret.stage.multisample->rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    ret.stage.multisample->sampleShadingEnable = VK_FALSE;
-    ret.stage.multisample->minSampleShading = 1.f;
-    ret.stage.multisample->pSampleMask = nullptr;
-    ret.stage.multisample->alphaToCoverageEnable = VK_FALSE;
-    ret.stage.multisample->alphaToOneEnable = VK_FALSE;
+    stage.multisample = VkPipelineMultisampleStateCreateInfo{};
+    stage.multisample->sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    stage.multisample->pNext = nullptr;
+    stage.multisample->flags = 0;
+    stage.multisample->rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    stage.multisample->sampleShadingEnable = VK_FALSE;
+    stage.multisample->minSampleShading = 1.f;
+    stage.multisample->pSampleMask = nullptr;
+    stage.multisample->alphaToCoverageEnable = VK_FALSE;
+    stage.multisample->alphaToOneEnable = VK_FALSE;
 
-    ret.stage.depth_stencil = std::nullopt;
+    stage.depth_stencil = std::nullopt;
 
-    ret.stage.color_blend = PipelineBuilder::Stages::ColorBlend{};
-    ret.stage.color_blend->attachments.push_back(VkPipelineColorBlendAttachmentState{});
-    ret.stage.color_blend->attachments.back().blendEnable = VK_FALSE;
-    ret.stage.color_blend->attachments.back().srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-    ret.stage.color_blend->attachments.back().dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-    ret.stage.color_blend->attachments.back().colorBlendOp = VK_BLEND_OP_ADD;
-    ret.stage.color_blend->attachments.back().srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    ret.stage.color_blend->attachments.back().dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    ret.stage.color_blend->attachments.back().alphaBlendOp = VK_BLEND_OP_ADD;
-    ret.stage.color_blend->attachments.back().colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
-                                                               VK_COLOR_COMPONENT_G_BIT |
-                                                               VK_COLOR_COMPONENT_B_BIT |
-                                                               VK_COLOR_COMPONENT_A_BIT;
-    ret.stage.color_blend->ci = VkPipelineColorBlendStateCreateInfo{};
-    ret.stage.color_blend->ci.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    ret.stage.color_blend->ci.pNext = nullptr;
-    ret.stage.color_blend->ci.flags = 0;
-    ret.stage.color_blend->ci.logicOpEnable = VK_FALSE;
-    ret.stage.color_blend->ci.logicOp = VK_LOGIC_OP_COPY;
-    ret.stage.color_blend->ci.attachmentCount = static_cast<uint32_t>(ret.stage.color_blend->attachments.size());
-    ret.stage.color_blend->ci.pAttachments = ret.stage.color_blend->attachments.data();
-    ret.stage.color_blend->ci.blendConstants[0] = 0.f;
-    ret.stage.color_blend->ci.blendConstants[1] = 0.f;
-    ret.stage.color_blend->ci.blendConstants[2] = 0.f;
-    ret.stage.color_blend->ci.blendConstants[3] = 0.f;
+    stage.color_blend = PipelineBuilder::Stages::ColorBlend{};
+    stage.color_blend->attachments.push_back(VkPipelineColorBlendAttachmentState{});
+    stage.color_blend->attachments.back().blendEnable = VK_FALSE;
+    stage.color_blend->attachments.back().srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    stage.color_blend->attachments.back().dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+    stage.color_blend->attachments.back().colorBlendOp = VK_BLEND_OP_ADD;
+    stage.color_blend->attachments.back().srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    stage.color_blend->attachments.back().dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    stage.color_blend->attachments.back().alphaBlendOp = VK_BLEND_OP_ADD;
+    stage.color_blend->attachments.back().colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
+                                                           VK_COLOR_COMPONENT_G_BIT |
+                                                           VK_COLOR_COMPONENT_B_BIT |
+                                                           VK_COLOR_COMPONENT_A_BIT;
+    stage.color_blend->ci = VkPipelineColorBlendStateCreateInfo{};
+    stage.color_blend->ci.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    stage.color_blend->ci.pNext = nullptr;
+    stage.color_blend->ci.flags = 0;
+    stage.color_blend->ci.logicOpEnable = VK_FALSE;
+    stage.color_blend->ci.logicOp = VK_LOGIC_OP_COPY;
+    stage.color_blend->ci.attachmentCount = static_cast<uint32_t>(stage.color_blend->attachments.size());
+    stage.color_blend->ci.pAttachments = stage.color_blend->attachments.data();
+    stage.color_blend->ci.blendConstants[0] = 0.f;
+    stage.color_blend->ci.blendConstants[1] = 0.f;
+    stage.color_blend->ci.blendConstants[2] = 0.f;
+    stage.color_blend->ci.blendConstants[3] = 0.f;
+}
 
-    return ret;
+Pipeline PipelineBuilder::create(VkPipelineLayout layout, VkPipelineShaderStageCreateInfo* shader_stages,
+                                 uint32_t shader_stages_size, VkRenderPass render_pass)
+{
+    auto value_ptr = [](auto opt) { return (opt.has_value()) ? (&opt.value()) : nullptr; };
+    VkGraphicsPipelineCreateInfo create_info;
+    create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    create_info.pNext = nullptr;
+    create_info.flags = 0;
+    create_info.stageCount = shader_stages_size;
+    create_info.pStages = shader_stages;
+    create_info.pVertexInputState = value_ptr(stage.vertex_input);
+    create_info.pInputAssemblyState = value_ptr(stage.input_assembly);
+    create_info.pTessellationState = value_ptr(stage.tesselation);
+    create_info.pViewportState = (stage.viewport.has_value()) ? (&stage.viewport->ci) : nullptr;
+    create_info.pRasterizationState = &stage.rasterization;
+    create_info.pMultisampleState = value_ptr(stage.multisample);
+    create_info.pDepthStencilState = value_ptr(stage.depth_stencil);
+    create_info.pColorBlendState = (stage.color_blend.has_value()) ? (&stage.color_blend->ci) : nullptr;
+    create_info.pDynamicState = nullptr;
+    create_info.layout = layout;
+    create_info.renderPass = render_pass;
+    create_info.subpass = 0;
+    create_info.basePipelineHandle = VK_NULL_HANDLE;
+    create_info.basePipelineIndex = -1;
+
+    VkPipeline pipeline;
+    VkResult res = vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &create_info, nullptr, &pipeline);
+    checkVulkanError(res, "Error in vkCreateGraphicsPipeline.");
+    return Pipeline(m_device, pipeline);
 }
 
 }
-
-
