@@ -9,6 +9,7 @@
 #include <gbVk/Device.hpp>
 #include <gbVk/DeviceMemory.hpp>
 #include <gbVk/Fence.hpp>
+#include <gbVk/Framebuffer.hpp>
 #include <gbVk/Image.hpp>
 #include <gbVk/ImageView.hpp>
 #include <gbVk/Instance.hpp>
@@ -298,26 +299,7 @@ int main()
 
 
     // framebuffer creation
-    std::vector<GhulbusVulkan::ImageView> image_views = swapchain.getImageViews();
-    std::vector<VkFramebuffer> framebuffers;
-    framebuffers.resize(images.size());
-    for(std::size_t i = 0; i < image_views.size(); ++i) {
-        VkImageView attachments[] = { image_views[i].getVkImageView() };
-        VkFramebufferCreateInfo framebuffer_ci;
-        framebuffer_ci.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebuffer_ci.pNext = nullptr;
-        framebuffer_ci.flags = 0;
-        framebuffer_ci.renderPass = render_pass.getVkRenderPass();
-        framebuffer_ci.attachmentCount = 1;
-        framebuffer_ci.pAttachments = attachments;
-        framebuffer_ci.width = swapchain_image->getWidth();
-        framebuffer_ci.height = swapchain_image->getHeight();
-        framebuffer_ci.layers = 1;
-        res = vkCreateFramebuffer(device.getVkDevice(), &framebuffer_ci, nullptr, &framebuffers[i]);
-        if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkCreateFramebuffer: " << res); return 1; }
-    }
-    std::unique_ptr<std::vector<VkFramebuffer>, std::function<void(std::vector<VkFramebuffer>*)>> guard_framebuffers(&framebuffers,
-        [&device](std::vector<VkFramebuffer>* f) { for(auto& fb : *f) { vkDestroyFramebuffer(device.getVkDevice(), fb, nullptr); } });
+    std::vector<GhulbusVulkan::Framebuffer> framebuffers = device.createFramebuffers(swapchain, render_pass);
 
     GhulbusVulkan::CommandBuffers triangle_draw_command_buffers =
         command_pool.allocateCommandBuffers(swapchain.getNumberOfImages());
@@ -330,7 +312,7 @@ int main()
         render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         render_pass_info.pNext = nullptr;
         render_pass_info.renderPass = render_pass.getVkRenderPass();
-        render_pass_info.framebuffer = framebuffers[i];
+        render_pass_info.framebuffer = framebuffers[i].getVkFramebuffer();
         render_pass_info.renderArea.offset.x = 0;
         render_pass_info.renderArea.offset.y = 0;
         render_pass_info.renderArea.extent.width = swapchain_image->getWidth();

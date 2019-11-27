@@ -68,6 +68,10 @@ public:
 
     uint32_t getNumberOfImages() const;
 
+    uint32_t getWidth() const;
+
+    uint32_t getHeight() const;
+
     std::vector<ImageView> getImageViews();
 
     std::vector<VkImage> getVkImages();

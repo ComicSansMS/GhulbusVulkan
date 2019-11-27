@@ -95,6 +95,18 @@ uint32_t Swapchain::getNumberOfImages() const
     return static_cast<uint32_t>(m_images.size());
 }
 
+uint32_t Swapchain::getWidth() const
+{
+    GHULBUS_PRECONDITION(!m_images.empty());
+    return m_images.front().getWidth();
+}
+
+uint32_t Swapchain::getHeight() const
+{
+    GHULBUS_PRECONDITION(!m_images.empty());
+    return m_images.front().getHeight();
+}
+
 std::vector<ImageView> Swapchain::getImageViews()
 {
     std::vector<ImageView> ret;

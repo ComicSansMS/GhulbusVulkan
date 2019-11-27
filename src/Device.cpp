@@ -5,10 +5,13 @@
 #include <gbVk/DeviceMemory.hpp>
 #include <gbVk/Exceptions.hpp>
 #include <gbVk/Fence.hpp>
+#include <gbVk/Framebuffer.hpp>
 #include <gbVk/Image.hpp>
+#include <gbVk/ImageView.hpp>
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/PipelineBuilder.hpp>
 #include <gbVk/PipelineLayout.hpp>
+#include <gbVk/RenderPass.hpp>
 #include <gbVk/RenderPassBuilder.hpp>
 #include <gbVk/Semaphore.hpp>
 #include <gbVk/ShaderModule.hpp>
@@ -275,6 +278,32 @@ ShaderModule Device::createShaderModule(Spirv::Code const& code)
     VkResult res = vkCreateShaderModule(m_device, &create_info, nullptr, &shader_module);
     checkVulkanError(res, "Error in vkCreateShaderModule.");
     return ShaderModule(m_device, shader_module);
+}
+
+std::vector<Framebuffer> Device::createFramebuffers(Swapchain& swapchain, RenderPass& render_pass)
+{
+    std::vector<GhulbusVulkan::ImageView> image_views = swapchain.getImageViews();
+    std::vector<Framebuffer> framebuffers;
+    framebuffers.reserve(image_views.size());
+    for (std::size_t i = 0; i < image_views.size(); ++i) {
+        VkImageView attachments[] = { image_views[i].getVkImageView() };
+        VkFramebufferCreateInfo framebuffer_ci;
+        framebuffer_ci.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebuffer_ci.pNext = nullptr;
+        framebuffer_ci.flags = 0;
+        framebuffer_ci.renderPass = render_pass.getVkRenderPass();
+        framebuffer_ci.attachmentCount = 1;
+        framebuffer_ci.pAttachments = attachments;
+        framebuffer_ci.width = swapchain.getWidth();
+        framebuffer_ci.height = swapchain.getHeight();
+        framebuffer_ci.layers = 1;
+        VkFramebuffer framebuffer;
+        VkResult res = vkCreateFramebuffer(m_device, &framebuffer_ci, nullptr, &framebuffer);
+        checkVulkanError(res, "Error in vkCreateFramebuffer.");
+        framebuffers.emplace_back(m_device, std::move(image_views[i]), framebuffer);
+    }
+    return framebuffers;
+
 }
 
 RenderPassBuilder Device::createRenderPassBuilder()

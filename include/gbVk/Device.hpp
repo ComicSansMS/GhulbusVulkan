@@ -18,10 +18,12 @@ class Buffer;
 class CommandPool;
 class DeviceMemory;
 class Fence;
+class Framebuffer;
 class Image;
 class PhysicalDevice;
 class PipelineBuilder;
 class PipelineLayout;
+class RenderPass;
 class RenderPassBuilder;
 class Semaphore;
 class ShaderModule;
@@ -75,6 +77,8 @@ public:
     VkQueue getQueue(uint32_t queue_family, uint32_t queue_index);
 
     ShaderModule createShaderModule(Spirv::Code const& code);
+
+    std::vector<Framebuffer> createFramebuffers(Swapchain& swapchain, RenderPass& render_pass);
 
     RenderPassBuilder createRenderPassBuilder();
 

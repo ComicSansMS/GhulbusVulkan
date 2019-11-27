@@ -73,6 +73,7 @@ set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/Device.cpp
     ${GB_VK_SOURCE_DIR}/DeviceMemory.cpp
     ${GB_VK_SOURCE_DIR}/Fence.cpp
+    ${GB_VK_SOURCE_DIR}/Framebuffer.cpp
     ${GB_VK_SOURCE_DIR}/Image.cpp
     ${GB_VK_SOURCE_DIR}/ImageView.cpp
     ${GB_VK_SOURCE_DIR}/Instance.cpp
@@ -99,6 +100,7 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceMemory.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Exceptions.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Fence.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/Framebuffer.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Image.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/ImageView.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Instance.hpp
