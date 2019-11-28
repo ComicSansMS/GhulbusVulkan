@@ -248,12 +248,12 @@ int main()
     swapchain.present(queue, std::move(swapchain_image));
     vkQueueWaitIdle(queue);
 
-    auto spirv_code = GhulbusVulkan::Spirv::load("../demo/shaders/simple.spv");
+    auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple.spv");
     auto version = spirv_code.getSpirvVersion();
     auto bound = spirv_code.getBound();
     auto shader_module = device.createShaderModule(spirv_code);
 
-    auto vert_spirv_code = GhulbusVulkan::Spirv::load("../demo/shaders/vert.spv");
+    auto vert_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_hardcoded.spv");
     auto vert_shader_module = device.createShaderModule(vert_spirv_code);
     VkPipelineShaderStageCreateInfo vert_shader_stage_ci;
     vert_shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -264,7 +264,7 @@ int main()
     vert_shader_stage_ci.pName = "main";
     vert_shader_stage_ci.pSpecializationInfo = nullptr;
 
-    auto frag_spirv_code = GhulbusVulkan::Spirv::load("../demo/shaders/frag.spv");
+    auto frag_spirv_code = GhulbusVulkan::Spirv::load("shaders/frag_hardcoded.spv");
     auto frag_shader_module = device.createShaderModule(frag_spirv_code);
     VkPipelineShaderStageCreateInfo frag_shader_stage_ci;
     frag_shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -298,7 +298,6 @@ int main()
     }();
 
 
-    // framebuffer creation
     std::vector<GhulbusVulkan::Framebuffer> framebuffers = device.createFramebuffers(swapchain, render_pass);
 
     GhulbusVulkan::CommandBuffers triangle_draw_command_buffers =

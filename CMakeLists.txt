@@ -45,6 +45,24 @@ option(BUILD_SHARED_LIBS "If checked, generate dynamic instead of static librari
 #find_package(Boost REQUIRED)
 
 find_package(Vulkan REQUIRED)
+find_program(Vulkan_GLSLC NAMES glslc HINTS ${Vulkan_INCLUDE_DIR}/../bin ENV GLSLC_EXECUTABLE)
+if(NOT Vulkan_GLSLC)
+    message(SEND_ERROR "Cannot find glslc compiler. Provide may provide a search hint via the GLSLC_EXECUTABLE environment variable.")
+endif()
+function(add_shader target_name output_file source_file)
+    set(options "")
+    set(oneValueArgs "")
+    set(multiValueArgs COMPILE_OPTIONS)
+    cmake_parse_arguments(ADD_SHADER_TARGET "${options}" "${oneValueArgs}"
+                          "${multiValueArgs}" ${ARGN} )
+    add_custom_command(
+        OUTPUT ${output_file}
+        COMMAND ${Vulkan_GLSLC} ${ADD_SHADER_TARGET_COMPILE_OPTIONS} -o ${output_file} ${source_file}
+        COMMENT "Compiling shader ${source_file}"
+        MAIN_DEPENDENCY ${source_file}
+    )
+    target_sources(${target_name} PRIVATE ${output_file})
+endfunction()
 
 find_package(glfw3 REQUIRED)
 
@@ -266,6 +284,10 @@ add_executable(demo ${PROJECT_SOURCE_DIR}/demo/demo.cpp)
 target_link_libraries(demo PUBLIC gbVk glfw)
 target_include_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/demo)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT demo)
+
+add_shader(demo ${PROJECT_BINARY_DIR}/shaders/simple.spv ${PROJECT_SOURCE_DIR}/demo/shaders/simple.comp)
+add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_hardcoded.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_hardcoded.vert)
+add_shader(demo ${PROJECT_BINARY_DIR}/shaders/frag_hardcoded.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_hardcoded.frag)
 
 ###############################################################################
 ## Doxygen gbVk
