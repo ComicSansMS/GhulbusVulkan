@@ -70,7 +70,7 @@ Code load(std::byte const* data, uint32_t data_size)
     GHULBUS_PRECONDITION(data_size % sizeof(uint32_t) == 0);
     Code ret;
     uint32_t const spirv_magic_number = 0x07230203;
-    uint32_t const spirv_magic_number_swapped = 0x07230203;
+    uint32_t const spirv_magic_number_swapped = 0x03022307;
     uint32_t check_magic_number;
     std::memcpy(&check_magic_number, data, sizeof(uint32_t));
     bool swap_endianess = [=]() {
