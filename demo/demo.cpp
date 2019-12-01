@@ -294,9 +294,11 @@ int main()
 
     GhulbusVulkan::Buffer vertex_buffer = device.createBuffer(vertex_data.size() * sizeof(Vertex),
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    auto const vertex_buffer_mem_reqs = vertex_buffer.getMemoryRequirements();
     GhulbusVulkan::DeviceMemory vertex_memory =
-        device.allocateMemory(vertex_buffer.getMemoryRequirements().memoryTypeBits,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        device.allocateMemory(vertex_buffer_mem_reqs.size,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            vertex_buffer_mem_reqs);
     vertex_buffer.bindBufferMemory(vertex_memory);
 
     {
