@@ -50,9 +50,14 @@ struct Vertex {
 
 inline std::vector<Vertex> generateVertexData()
 {
-    return { {{ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-             {{ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
-             {{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}} };
+    return { {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+             {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+             {{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
+             {{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}} };
+}
+
+inline std::vector<uint16_t> generateIndexData() {
+    return { 0, 1, 2, 2, 3, 0 };
 }
 
 enum class DrawMode {
@@ -310,6 +315,7 @@ int main()
     vkQueueWaitIdle(queue);
 
     std::vector<Vertex> vertex_data = generateVertexData();
+    std::vector<uint16_t> index_data = generateIndexData();
     VkVertexInputBindingDescription vertex_binding;
     vertex_binding.binding = 0;
     vertex_binding.stride = sizeof(Vertex);
@@ -380,6 +386,61 @@ int main()
         transfer_command_buffer.submit(transfer_queue);
     }
 
+
+    GhulbusVulkan::Buffer index_staging_buffer = device.createBuffer(index_data.size() * sizeof(uint16_t),
+                                                                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    auto const index_staging_buffer_mem_reqs = index_staging_buffer.getMemoryRequirements();
+    GhulbusVulkan::DeviceMemory index_staging_memory = device.allocateMemory(index_staging_buffer_mem_reqs.size,
+                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                        index_staging_buffer_mem_reqs);
+    index_staging_buffer.bindBufferMemory(index_staging_memory);
+
+    GhulbusVulkan::Buffer index_buffer = device.createBuffer(index_data.size() * sizeof(uint16_t),
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    auto const index_buffer_mem_reqs = vertex_buffer.getMemoryRequirements();
+    GhulbusVulkan::DeviceMemory index_memory =
+        device.allocateMemory(index_buffer_mem_reqs.size,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            index_buffer_mem_reqs);
+    index_buffer.bindBufferMemory(index_memory);
+
+    // copy index buffer
+    {
+        auto mapped_memory = index_staging_memory.map();
+        std::memcpy(mapped_memory, index_data.data(), index_data.size() * sizeof(uint16_t));
+    }
+    {
+        auto transfer_command_buffers = transfer_command_pool.allocateCommandBuffers(1);
+        auto transfer_command_buffer = transfer_command_buffers.getCommandBuffer(0);
+
+        transfer_command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        VkBufferCopy buffer_copy;
+        buffer_copy.srcOffset = 0;
+        buffer_copy.dstOffset = 0;
+        buffer_copy.size = index_data.size() * sizeof(uint16_t);
+
+        vkCmdCopyBuffer(transfer_command_buffer.getVkCommandBuffer(), index_staging_buffer.getVkBuffer(),
+                        index_buffer.getVkBuffer(), 1, &buffer_copy);
+
+        VkBufferMemoryBarrier barrier;
+        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        barrier.pNext = nullptr;
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_INDEX_READ_BIT;
+        barrier.srcQueueFamilyIndex = transfer_queue_family;
+        barrier.dstQueueFamilyIndex = queue_family;
+        barrier.buffer = index_buffer.getVkBuffer();
+        barrier.offset = 0;
+        barrier.size = VK_WHOLE_SIZE;
+        vkCmdPipelineBarrier(transfer_command_buffer.getVkCommandBuffer(),
+                             VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                             VK_DEPENDENCY_BY_REGION_BIT,
+                             0, nullptr, 1, &barrier, 0, nullptr);
+
+        transfer_command_buffer.end();
+
+        transfer_command_buffer.submit(transfer_queue);
+    }
 
 
     auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple_compute.spv");
@@ -480,7 +541,10 @@ int main()
             VkBuffer vertexBuffers[] = { vertex_buffer.getVkBuffer() };
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(local_command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
-            vkCmdDraw(local_command_buffer.getVkCommandBuffer(), static_cast<uint32_t>(vertex_data.size()), 1, 0, 0);
+            vkCmdBindIndexBuffer(local_command_buffer.getVkCommandBuffer(), index_buffer.getVkBuffer(),
+                                 0, VK_INDEX_TYPE_UINT16);
+            vkCmdDrawIndexed(local_command_buffer.getVkCommandBuffer(), static_cast<uint32_t>(index_data.size()),
+                             1, 0, 0, 0);
         }
 
         vkCmdEndRenderPass(local_command_buffer.getVkCommandBuffer());
