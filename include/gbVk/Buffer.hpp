@@ -14,6 +14,7 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class DeviceMemory;
 
 class Buffer {
 private:
@@ -32,6 +33,10 @@ public:
     VkBuffer getVkBuffer();
 
     VkMemoryRequirements getMemoryRequirements();
+
+    void bindBufferMemory(DeviceMemory& memory);
+
+    void bindBufferMemory(DeviceMemory& memory, VkDeviceSize offset);
 };
 }
 #endif

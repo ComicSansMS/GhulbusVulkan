@@ -2,7 +2,12 @@
 #include <gbBase/Finally.hpp>
 #include <gbBase/Log.hpp>
 #include <gbBase/LogHandlers.hpp>
+#include <gbBase/UnusedVariable.hpp>
 
+#include <gbMath/Vector2.hpp>
+#include <gbMath/Vector3.hpp>
+
+#include <gbVk/Buffer.hpp>
 #include <gbVk/CommandBuffer.hpp>
 #include <gbVk/CommandBuffers.hpp>
 #include <gbVk/CommandPool.hpp>
@@ -34,11 +39,30 @@
 #include <memory>
 #include <vector>
 
-
 struct DemoState {};
+
+struct Vertex {
+    GhulbusMath::Vector2f position;
+    GhulbusMath::Vector3f color;
+};
+
+inline std::vector<Vertex> generateVertexData()
+{
+    return { {{ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+             {{ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
+             {{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}} };
+}
+
+enum class DrawMode {
+    Hardcoded,
+    Direct,
+    Indexed
+};
 
 int main()
 {
+    DrawMode const draw_mode = DrawMode::Direct;
+
     Ghulbus::Log::initializeLogging();
     auto const gblog_init_guard = Ghulbus::finally([]() { Ghulbus::Log::shutdownLogging(); });
     Ghulbus::Log::Handlers::LogSynchronizeMutex logger(Ghulbus::Log::Handlers::logToCout);
@@ -93,6 +117,9 @@ int main()
     glfwSetKeyCallback(main_window.get(),
         [](GLFWwindow* window, int key, int scancode, int action, int mods)
         {
+            GHULBUS_UNUSED_VARIABLE(scancode);
+            GHULBUS_UNUSED_VARIABLE(action);
+            GHULBUS_UNUSED_VARIABLE(mods);
             if(key == GLFW_KEY_ESCAPE) {
                 glfwSetWindowShouldClose(window, true);
             }
@@ -248,19 +275,57 @@ int main()
     swapchain.present(queue, std::move(swapchain_image));
     vkQueueWaitIdle(queue);
 
-    auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple.spv");
+    std::vector<Vertex> vertex_data = generateVertexData();
+    VkVertexInputBindingDescription vertex_binding;
+    vertex_binding.binding = 0;
+    vertex_binding.stride = sizeof(Vertex);
+    vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    VkVertexInputAttributeDescription vertex_attributes[2];
+    vertex_attributes[0].location = 0;
+    vertex_attributes[0].binding = vertex_binding.binding;
+    vertex_attributes[0].format = VK_FORMAT_R32G32_SFLOAT;
+    vertex_attributes[0].offset = offsetof(Vertex, position);
+
+    vertex_attributes[1].location = 1;
+    vertex_attributes[1].binding = vertex_binding.binding;
+    vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertex_attributes[1].offset = offsetof(Vertex, color);
+
+    GhulbusVulkan::Buffer vertex_buffer = device.createBuffer(vertex_data.size() * sizeof(Vertex),
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    GhulbusVulkan::DeviceMemory vertex_memory =
+        device.allocateMemory(vertex_buffer.getMemoryRequirements().memoryTypeBits,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    vertex_buffer.bindBufferMemory(vertex_memory);
+
+    {
+        auto mapped_memory = vertex_memory.map();
+        std::memcpy(mapped_memory, vertex_data.data(), vertex_data.size() * sizeof(Vertex));
+    }
+
+    auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple_compute.spv");
     auto version = spirv_code.getSpirvVersion();
     auto bound = spirv_code.getBound();
+    GHULBUS_UNUSED_VARIABLE(version);
+    GHULBUS_UNUSED_VARIABLE(bound);
     auto shader_module = device.createShaderModule(spirv_code);
 
     auto vert_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_hardcoded.spv");
-    auto vert_shader_module = device.createShaderModule(vert_spirv_code);
+    auto vert_hardcoded_shader_module = device.createShaderModule(vert_spirv_code);
+
+    auto vert_direct_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_direct.spv");
+    auto vert_direct_shader_module = device.createShaderModule(vert_direct_spirv_code);
     VkPipelineShaderStageCreateInfo vert_shader_stage_ci;
     vert_shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vert_shader_stage_ci.pNext = nullptr;
     vert_shader_stage_ci.flags = 0;
     vert_shader_stage_ci.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vert_shader_stage_ci.module = vert_shader_module.getVkShaderModule();
+    if constexpr (draw_mode == DrawMode::Hardcoded) {
+        vert_shader_stage_ci.module = vert_hardcoded_shader_module.getVkShaderModule();
+    } else if constexpr (draw_mode == DrawMode::Direct) {
+        vert_shader_stage_ci.module = vert_direct_shader_module.getVkShaderModule();
+    }
     vert_shader_stage_ci.pName = "main";
     vert_shader_stage_ci.pSpecializationInfo = nullptr;
 
@@ -289,9 +354,11 @@ int main()
     GhulbusVulkan::PipelineLayout pipeline_layout = device.createPipelineLayout();
 
     GhulbusVulkan::Pipeline pipeline = [&device, &swapchain_image, &pipeline_layout,
-                                        &shader_stage_cis, &render_pass]() {
+                                        &shader_stage_cis, &render_pass,
+                                        &vertex_binding, &vertex_attributes]() {
         auto builder = device.createGraphicsPipelineBuilder(swapchain_image->getWidth(),
                                                             swapchain_image->getHeight());
+        builder.addVertexBindings(&vertex_binding, 1, vertex_attributes, 2);
         return builder.create(pipeline_layout, shader_stage_cis.data(),
                               static_cast<std::uint32_t>(shader_stage_cis.size()),
                               render_pass.getVkRenderPass());
@@ -328,7 +395,16 @@ int main()
                              &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(local_command_buffer.getVkCommandBuffer(),
                           VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getVkPipeline());
-        vkCmdDraw(local_command_buffer.getVkCommandBuffer(), 3, 1, 0, 0);
+
+        if constexpr (draw_mode == DrawMode::Hardcoded) {
+            vkCmdDraw(local_command_buffer.getVkCommandBuffer(), 3, 1, 0, 0);
+        } else if constexpr (draw_mode == DrawMode::Direct) {
+            VkBuffer vertexBuffers[] = { vertex_buffer.getVkBuffer() };
+            VkDeviceSize offsets[] = { 0 };
+            vkCmdBindVertexBuffers(local_command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
+            vkCmdDraw(local_command_buffer.getVkCommandBuffer(), static_cast<uint32_t>(vertex_data.size()), 1, 0, 0);
+        }
+
         vkCmdEndRenderPass(local_command_buffer.getVkCommandBuffer());
         local_command_buffer.end();
     }

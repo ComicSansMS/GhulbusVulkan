@@ -1,5 +1,8 @@
 #include <gbVk/Buffer.hpp>
 
+#include <gbVk/DeviceMemory.hpp>
+#include <gbVk/Exceptions.hpp>
+
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 Buffer::Buffer(VkDevice logical_device, VkBuffer buffer)
@@ -29,5 +32,16 @@ VkMemoryRequirements Buffer::getMemoryRequirements()
     VkMemoryRequirements ret;
     vkGetBufferMemoryRequirements(m_device, m_buffer, &ret);
     return ret;
+}
+
+void Buffer::bindBufferMemory(DeviceMemory& memory)
+{
+    bindBufferMemory(memory, 0);
+}
+
+void Buffer::bindBufferMemory(DeviceMemory& memory, VkDeviceSize offset)
+{
+    VkResult const res = vkBindBufferMemory(m_device, m_buffer, memory.getVkDeviceMemory(), offset);
+    checkVulkanError(res, "Error in vkBindBufferMemory.");
 }
 }

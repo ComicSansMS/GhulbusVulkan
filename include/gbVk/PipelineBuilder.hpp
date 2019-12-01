@@ -13,6 +13,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include <optional>
+#include <vector>
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
@@ -23,6 +24,8 @@ class PipelineBuilder {
 public:
     struct Stages {
         std::optional<VkPipelineVertexInputStateCreateInfo> vertex_input;
+        std::vector<VkVertexInputBindingDescription> vertex_bindings;
+        std::vector<VkVertexInputAttributeDescription> vertex_attributes;
         std::optional<VkPipelineInputAssemblyStateCreateInfo> input_assembly;
         std::optional<VkPipelineTessellationStateCreateInfo> tesselation;
         struct Viewport {
@@ -60,6 +63,9 @@ private:
 public:
 
     PipelineBuilder(VkDevice logical_device, uint32_t viewport_width, uint32_t viewport_height);
+
+    void addVertexBindings(VkVertexInputBindingDescription* binding_data, uint32_t n_bindings,
+                           VkVertexInputAttributeDescription* attributes_data, uint32_t n_attributes);
 
     Pipeline create(PipelineLayout& layout, VkPipelineShaderStageCreateInfo* shader_stages,
                     uint32_t shader_stages_size, VkRenderPass render_pass);

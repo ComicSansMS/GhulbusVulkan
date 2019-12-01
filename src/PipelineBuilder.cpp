@@ -185,9 +185,23 @@ PipelineBuilder::PipelineBuilder(VkDevice logical_device, uint32_t viewport_widt
     stage.color_blend->ci.blendConstants[3] = 0.f;
 }
 
+void PipelineBuilder::addVertexBindings(VkVertexInputBindingDescription* binding_data, uint32_t n_bindings,
+                                        VkVertexInputAttributeDescription* attributes_data, uint32_t n_attributes)
+{
+    GHULBUS_PRECONDITION(stage.vertex_input);
+    stage.vertex_bindings.insert(stage.vertex_bindings.end(), binding_data, binding_data + n_bindings);
+    stage.vertex_attributes.insert(stage.vertex_attributes.end(), attributes_data, attributes_data + n_attributes);
+}
+
 Pipeline PipelineBuilder::create(PipelineLayout& layout, VkPipelineShaderStageCreateInfo* shader_stages,
                                  uint32_t shader_stages_size, VkRenderPass render_pass)
 {
+    if (stage.vertex_input) {
+        stage.vertex_input->pVertexBindingDescriptions = stage.vertex_bindings.data();
+        stage.vertex_input->vertexBindingDescriptionCount = static_cast<uint32_t>(stage.vertex_bindings.size());
+        stage.vertex_input->pVertexAttributeDescriptions = stage.vertex_attributes.data();
+        stage.vertex_input->vertexAttributeDescriptionCount = static_cast<uint32_t>(stage.vertex_attributes.size());
+    }
     auto value_ptr = [](auto opt) { return (opt.has_value()) ? (&opt.value()) : nullptr; };
     VkGraphicsPipelineCreateInfo create_info;
     create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

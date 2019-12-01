@@ -78,6 +78,7 @@ if(NOT ((GB_BASE_IS_SHARED AND BUILD_SHARED_LIBS) OR ((NOT GB_BASE_IS_SHARED) AN
     message(STATUS "gbBase is shared " ${GB_BASE_IS_SHARED} "; gbVk is shared " ${BUILD_SHARED_LIBS} ".")
     message(FATAL_ERROR "Mixing shared and static builds of Ghulbus libraries is not supported.")
 endif()
+find_package(gbMath REQUIRED)
 
 set(GB_VK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 set(GB_VK_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
@@ -281,12 +282,13 @@ if(GB_BUILD_TESTS)
 endif()
 
 add_executable(demo ${PROJECT_SOURCE_DIR}/demo/demo.cpp)
-target_link_libraries(demo PUBLIC gbVk glfw)
+target_link_libraries(demo PUBLIC gbVk glfw Ghulbus::gbMath)
 target_include_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/demo)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT demo)
 
-add_shader(demo ${PROJECT_BINARY_DIR}/shaders/simple.spv ${PROJECT_SOURCE_DIR}/demo/shaders/simple.comp)
+add_shader(demo ${PROJECT_BINARY_DIR}/shaders/simple_compute.spv ${PROJECT_SOURCE_DIR}/demo/shaders/simple.comp)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_hardcoded.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_hardcoded.vert)
+add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_direct.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_direct_vertices.vert)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/frag_hardcoded.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_hardcoded.frag)
 
 ###############################################################################
