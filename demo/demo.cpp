@@ -361,6 +361,20 @@ int main()
         vkCmdCopyBuffer(transfer_command_buffer.getVkCommandBuffer(), staging_buffer.getVkBuffer(),
                         vertex_buffer.getVkBuffer(), 1, &buffer_copy);
 
+        VkBufferMemoryBarrier barrier;
+        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        barrier.pNext = nullptr;
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+        barrier.srcQueueFamilyIndex = transfer_queue_family;
+        barrier.dstQueueFamilyIndex = queue_family;
+        barrier.buffer = vertex_buffer.getVkBuffer();
+        barrier.offset = 0;
+        barrier.size = VK_WHOLE_SIZE;
+        vkCmdPipelineBarrier(transfer_command_buffer.getVkCommandBuffer(),
+            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_DEPENDENCY_BY_REGION_BIT,
+            0, nullptr, 1, &barrier, 0, nullptr);
+
         transfer_command_buffer.end();
 
         transfer_command_buffer.submit(transfer_queue);
