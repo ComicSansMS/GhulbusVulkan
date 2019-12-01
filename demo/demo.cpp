@@ -12,6 +12,7 @@
 #include <gbVk/CommandBuffers.hpp>
 #include <gbVk/CommandPool.hpp>
 #include <gbVk/Device.hpp>
+#include <gbVk/DeviceBuilder.hpp>
 #include <gbVk/DeviceMemory.hpp>
 #include <gbVk/Fence.hpp>
 #include <gbVk/Framebuffer.hpp>
@@ -91,25 +92,70 @@ int main()
                       << "Driver Version " << GhulbusVulkan::version_to_string(dev_props.driverVersion)
                       << ").");
 
-    GhulbusVulkan::Device device = physical_device.createDevice();
-
     glfwWindowHint(GLFW_RESIZABLE, 0);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     int const WINDOW_WIDTH = 1280;
     int const WINDOW_HEIGHT = 720;
     auto main_window =
         std::unique_ptr<GLFWwindow, void(*)(GLFWwindow*)>(glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan Demo",
-                                                                           nullptr, nullptr),
-                                                          glfwDestroyWindow);
-    if(!main_window) {
+            nullptr, nullptr),
+            glfwDestroyWindow);
+    if (!main_window) {
         return 1;
     }
     VkSurfaceKHR surface;
     VkResult res = glfwCreateWindowSurface(instance.getVkInstance(), main_window.get(), nullptr, &surface);
-    if(res != VK_SUCCESS) {
+    if (res != VK_SUCCESS) {
         GHULBUS_LOG(Error, "Unable to create Vulkan surface.");
     }
     auto guard_surface = Ghulbus::finally([&instance, surface]() { vkDestroySurfaceKHR(instance.getVkInstance(), surface, nullptr); });
+
+
+    // find queue family
+    auto const queue_family_properties = physical_device.getQueueFamilyProperties();
+    auto const opt_queue_family = [&physical_device, &surface, &queue_family_properties]() -> std::optional<uint32_t> {
+        uint32_t i = 0;
+        for (auto const& qfp : queue_family_properties) {
+            if ((qfp.queueCount > 0) && (qfp.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
+                // @todo: graphics and presentation might only be available on separate queues
+                if (physical_device.getSurfaceSupport(i, surface)) {
+                    return i;
+                }
+            }
+            ++i;
+        }
+        GHULBUS_LOG(Error, "No suitable queue family found.");
+        return std::nullopt;
+    }();
+    if (!opt_queue_family) {
+        return 1;
+    }
+
+    uint32_t const queue_family = *opt_queue_family;
+
+    uint32_t const transfer_queue_family = [&physical_device, queue_family, &queue_family_properties]() {
+        uint32_t i = 0;
+        for (auto const& qfp : queue_family_properties) {
+            if ((qfp.queueCount > 0) &&
+                (qfp.queueFlags & VK_QUEUE_TRANSFER_BIT) &&
+                ((qfp.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0)) {
+                return i;
+            }
+            ++i;
+        }
+        return queue_family;
+    }();
+
+    GhulbusVulkan::Device device = [&physical_device, queue_family, transfer_queue_family]() {
+        GhulbusVulkan::DeviceBuilder device_builder = physical_device.createDeviceBuilder();
+        if (queue_family == transfer_queue_family) {
+            device_builder.addQueue(queue_family, 2);
+        } else {
+            device_builder.addQueue(queue_family, 1);
+            device_builder.addQueue(transfer_queue_family, 1);
+        }
+        return device_builder.create();
+    }();
 
     DemoState state;
     glfwSetWindowUserPointer(main_window.get(), &state);
@@ -144,34 +190,18 @@ int main()
         }
     }
 
-
-    // find queue family
-    auto const opt_queue_family = [&device, &surface]() -> std::optional<uint32_t> {
-        uint32_t i = 0;
-        for(auto const& qfp : device.getPhysicalDevice().getQueueFamilyProperties()) {
-            if((qfp.queueCount > 0) && (qfp.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
-                // @todo: graphics and presentation might only be available on separate queues
-                if(device.getPhysicalDevice().getSurfaceSupport(i, surface)) {
-                    return i;
-                }
-            }
-            ++i;
-        }
-        GHULBUS_LOG(Error, "No suitable queue family found.");
-        return std::nullopt;
-    }();
-    if(!opt_queue_family) {
-        return 1;
-    }
-
-    uint32_t const queue_family = *opt_queue_family;
-
     auto swapchain = device.createSwapChain(surface, queue_family);
 
     auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT |
                                                  VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
     auto command_buffers = command_pool.allocateCommandBuffers(1);
     auto command_buffer = command_buffers.getCommandBuffer(0);
+
+    auto transfer_command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT |
+                                                          VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+                                                          transfer_queue_family);
+    auto transfer_command_buffers = transfer_command_pool.allocateCommandBuffers(1);
+    auto transfer_command_buffer = transfer_command_buffers.getCommandBuffer(0);
 
     command_buffer.begin();
     VkBufferCopy region;

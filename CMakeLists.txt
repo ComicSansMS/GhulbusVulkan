@@ -90,6 +90,7 @@ set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/CommandBuffers.cpp
     ${GB_VK_SOURCE_DIR}/CommandPool.cpp
     ${GB_VK_SOURCE_DIR}/Device.cpp
+    ${GB_VK_SOURCE_DIR}/DeviceBuilder.cpp
     ${GB_VK_SOURCE_DIR}/DeviceMemory.cpp
     ${GB_VK_SOURCE_DIR}/Fence.cpp
     ${GB_VK_SOURCE_DIR}/Framebuffer.cpp
@@ -116,6 +117,7 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/CommandPool.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/config.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Device.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/DeviceBuilder.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceMemory.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Exceptions.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Fence.hpp

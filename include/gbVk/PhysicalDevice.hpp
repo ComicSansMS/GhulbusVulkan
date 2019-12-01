@@ -18,10 +18,14 @@
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 class Device;
+class DeviceBuilder;
+
+struct NoSwapchainSupport_T {};
+inline constexpr NoSwapchainSupport_T no_swapchain_support {};
 
 class PhysicalDevice {
 private:
-    VkPhysicalDevice m_physical_device;
+    VkPhysicalDevice m_physicalDevice;
 public:
     explicit PhysicalDevice(VkPhysicalDevice physical_device);
 
@@ -53,6 +57,10 @@ public:
     std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties();
 
     std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties(VkLayerProperties layer);
+
+    DeviceBuilder createDeviceBuilder(NoSwapchainSupport_T const&);
+
+    DeviceBuilder createDeviceBuilder();
 
     Device createDevice();
 };
