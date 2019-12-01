@@ -87,7 +87,7 @@ Code load(std::byte const* data, uint32_t data_size)
     if(swap_endianess) {
         ret.m_data.reset(new uint32_t[n_elements]);
         ret.m_size = data_size;
-        for(int i = 0; i < n_elements; ++i) {
+        for(size_t i = 0; i < n_elements; ++i) {
             auto const base_idx = i * sizeof(uint32_t);
             uint32_t const tmp = (std::to_integer<uint32_t>(data[base_idx + 3])) |
                                  (std::to_integer<uint32_t>(data[base_idx + 2]) << 8) |
