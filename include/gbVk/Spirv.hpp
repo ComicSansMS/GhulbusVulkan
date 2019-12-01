@@ -35,8 +35,8 @@ private:
 public:
     Code() = default;
     ~Code() = default;
-    Code(Code const&) = default;
-    Code& operator=(Code const&) = default;
+    Code(Code const&) = delete;
+    Code& operator=(Code const&) = delete;
     Code(Code&&) = default;
     Code& operator=(Code&&) = default;
 
