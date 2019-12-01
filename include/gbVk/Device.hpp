@@ -16,6 +16,7 @@ namespace GHULBUS_VULKAN_NAMESPACE
 {
 class Buffer;
 class CommandPool;
+class DescriptorSetLayoutBuilder;
 class DeviceMemory;
 class Fence;
 class Framebuffer;
@@ -83,6 +84,8 @@ public:
     std::vector<Framebuffer> createFramebuffers(Swapchain& swapchain, RenderPass& render_pass);
 
     RenderPassBuilder createRenderPassBuilder();
+
+    DescriptorSetLayoutBuilder createDescriptorSetLayoutBuilder();
 
     PipelineLayout createPipelineLayout();
 

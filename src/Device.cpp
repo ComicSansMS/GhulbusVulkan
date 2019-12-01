@@ -2,6 +2,7 @@
 
 #include <gbVk/Buffer.hpp>
 #include <gbVk/CommandPool.hpp>
+#include <gbVk/DescriptorSetLayoutBuilder.hpp>
 #include <gbVk/DeviceMemory.hpp>
 #include <gbVk/Exceptions.hpp>
 #include <gbVk/Fence.hpp>
@@ -314,6 +315,11 @@ std::vector<Framebuffer> Device::createFramebuffers(Swapchain& swapchain, Render
 RenderPassBuilder Device::createRenderPassBuilder()
 {
     return RenderPassBuilder(m_device);
+}
+
+DescriptorSetLayoutBuilder Device::createDescriptorSetLayoutBuilder()
+{
+    return DescriptorSetLayoutBuilder(m_device);
 }
 
 PipelineLayout Device::createPipelineLayout()

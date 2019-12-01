@@ -6,11 +6,14 @@
 
 #include <gbMath/Vector2.hpp>
 #include <gbMath/Vector3.hpp>
+#include <gbMath/Matrix4.hpp>
 
 #include <gbVk/Buffer.hpp>
 #include <gbVk/CommandBuffer.hpp>
 #include <gbVk/CommandBuffers.hpp>
 #include <gbVk/CommandPool.hpp>
+#include <gbVk/DescriptorSetLayout.hpp>
+#include <gbVk/DescriptorSetLayoutBuilder.hpp>
 #include <gbVk/Device.hpp>
 #include <gbVk/DeviceBuilder.hpp>
 #include <gbVk/DeviceMemory.hpp>
@@ -48,6 +51,12 @@ struct Vertex {
     GhulbusMath::Vector3f color;
 };
 
+struct UBOMVP {
+    GhulbusMath::Matrix4<float> model;
+    GhulbusMath::Matrix4<float> view;
+    GhulbusMath::Matrix4<float> projection;
+};
+
 inline std::vector<Vertex> generateVertexData()
 {
     return { {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
@@ -58,6 +67,11 @@ inline std::vector<Vertex> generateVertexData()
 
 inline std::vector<uint16_t> generateIndexData() {
     return { 0, 1, 2, 2, 3, 0 };
+}
+
+inline UBOMVP generateMVP()
+{
+    return {};
 }
 
 enum class DrawMode {
@@ -488,6 +502,14 @@ int main()
             builder.addColorAttachment(swapchain_image->getFormat());
             return builder.create();
         }();
+
+    // ubo
+    auto const ubo_data = generateMVP();
+    GhulbusVulkan::DescriptorSetLayout ubo_layout = [&device]() {
+        GhulbusVulkan::DescriptorSetLayoutBuilder layout_builder = device.createDescriptorSetLayoutBuilder();
+        layout_builder.addUniformBuffer(0, VK_SHADER_STAGE_VERTEX_BIT);
+        return layout_builder.create();
+    }();
 
     // pipeline
     GhulbusVulkan::PipelineLayout pipeline_layout = device.createPipelineLayout();

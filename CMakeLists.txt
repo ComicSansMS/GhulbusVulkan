@@ -89,6 +89,8 @@ set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/CommandBuffer.cpp
     ${GB_VK_SOURCE_DIR}/CommandBuffers.cpp
     ${GB_VK_SOURCE_DIR}/CommandPool.cpp
+    ${GB_VK_SOURCE_DIR}/DescriptorSetLayout.cpp
+    ${GB_VK_SOURCE_DIR}/DescriptorSetLayoutBuilder.cpp
     ${GB_VK_SOURCE_DIR}/Device.cpp
     ${GB_VK_SOURCE_DIR}/DeviceBuilder.cpp
     ${GB_VK_SOURCE_DIR}/DeviceMemory.cpp
@@ -116,6 +118,8 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/CommandBuffers.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/CommandPool.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/config.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/DescriptorSetLayout.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/DescriptorSetLayoutBuilder.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Device.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceBuilder.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceMemory.hpp
@@ -149,8 +153,6 @@ add_library(gbVk
     ${GB_VK_HEADER_FILES}
 )
 target_include_directories(gbVk PUBLIC $<BUILD_INTERFACE:${GB_VK_INCLUDE_DIR}>)
-#target_include_directories(gbVk PUBLIC $<BUILD_INTERFACE:${Boost_INCLUDE_DIR}>)
-#target_compile_definitions(gbVk PUBLIC BOOST_ALL_NO_LIB)
 target_link_libraries(gbVk PUBLIC Threads::Threads)
 target_link_libraries(gbVk PUBLIC Ghulbus::gbBase)
 target_link_libraries(gbVk PUBLIC Vulkan::Vulkan)
@@ -292,6 +294,7 @@ file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/shaders)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/simple_compute.spv ${PROJECT_SOURCE_DIR}/demo/shaders/simple.comp)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_hardcoded.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_hardcoded.vert)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_direct.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_direct_vertices.vert)
+add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_mvp.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_ubo_mvp.vert COMPILE_OPTIONS -O)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/frag_hardcoded.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_hardcoded.frag)
 
 ###############################################################################
