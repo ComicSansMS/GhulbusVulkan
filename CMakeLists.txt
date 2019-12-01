@@ -286,6 +286,7 @@ target_link_libraries(demo PUBLIC gbVk glfw Ghulbus::gbMath)
 target_include_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/demo)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT demo)
 
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/shaders)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/simple_compute.spv ${PROJECT_SOURCE_DIR}/demo/shaders/simple.comp)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_hardcoded.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_hardcoded.vert)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_direct.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_direct_vertices.vert)
