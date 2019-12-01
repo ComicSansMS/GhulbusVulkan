@@ -203,8 +203,6 @@ int main()
     auto transfer_command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT |
                                                           VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
                                                           transfer_queue_family);
-    auto transfer_command_buffers = transfer_command_pool.allocateCommandBuffers(1);
-    auto transfer_command_buffer = transfer_command_buffers.getCommandBuffer(0);
 
     command_buffer.begin();
     VkBufferCopy region;
@@ -218,6 +216,9 @@ int main()
     command_buffer.submit(queue);
     vkQueueWaitIdle(queue);
     command_buffer.reset();
+
+    auto transfer_queue = device.getQueue(transfer_queue_family, (transfer_queue_family == queue_family) ?
+        ((queue_family_properties[queue_family].queueCount > 1) ? 1 : 0) : 0);
 
     auto fence = device.createFence();
     auto images = swapchain.getVkImages();
@@ -325,19 +326,47 @@ int main()
     vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
     vertex_attributes[1].offset = offsetof(Vertex, color);
 
+    GhulbusVulkan::Buffer staging_buffer = device.createBuffer(vertex_data.size() * sizeof(Vertex),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    auto const staging_buffer_mem_reqs = staging_buffer.getMemoryRequirements();
+    GhulbusVulkan::DeviceMemory staging_memory = device.allocateMemory(staging_buffer_mem_reqs.size,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        staging_buffer_mem_reqs);
+    staging_buffer.bindBufferMemory(staging_memory);
+
     GhulbusVulkan::Buffer vertex_buffer = device.createBuffer(vertex_data.size() * sizeof(Vertex),
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     auto const vertex_buffer_mem_reqs = vertex_buffer.getMemoryRequirements();
     GhulbusVulkan::DeviceMemory vertex_memory =
         device.allocateMemory(vertex_buffer_mem_reqs.size,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             vertex_buffer_mem_reqs);
     vertex_buffer.bindBufferMemory(vertex_memory);
 
+    // copy vertex buffer
     {
-        auto mapped_memory = vertex_memory.map();
+        auto mapped_memory = staging_memory.map();
         std::memcpy(mapped_memory, vertex_data.data(), vertex_data.size() * sizeof(Vertex));
     }
+    {
+        auto transfer_command_buffers = transfer_command_pool.allocateCommandBuffers(1);
+        auto transfer_command_buffer = transfer_command_buffers.getCommandBuffer(0);
+
+        transfer_command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        VkBufferCopy buffer_copy;
+        buffer_copy.srcOffset = 0;
+        buffer_copy.dstOffset = 0;
+        buffer_copy.size = vertex_data.size() * sizeof(Vertex);
+
+        vkCmdCopyBuffer(transfer_command_buffer.getVkCommandBuffer(), staging_buffer.getVkBuffer(),
+                        vertex_buffer.getVkBuffer(), 1, &buffer_copy);
+
+        transfer_command_buffer.end();
+
+        transfer_command_buffer.submit(transfer_queue);
+    }
+
+
 
     auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple_compute.spv");
     auto version = spirv_code.getSpirvVersion();

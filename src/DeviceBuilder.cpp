@@ -17,7 +17,7 @@ DeviceBuilder::DeviceBuilder(VkPhysicalDevice physical_device)
 void DeviceBuilder::addQueue(uint32_t queue_family, uint32_t n_queues)
 {
     queue_create_infos.emplace_back();
-    auto& queue_ci = queue_create_infos.back();
+    VkDeviceQueueCreateInfo& queue_ci = queue_create_infos.back();
     queue_ci.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     queue_ci.pNext = nullptr;
     queue_ci.flags = 0;    // reserved;

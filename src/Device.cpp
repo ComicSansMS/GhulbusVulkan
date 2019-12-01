@@ -153,13 +153,18 @@ Semaphore Device::createSemaphore()
 
 Buffer Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags)
 {
+    return createBuffer(size, usage_flags, VK_SHARING_MODE_EXCLUSIVE);
+}
+
+Buffer Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode)
+{
     VkBufferCreateInfo create_info;
     create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     create_info.pNext = nullptr;
     create_info.flags = 0;
     create_info.size = size;
     create_info.usage = usage_flags;
-    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    create_info.sharingMode = sharing_mode;
     create_info.queueFamilyIndexCount = 0;
     create_info.pQueueFamilyIndices = nullptr;
     VkBuffer buffer;

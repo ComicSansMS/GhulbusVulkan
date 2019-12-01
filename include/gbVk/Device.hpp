@@ -62,6 +62,8 @@ public:
 
     Buffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags);
 
+    Buffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode);
+
     Image createImage(uint32_t width, uint32_t height);
     Image createImage(VkExtent3D const& extent, VkFormat format);
     Image createImage(VkExtent3D const& extent, VkFormat format, uint32_t mip_levels, uint32_t array_layers,
