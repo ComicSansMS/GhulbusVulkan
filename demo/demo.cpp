@@ -36,6 +36,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <external/stb_image.h>
 
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <vector>
@@ -146,10 +147,12 @@ int main()
         return queue_family;
     }();
 
-    GhulbusVulkan::Device device = [&physical_device, queue_family, transfer_queue_family]() {
+    GhulbusVulkan::Device device = [&physical_device, queue_family, transfer_queue_family,
+                                    &queue_family_properties]()
+    {
         GhulbusVulkan::DeviceBuilder device_builder = physical_device.createDeviceBuilder();
         if (queue_family == transfer_queue_family) {
-            device_builder.addQueue(queue_family, 2);
+            device_builder.addQueue(queue_family, std::min(queue_family_properties[queue_family].queueCount, 2u));
         } else {
             device_builder.addQueue(queue_family, 1);
             device_builder.addQueue(transfer_queue_family, 1);
