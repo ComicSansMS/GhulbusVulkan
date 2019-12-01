@@ -23,7 +23,7 @@ class Framebuffer;
 class Image;
 class PhysicalDevice;
 class PipelineBuilder;
-class PipelineLayout;
+class PipelineLayoutBuilder;
 class RenderPass;
 class RenderPassBuilder;
 class Semaphore;
@@ -87,7 +87,7 @@ public:
 
     DescriptorSetLayoutBuilder createDescriptorSetLayoutBuilder();
 
-    PipelineLayout createPipelineLayout();
+    PipelineLayoutBuilder createPipelineLayoutBuilder();
 
     PipelineBuilder createGraphicsPipelineBuilder(uint32_t viewport_width, uint32_t viewport_height);
 

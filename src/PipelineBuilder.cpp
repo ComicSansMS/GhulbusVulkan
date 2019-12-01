@@ -47,9 +47,9 @@ PipelineBuilder::Stages::Viewport& PipelineBuilder::Stages::Viewport::operator==
 void PipelineBuilder::Stages::Viewport::refreshReferences()
 {
     ci.viewportCount = static_cast<std::uint32_t>(viewports.size());
-    ci.pViewports = viewports.data();
+    ci.pViewports = (!viewports.empty()) ? viewports.data() : nullptr;
     ci.scissorCount = static_cast<std::uint32_t>(scissors.size());
-    ci.pScissors = scissors.data();
+    ci.pScissors = (!scissors.empty()) ? scissors.data() : nullptr;
 }
 
 PipelineBuilder::Stages::ColorBlend::ColorBlend(ColorBlend const& rhs)
@@ -87,7 +87,7 @@ PipelineBuilder::Stages::ColorBlend& PipelineBuilder::Stages::ColorBlend::operat
 void PipelineBuilder::Stages::ColorBlend::refreshReferences()
 {
     ci.attachmentCount = static_cast<uint32_t>(attachments.size());
-    ci.pAttachments = attachments.data();
+    ci.pAttachments = (!attachments.empty()) ? attachments.data() : nullptr;
 }
 
 PipelineBuilder::PipelineBuilder(VkDevice logical_device, uint32_t viewport_width, uint32_t viewport_height)
@@ -127,9 +127,9 @@ PipelineBuilder::PipelineBuilder(VkDevice logical_device, uint32_t viewport_widt
     stage.viewport->ci.pNext = nullptr;
     stage.viewport->ci.flags = 0;
     stage.viewport->ci.viewportCount = static_cast<std::uint32_t>(stage.viewport->viewports.size());
-    stage.viewport->ci.pViewports = stage.viewport->viewports.data();
+    stage.viewport->ci.pViewports = (!stage.viewport->viewports.empty()) ? stage.viewport->viewports.data() : nullptr;
     stage.viewport->ci.scissorCount = static_cast<std::uint32_t>(stage.viewport->scissors.size());
-    stage.viewport->ci.pScissors = stage.viewport->scissors.data();
+    stage.viewport->ci.pScissors = (!stage.viewport->scissors.empty()) ? stage.viewport->scissors.data() : nullptr;
 
     stage.rasterization.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     stage.rasterization.pNext = nullptr;
@@ -178,7 +178,9 @@ PipelineBuilder::PipelineBuilder(VkDevice logical_device, uint32_t viewport_widt
     stage.color_blend->ci.logicOpEnable = VK_FALSE;
     stage.color_blend->ci.logicOp = VK_LOGIC_OP_COPY;
     stage.color_blend->ci.attachmentCount = static_cast<uint32_t>(stage.color_blend->attachments.size());
-    stage.color_blend->ci.pAttachments = stage.color_blend->attachments.data();
+    stage.color_blend->ci.pAttachments = (!stage.color_blend->attachments.empty()) ?
+                                         stage.color_blend->attachments.data() :
+                                         nullptr;
     stage.color_blend->ci.blendConstants[0] = 0.f;
     stage.color_blend->ci.blendConstants[1] = 0.f;
     stage.color_blend->ci.blendConstants[2] = 0.f;
@@ -197,9 +199,13 @@ Pipeline PipelineBuilder::create(PipelineLayout& layout, VkPipelineShaderStageCr
                                  uint32_t shader_stages_size, VkRenderPass render_pass)
 {
     if (stage.vertex_input) {
-        stage.vertex_input->pVertexBindingDescriptions = stage.vertex_bindings.data();
+        stage.vertex_input->pVertexBindingDescriptions = (!stage.vertex_bindings.empty()) ?
+                                                         stage.vertex_bindings.data() :
+                                                         nullptr;
         stage.vertex_input->vertexBindingDescriptionCount = static_cast<uint32_t>(stage.vertex_bindings.size());
-        stage.vertex_input->pVertexAttributeDescriptions = stage.vertex_attributes.data();
+        stage.vertex_input->pVertexAttributeDescriptions = (!stage.vertex_attributes.empty()) ?
+                                                           stage.vertex_attributes.data() :
+                                                           nullptr;
         stage.vertex_input->vertexAttributeDescriptionCount = static_cast<uint32_t>(stage.vertex_attributes.size());
     }
     auto value_ptr = [](auto opt) { return (opt.has_value()) ? (&opt.value()) : nullptr; };

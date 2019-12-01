@@ -26,6 +26,7 @@
 #include <gbVk/Pipeline.hpp>
 #include <gbVk/PipelineBuilder.hpp>
 #include <gbVk/PipelineLayout.hpp>
+#include <gbVk/PipelineLayoutBuilder.hpp>
 #include <gbVk/RenderPass.hpp>
 #include <gbVk/RenderPassBuilder.hpp>
 #include <gbVk/Semaphore.hpp>
@@ -512,7 +513,11 @@ int main()
     }();
 
     // pipeline
-    GhulbusVulkan::PipelineLayout pipeline_layout = device.createPipelineLayout();
+    GhulbusVulkan::PipelineLayout pipeline_layout = [&device, &ubo_layout]() {
+        GhulbusVulkan::PipelineLayoutBuilder builder = device.createPipelineLayoutBuilder();
+        builder.addDescriptorSetLayout(ubo_layout);
+        return builder.create();
+    }();
 
     GhulbusVulkan::Pipeline pipeline = [&device, &swapchain_image, &pipeline_layout,
                                         &shader_stage_cis, &render_pass,

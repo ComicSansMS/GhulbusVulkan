@@ -79,11 +79,11 @@ RenderPass RenderPassBuilder::create()
     render_pass_ci.pNext = nullptr;
     render_pass_ci.flags = 0;
     render_pass_ci.attachmentCount = static_cast<uint32_t>(attachments.size());
-    render_pass_ci.pAttachments = attachments.data();
+    render_pass_ci.pAttachments = (!attachments.empty()) ? attachments.data() : nullptr;
     render_pass_ci.subpassCount = static_cast<uint32_t>(subpassDescriptions.size());
-    render_pass_ci.pSubpasses = subpassDescriptions.data();
+    render_pass_ci.pSubpasses = (!subpassDescriptions.empty()) ? subpassDescriptions.data() : nullptr;
     render_pass_ci.dependencyCount = static_cast<uint32_t>(subpassDependencies.size());
-    render_pass_ci.pDependencies = subpassDependencies.data();
+    render_pass_ci.pDependencies = (!subpassDependencies.empty()) ? subpassDependencies.data() : nullptr;
 
     VkRenderPass render_pass;
     VkResult res = vkCreateRenderPass(m_device, &render_pass_ci, nullptr, &render_pass);

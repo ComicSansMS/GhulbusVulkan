@@ -11,7 +11,7 @@
 #include <gbVk/ImageView.hpp>
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/PipelineBuilder.hpp>
-#include <gbVk/PipelineLayout.hpp>
+#include <gbVk/PipelineLayoutBuilder.hpp>
 #include <gbVk/RenderPass.hpp>
 #include <gbVk/RenderPassBuilder.hpp>
 #include <gbVk/Semaphore.hpp>
@@ -322,20 +322,9 @@ DescriptorSetLayoutBuilder Device::createDescriptorSetLayoutBuilder()
     return DescriptorSetLayoutBuilder(m_device);
 }
 
-PipelineLayout Device::createPipelineLayout()
+PipelineLayoutBuilder Device::createPipelineLayoutBuilder()
 {
-    VkPipelineLayoutCreateInfo create_info;
-    create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    create_info.pNext = nullptr;
-    create_info.flags = 0;
-    create_info.setLayoutCount = 0;
-    create_info.pSetLayouts = nullptr;
-    create_info.pushConstantRangeCount = 0;
-    create_info.pPushConstantRanges = nullptr;
-    VkPipelineLayout pipeline_layout;
-    VkResult res = vkCreatePipelineLayout(m_device, &create_info, nullptr, &pipeline_layout);
-    checkVulkanError(res, "Error in vkCreatePipelineLayout.");
-    return PipelineLayout(m_device, pipeline_layout);
+    return PipelineLayoutBuilder(m_device);
 }
 
 PipelineBuilder Device::createGraphicsPipelineBuilder(uint32_t viewport_width, uint32_t viewport_height)

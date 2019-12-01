@@ -30,7 +30,7 @@ DescriptorSetLayout DescriptorSetLayoutBuilder::create()
     create_info.pNext = nullptr;
     create_info.flags = 0;
     create_info.bindingCount = static_cast<uint32_t>(bindings.size());
-    create_info.pBindings = bindings.data();
+    create_info.pBindings = (!bindings.empty()) ? bindings.data() : nullptr;
 
     VkDescriptorSetLayout desc_set_layout;
     VkResult res = vkCreateDescriptorSetLayout(m_device, &create_info, nullptr, &desc_set_layout);

@@ -81,11 +81,11 @@ Instance Instance::createInstance(char const* application_name, Version const& a
     std::vector<char const*> requested_layers = enabled_layers.getRequestedLayers();
     GHULBUS_PRECONDITION(requested_layers.size() < std::numeric_limits<uint32_t>::max());
     create_info.enabledLayerCount = static_cast<uint32_t>(requested_layers.size());
-    create_info.ppEnabledLayerNames = requested_layers.data();
+    create_info.ppEnabledLayerNames = (!requested_layers.empty()) ? requested_layers.data() : nullptr;
     std::vector<char const*> requested_extensions = enabled_extensions.getRequestedExtensions();
     GHULBUS_PRECONDITION(requested_extensions.size() < std::numeric_limits<uint32_t>::max());
     create_info.enabledExtensionCount = static_cast<uint32_t>(requested_extensions.size());
-    create_info.ppEnabledExtensionNames = requested_extensions.data();
+    create_info.ppEnabledExtensionNames = (!requested_extensions.empty()) ? requested_extensions.data() : nullptr;
 
     VkInstance instance;
     VkResult res = vkCreateInstance(&create_info, nullptr, &instance);
