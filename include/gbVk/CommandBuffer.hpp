@@ -35,8 +35,6 @@ public:
 
     void reset();
     void reset(VkCommandBufferResetFlags flags);
-
-    void submit(VkQueue queue);
 };
 }
 #endif

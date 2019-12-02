@@ -24,6 +24,7 @@ class Image;
 class PhysicalDevice;
 class PipelineBuilder;
 class PipelineLayoutBuilder;
+class Queue;
 class RenderPass;
 class RenderPassBuilder;
 class Semaphore;
@@ -77,7 +78,7 @@ public:
 
     CommandPool createCommandPool(VkCommandPoolCreateFlags requested_flags, uint32_t queue_family_index);
 
-    VkQueue getQueue(uint32_t queue_family, uint32_t queue_index);
+    Queue getQueue(uint32_t queue_family, uint32_t queue_index);
 
     ShaderModule createShaderModule(Spirv::Code const& code);
 

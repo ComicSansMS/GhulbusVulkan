@@ -37,6 +37,8 @@ public:
     uint32_t size() const;
 
     CommandBuffer getCommandBuffer(uint32_t index);
+
+    VkCommandBuffer* getVkCommandBuffers();
 };
 }
 #endif

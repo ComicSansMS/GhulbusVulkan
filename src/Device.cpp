@@ -12,6 +12,7 @@
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/PipelineBuilder.hpp>
 #include <gbVk/PipelineLayoutBuilder.hpp>
+#include <gbVk/Queue.hpp>
 #include <gbVk/RenderPass.hpp>
 #include <gbVk/RenderPassBuilder.hpp>
 #include <gbVk/Semaphore.hpp>
@@ -265,11 +266,11 @@ CommandPool Device::createCommandPool(VkCommandPoolCreateFlags requested_flags, 
     return CommandPool(m_device, command_pool);
 }
 
-VkQueue Device::getQueue(uint32_t queue_family, uint32_t queue_index)
+Queue Device::getQueue(uint32_t queue_family, uint32_t queue_index)
 {
     VkQueue queue;
     vkGetDeviceQueue(m_device, queue_family, queue_index, &queue);      //@todo this will crash if family or index are invalid
-    return queue;
+    return Queue(queue);
 }
 
 ShaderModule Device::createShaderModule(Spirv::Code const& code)

@@ -40,4 +40,9 @@ CommandBuffer CommandBuffers::getCommandBuffer(uint32_t index)
     GHULBUS_PRECONDITION_DBG((index >= 0) && (index < size()));
     return CommandBuffer(m_commandBuffers[index]);
 }
+
+VkCommandBuffer* CommandBuffers::getVkCommandBuffers()
+{
+    return m_commandBuffers.data();
+}
 }

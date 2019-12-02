@@ -27,6 +27,7 @@
 #include <gbVk/PipelineBuilder.hpp>
 #include <gbVk/PipelineLayout.hpp>
 #include <gbVk/PipelineLayoutBuilder.hpp>
+#include <gbVk/Queue.hpp>
 #include <gbVk/RenderPass.hpp>
 #include <gbVk/RenderPassBuilder.hpp>
 #include <gbVk/Semaphore.hpp>
@@ -233,8 +234,8 @@ int main()
     command_buffer.end();
 
     auto queue = device.getQueue(queue_family, 0);
-    command_buffer.submit(queue);
-    vkQueueWaitIdle(queue);
+    queue.submit(command_buffer);
+    queue.waitIdle();
     command_buffer.reset();
 
     auto transfer_queue = device.getQueue(transfer_queue_family, (transfer_queue_family == queue_family) ?
@@ -323,11 +324,12 @@ int main()
                                 VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     command_buffer.end();
-    command_buffer.submit(queue);
+    queue.submit(command_buffer);
+    queue.waitIdle();
     command_buffer.reset();
 
-    swapchain.present(queue, std::move(swapchain_image));
-    vkQueueWaitIdle(queue);
+    swapchain.present(queue.getVkQueue(), std::move(swapchain_image));
+    queue.waitIdle();
 
     std::vector<Vertex> vertex_data = generateVertexData();
     std::vector<uint16_t> index_data = generateIndexData();
@@ -398,7 +400,8 @@ int main()
 
         transfer_command_buffer.end();
 
-        transfer_command_buffer.submit(transfer_queue);
+        transfer_queue.submit(transfer_command_buffer);
+        transfer_queue.waitIdle();
     }
 
 
@@ -454,7 +457,8 @@ int main()
 
         transfer_command_buffer.end();
 
-        transfer_command_buffer.submit(transfer_queue);
+        transfer_queue.submit(transfer_command_buffer);
+        transfer_queue.waitIdle();
     }
 
 
@@ -600,9 +604,9 @@ int main()
         VkSemaphore signal_semaphores[] = { semaphore_render_finished.getVkSemaphore() };
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = signal_semaphores;
-        res = vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE);
+        res = vkQueueSubmit(queue.getVkQueue(), 1, &submit_info, VK_NULL_HANDLE);
         if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkQueueSubmit: " << res); return 1; }
-        swapchain.present(queue, semaphore_render_finished, std::move(frame_image));
-        vkQueueWaitIdle(queue);
+        swapchain.present(queue.getVkQueue(), semaphore_render_finished, std::move(frame_image));
+        queue.waitIdle();
     }
 }

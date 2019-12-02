@@ -104,6 +104,7 @@ set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/PipelineBuilder.cpp
     ${GB_VK_SOURCE_DIR}/PipelineLayout.cpp
     ${GB_VK_SOURCE_DIR}/PipelineLayoutBuilder.cpp
+    ${GB_VK_SOURCE_DIR}/Queue.cpp
     ${GB_VK_SOURCE_DIR}/RenderPass.cpp
     ${GB_VK_SOURCE_DIR}/RenderPassBuilder.cpp
     ${GB_VK_SOURCE_DIR}/Semaphore.cpp
@@ -135,6 +136,7 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/PipelineBuilder.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/PipelineLayout.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/PipelineLayoutBuilder.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/Queue.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/RenderPass.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/RenderPassBuilder.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Semaphore.hpp
