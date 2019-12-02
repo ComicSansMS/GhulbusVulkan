@@ -366,13 +366,14 @@ int main()
             vertex_buffer_mem_reqs);
     vertex_buffer.bindBufferMemory(vertex_memory);
 
+    auto transfer_command_buffers = transfer_command_pool.allocateCommandBuffers(2);
+
     // copy vertex buffer
     {
         auto mapped_memory = staging_memory.map();
         std::memcpy(mapped_memory, vertex_data.data(), vertex_data.size() * sizeof(Vertex));
     }
     {
-        auto transfer_command_buffers = transfer_command_pool.allocateCommandBuffers(1);
         auto transfer_command_buffer = transfer_command_buffers.getCommandBuffer(0);
 
         transfer_command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -399,9 +400,6 @@ int main()
             0, nullptr, 1, &barrier, 0, nullptr);
 
         transfer_command_buffer.end();
-
-        transfer_queue.submit(transfer_command_buffer);
-        transfer_queue.waitIdle();
     }
 
 
@@ -428,8 +426,7 @@ int main()
         std::memcpy(mapped_memory, index_data.data(), index_data.size() * sizeof(uint16_t));
     }
     {
-        auto transfer_command_buffers = transfer_command_pool.allocateCommandBuffers(1);
-        auto transfer_command_buffer = transfer_command_buffers.getCommandBuffer(0);
+        auto transfer_command_buffer = transfer_command_buffers.getCommandBuffer(1);
 
         transfer_command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         VkBufferCopy buffer_copy;
@@ -456,10 +453,9 @@ int main()
                              0, nullptr, 1, &barrier, 0, nullptr);
 
         transfer_command_buffer.end();
-
-        transfer_queue.submit(transfer_command_buffer);
-        transfer_queue.waitIdle();
     }
+    fence.reset();
+    transfer_queue.submit(transfer_command_buffers, fence);
 
 
     auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple_compute.spv");
@@ -585,6 +581,7 @@ int main()
     GhulbusVulkan::Semaphore semaphore_image_available = device.createSemaphore();
     GhulbusVulkan::Semaphore semaphore_render_finished = device.createSemaphore();
 
+    fence.wait();
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!glfwWindowShouldClose(main_window.get())) {
         glfwPollEvents();
