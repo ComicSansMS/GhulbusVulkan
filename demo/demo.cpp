@@ -4,9 +4,10 @@
 #include <gbBase/LogHandlers.hpp>
 #include <gbBase/UnusedVariable.hpp>
 
+#include <gbMath/Matrix4.hpp>
+#include <gbMath/Transform3.hpp>
 #include <gbMath/Vector2.hpp>
 #include <gbMath/Vector3.hpp>
-#include <gbMath/Matrix4.hpp>
 
 #include <gbVk/Buffer.hpp>
 #include <gbVk/CommandBuffer.hpp>
@@ -42,6 +43,7 @@
 #include <external/stb_image.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstring>
 #include <memory>
 #include <vector>
@@ -69,11 +71,6 @@ inline std::vector<Vertex> generateVertexData()
 
 inline std::vector<uint16_t> generateIndexData() {
     return { 0, 1, 2, 2, 3, 0 };
-}
-
-inline UBOMVP generateMVP()
-{
-    return {};
 }
 
 enum class DrawMode {
@@ -457,6 +454,40 @@ int main()
     fence.reset();
     transfer_queue.submit(transfer_command_buffers, fence);
 
+    // ubo
+    std::vector<GhulbusVulkan::Buffer> ubo_buffers;
+    std::vector<GhulbusVulkan::DeviceMemory> ubo_memories;
+    ubo_buffers.reserve(swapchain.getNumberOfImages());
+    ubo_memories.reserve(swapchain.getNumberOfImages());
+    for(uint32_t i = 0; i < swapchain.getNumberOfImages(); ++i)
+    {
+        ubo_buffers.push_back(device.createBuffer(sizeof(UBOMVP), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
+        auto const ubo_buffer_mem_reqs = ubo_buffers.back().getMemoryRequirements();
+        ubo_memories.push_back(device.allocateMemory(ubo_buffer_mem_reqs.size,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            ubo_buffer_mem_reqs));
+        ubo_buffers.back().bindBufferMemory(ubo_memories.back());
+    }
+
+    auto timestamp = std::chrono::steady_clock::now();
+    UBOMVP ubo_data;
+    auto update_uniform_buffer = [&timestamp, &ubo_data, &ubo_memories, WINDOW_WIDTH, WINDOW_HEIGHT](uint32_t index) {
+        auto const t = std::chrono::steady_clock::now();
+        float const time = std::chrono::duration<float>(t - timestamp).count();
+        ubo_data.model = GhulbusMath::make_rotation((GhulbusMath::traits::Pi<float>::value / 2.f) * time,
+                                                GhulbusMath::Vector3f(0.f, 0.f, 1.f)).m;
+        ubo_data.view = GhulbusMath::make_view_look_at(GhulbusMath::Vector3f(2.0f, 2.0f, 2.0f),
+                                                   GhulbusMath::Vector3f(0.0f, 0.0f, 0.0f),
+                                                   GhulbusMath::Vector3f(0.0f, 0.0f, 1.0f)).m;
+        ubo_data.projection = GhulbusMath::make_perspective_projection_fov(
+            (GhulbusMath::traits::Pi<float>::value / 4.f),
+            static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT), 0.1f, 10.f).m;
+        {
+            auto mapped_mem = ubo_memories[index].map();
+            std::memcpy(mapped_mem, &ubo_data, sizeof(UBOMVP));
+        }
+    };
+
 
     auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple_compute.spv");
     auto version = spirv_code.getSpirvVersion();
@@ -505,7 +536,6 @@ int main()
         }();
 
     // ubo
-    auto const ubo_data = generateMVP();
     GhulbusVulkan::DescriptorSetLayout ubo_layout = [&device]() {
         GhulbusVulkan::DescriptorSetLayoutBuilder layout_builder = device.createDescriptorSetLayoutBuilder();
         layout_builder.addUniformBuffer(0, VK_SHADER_STAGE_VERTEX_BIT);
@@ -587,6 +617,7 @@ int main()
         glfwPollEvents();
 
         auto frame_image = swapchain.acquireNextImage(semaphore_image_available);
+        update_uniform_buffer(frame_image.getSwapchainIndex());
         VkSubmitInfo submit_info;
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submit_info.pNext = nullptr;
