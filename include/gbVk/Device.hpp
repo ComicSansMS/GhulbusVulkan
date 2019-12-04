@@ -16,6 +16,7 @@ namespace GHULBUS_VULKAN_NAMESPACE
 {
 class Buffer;
 class CommandPool;
+class DescriptorPoolBuilder;
 class DescriptorSetLayoutBuilder;
 class DeviceMemory;
 class Fence;
@@ -87,6 +88,8 @@ public:
     RenderPassBuilder createRenderPassBuilder();
 
     DescriptorSetLayoutBuilder createDescriptorSetLayoutBuilder();
+
+    DescriptorPoolBuilder createDescriptorPoolBuilder();
 
     PipelineLayoutBuilder createPipelineLayoutBuilder();
 

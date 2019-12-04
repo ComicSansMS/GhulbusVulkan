@@ -30,7 +30,7 @@ public:
     DescriptorSetLayout(DescriptorSetLayout&& rhs);
     DescriptorSetLayout& operator=(DescriptorSetLayout&&) = delete;
 
-    VkDescriptorSetLayout getVkDescriptorSetLayout();
+    VkDescriptorSetLayout getVkDescriptorSetLayout() const;
 };
 }
 #endif

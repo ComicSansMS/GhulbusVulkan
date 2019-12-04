@@ -30,7 +30,7 @@ private:
 public:
     DeviceBuilder(VkPhysicalDevice physical_device);
 
-    void addQueue(uint32_t queue_family, uint32_t n_queues);
+    void addQueues(uint32_t queue_family, uint32_t n_queues_in_family);
 
     void addExtension(std::string extension);
 

@@ -2,6 +2,7 @@
 
 #include <gbVk/Buffer.hpp>
 #include <gbVk/CommandPool.hpp>
+#include <gbVk/DescriptorPoolBuilder.hpp>
 #include <gbVk/DescriptorSetLayoutBuilder.hpp>
 #include <gbVk/DeviceMemory.hpp>
 #include <gbVk/Exceptions.hpp>
@@ -321,6 +322,11 @@ RenderPassBuilder Device::createRenderPassBuilder()
 DescriptorSetLayoutBuilder Device::createDescriptorSetLayoutBuilder()
 {
     return DescriptorSetLayoutBuilder(m_device);
+}
+
+DescriptorPoolBuilder Device::createDescriptorPoolBuilder()
+{
+    return DescriptorPoolBuilder(m_device);
 }
 
 PipelineLayoutBuilder Device::createPipelineLayoutBuilder()

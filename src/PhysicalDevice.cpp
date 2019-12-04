@@ -186,7 +186,7 @@ Device PhysicalDevice::createDevice()
     if(!queue_family) {
         GHULBUS_THROW(Ghulbus::Exceptions::ProtocolViolation(), "Cannot find a suitable queue family on device.");
     }
-    device_builder.addQueue(*queue_family, 1);
+    device_builder.addQueues(*queue_family, 1);
 
     return device_builder.create();
 }

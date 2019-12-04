@@ -13,8 +13,12 @@
 #include <gbVk/CommandBuffer.hpp>
 #include <gbVk/CommandBuffers.hpp>
 #include <gbVk/CommandPool.hpp>
+#include <gbVk/DescriptorPool.hpp>
+#include <gbVk/DescriptorPoolBuilder.hpp>
+#include <gbVk/DescriptorSet.hpp>
 #include <gbVk/DescriptorSetLayout.hpp>
 #include <gbVk/DescriptorSetLayoutBuilder.hpp>
+#include <gbVk/DescriptorSets.hpp>
 #include <gbVk/Device.hpp>
 #include <gbVk/DeviceBuilder.hpp>
 #include <gbVk/DeviceMemory.hpp>
@@ -170,10 +174,10 @@ int main()
     {
         GhulbusVulkan::DeviceBuilder device_builder = physical_device.createDeviceBuilder();
         if (queue_family == transfer_queue_family) {
-            device_builder.addQueue(queue_family, std::min(queue_family_properties[queue_family].queueCount, 2u));
+            device_builder.addQueues(queue_family, std::min(queue_family_properties[queue_family].queueCount, 2u));
         } else {
-            device_builder.addQueue(queue_family, 1);
-            device_builder.addQueue(transfer_queue_family, 1);
+            device_builder.addQueues(queue_family, 1);
+            device_builder.addQueues(transfer_queue_family, 1);
         }
         return device_builder.create();
     }();
@@ -213,14 +217,11 @@ int main()
 
     auto swapchain = device.createSwapChain(surface, queue_family);
 
-    auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT |
-                                                 VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
+    auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
     auto command_buffers = command_pool.allocateCommandBuffers(1);
     auto command_buffer = command_buffers.getCommandBuffer(0);
 
-    auto transfer_command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT |
-                                                          VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-                                                          transfer_queue_family);
+    auto transfer_command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, transfer_queue_family);
 
     command_buffer.begin();
     VkBufferCopy region;
@@ -541,6 +542,14 @@ int main()
         layout_builder.addUniformBuffer(0, VK_SHADER_STAGE_VERTEX_BIT);
         return layout_builder.create();
     }();
+    GhulbusVulkan::DescriptorPool ubo_descriptor_pool = [&device, &swapchain]() {
+        GhulbusVulkan::DescriptorPoolBuilder descpool_builder = device.createDescriptorPoolBuilder();
+        descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, swapchain.getNumberOfImages());
+        return descpool_builder.create(swapchain.getNumberOfImages());
+    }();
+    GhulbusVulkan::DescriptorSets ubo_descriptor_sets =
+        ubo_descriptor_pool.allocateDescriptorSets(swapchain.getNumberOfImages(), ubo_layout);
+
 
     // pipeline
     GhulbusVulkan::PipelineLayout pipeline_layout = [&device, &ubo_layout]() {

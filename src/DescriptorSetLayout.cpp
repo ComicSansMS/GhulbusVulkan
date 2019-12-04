@@ -21,7 +21,7 @@ DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& rhs)
     rhs.m_device = nullptr;
 }
 
-VkDescriptorSetLayout DescriptorSetLayout::getVkDescriptorSetLayout()
+VkDescriptorSetLayout DescriptorSetLayout::getVkDescriptorSetLayout() const
 {
     return m_descriptorSetLayout;
 }

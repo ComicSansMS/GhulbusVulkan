@@ -14,7 +14,7 @@ DeviceBuilder::DeviceBuilder(VkPhysicalDevice physical_device)
 {
 }
 
-void DeviceBuilder::addQueue(uint32_t queue_family, uint32_t n_queues)
+void DeviceBuilder::addQueues(uint32_t queue_family, uint32_t n_queues_in_family)
 {
     queue_create_infos.emplace_back();
     VkDeviceQueueCreateInfo& queue_ci = queue_create_infos.back();
@@ -22,8 +22,8 @@ void DeviceBuilder::addQueue(uint32_t queue_family, uint32_t n_queues)
     queue_ci.pNext = nullptr;
     queue_ci.flags = 0;    // reserved;
     queue_ci.queueFamilyIndex = queue_family;
-    queue_ci.queueCount = n_queues;
-    queue_create_priorities.emplace_back(n_queues, 1.0f);
+    queue_ci.queueCount = n_queues_in_family;
+    queue_create_priorities.emplace_back(n_queues_in_family, 1.0f);
     queue_ci.pQueuePriorities = queue_create_priorities.back().data();
 }
 

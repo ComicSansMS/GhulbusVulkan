@@ -89,8 +89,12 @@ set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/CommandBuffer.cpp
     ${GB_VK_SOURCE_DIR}/CommandBuffers.cpp
     ${GB_VK_SOURCE_DIR}/CommandPool.cpp
+    ${GB_VK_SOURCE_DIR}/DescriptorPool.cpp
+    ${GB_VK_SOURCE_DIR}/DescriptorPoolBuilder.cpp
+    ${GB_VK_SOURCE_DIR}/DescriptorSet.cpp
     ${GB_VK_SOURCE_DIR}/DescriptorSetLayout.cpp
     ${GB_VK_SOURCE_DIR}/DescriptorSetLayoutBuilder.cpp
+    ${GB_VK_SOURCE_DIR}/DescriptorSets.cpp
     ${GB_VK_SOURCE_DIR}/Device.cpp
     ${GB_VK_SOURCE_DIR}/DeviceBuilder.cpp
     ${GB_VK_SOURCE_DIR}/DeviceMemory.cpp
@@ -120,8 +124,12 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/CommandBuffers.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/CommandPool.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/config.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/DescriptorPool.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/DescriptorPoolBuilder.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/DescriptorSet.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/DescriptorSetLayout.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/DescriptorSetLayoutBuilder.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/DescriptorSets.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Device.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceBuilder.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceMemory.hpp

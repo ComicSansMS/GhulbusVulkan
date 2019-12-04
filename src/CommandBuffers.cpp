@@ -28,7 +28,9 @@ CommandBuffers::~CommandBuffers()
 
 CommandBuffers::CommandBuffers(CommandBuffers&& rhs)
     :m_commandBuffers(std::move(rhs.m_commandBuffers)), m_device(rhs.m_device), m_commandPool(rhs.m_commandPool)
-{}
+{
+    rhs.m_commandBuffers.clear();
+}
 
 uint32_t CommandBuffers::size() const
 {
