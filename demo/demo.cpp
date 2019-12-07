@@ -43,7 +43,6 @@
 
 #include <GLFW/glfw3.h>
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <external/stb_image.h>
 
 #include <algorithm>
@@ -288,7 +287,7 @@ int main()
                             VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
     {
         struct ImageDim { int x,y,comp; } dim;
-        auto img_data = stbi_load("image.jpg", &dim.x, &dim.y, &dim.comp, 0);
+        auto img_data = stbi_load("textures/statue.jpg", &dim.x, &dim.y, &dim.comp, 0);
         auto mapped = source_image_memory.map();
         for(int i=0; i<mem_reqs.size/4; ++i) {
             int ix = i % WINDOW_WIDTH;
@@ -328,6 +327,7 @@ int main()
 
     swapchain.present(queue.getVkQueue(), std::move(swapchain_image));
     queue.waitIdle();
+    //std::this_thread::sleep_for(std::chrono::seconds(5));
 
     std::vector<Vertex> vertex_data = generateVertexData();
     std::vector<uint16_t> index_data = generateIndexData();

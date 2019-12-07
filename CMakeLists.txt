@@ -297,7 +297,7 @@ if(GB_BUILD_TESTS)
     endif()
 endif()
 
-add_executable(demo ${PROJECT_SOURCE_DIR}/demo/demo.cpp)
+add_executable(demo ${PROJECT_SOURCE_DIR}/demo/demo.cpp ${PROJECT_SOURCE_DIR}/demo/external/stb_image_impl.cpp)
 target_link_libraries(demo PUBLIC gbVk glfw Ghulbus::gbMath)
 target_include_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/demo)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT demo)
@@ -308,6 +308,8 @@ add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_hardcoded.spv ${PROJECT_SOURC
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_direct.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_direct_vertices.vert)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_mvp.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_ubo_mvp.vert COMPILE_OPTIONS -O)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/frag_hardcoded.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_hardcoded.frag)
+
+file(COPY ${PROJECT_SOURCE_DIR}/demo/textures/statue.jpg DESTINATION ${PROJECT_BINARY_DIR}/textures)
 
 ###############################################################################
 ## Doxygen gbVk
