@@ -80,12 +80,12 @@ inline std::vector<uint16_t> generateIndexData() {
 enum class DrawMode {
     Hardcoded,
     Direct,
-    Indexed
+    UniformTransform
 };
 
 int main()
 {
-    DrawMode const draw_mode = DrawMode::Direct;
+    DrawMode const draw_mode = DrawMode::UniformTransform;
 
     Ghulbus::Log::initializeLogging();
     auto const gblog_init_guard = Ghulbus::finally([]() { Ghulbus::Log::shutdownLogging(); });
@@ -483,6 +483,14 @@ int main()
         ubo_data.projection = GhulbusMath::make_perspective_projection_fov(
             (GhulbusMath::traits::Pi<float>::value / 4.f),
             static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT), 0.1f, 10.f).m;
+
+        // correct for vulkan screen coordinate origin being upper left, instead of lower left
+        ubo_data.projection.m22 *= -1.f;
+
+        // correct memory layout to column-major
+        ubo_data.model = GhulbusMath::transpose(ubo_data.model);
+        ubo_data.view = GhulbusMath::transpose(ubo_data.view);
+        ubo_data.projection = GhulbusMath::transpose(ubo_data.projection);
         {
             auto mapped_mem = ubo_memories[index].map();
             std::memcpy(mapped_mem, &ubo_data, sizeof(UBOMVP));
@@ -502,12 +510,17 @@ int main()
 
     auto vert_direct_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_direct.spv");
     auto vert_direct_shader_module = device.createShaderModule(vert_direct_spirv_code);
+
+    auto vert_mvp_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_mvp.spv");
+    auto vert_mvp_shader_module = device.createShaderModule(vert_mvp_spirv_code);
     VkPipelineShaderStageCreateInfo vert_shader_stage_ci;
     vert_shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vert_shader_stage_ci.pNext = nullptr;
     vert_shader_stage_ci.flags = 0;
     vert_shader_stage_ci.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    if constexpr (draw_mode == DrawMode::Hardcoded) {
+    if constexpr (draw_mode == DrawMode::UniformTransform) {
+        vert_shader_stage_ci.module = vert_mvp_shader_module.getVkShaderModule();
+    } else if constexpr (draw_mode == DrawMode::Hardcoded) {
         vert_shader_stage_ci.module = vert_hardcoded_shader_module.getVkShaderModule();
     } else if constexpr (draw_mode == DrawMode::Direct) {
         vert_shader_stage_ci.module = vert_direct_shader_module.getVkShaderModule();
@@ -545,10 +558,31 @@ int main()
     GhulbusVulkan::DescriptorPool ubo_descriptor_pool = [&device, &swapchain]() {
         GhulbusVulkan::DescriptorPoolBuilder descpool_builder = device.createDescriptorPoolBuilder();
         descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, swapchain.getNumberOfImages());
-        return descpool_builder.create(swapchain.getNumberOfImages());
+        return descpool_builder.create(swapchain.getNumberOfImages(), 0,
+                                       GhulbusVulkan::DescriptorPoolBuilder::NoImplicitFreeDescriptorFlag{});
     }();
     GhulbusVulkan::DescriptorSets ubo_descriptor_sets =
         ubo_descriptor_pool.allocateDescriptorSets(swapchain.getNumberOfImages(), ubo_layout);
+    for (uint32_t i = 0; i < swapchain.getNumberOfImages(); ++i) {
+        VkDescriptorBufferInfo buffer_info;
+        buffer_info.buffer = ubo_buffers[i].getVkBuffer();
+        buffer_info.offset = 0;
+        buffer_info.range = sizeof(UBOMVP);
+
+        VkWriteDescriptorSet write_desc_set;
+        write_desc_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write_desc_set.pNext = nullptr;
+        write_desc_set.dstSet = ubo_descriptor_sets.getDescriptorSet(i).getVkDescriptorSet();
+        write_desc_set.dstBinding = 0;
+        write_desc_set.dstArrayElement = 0;
+        write_desc_set.descriptorCount = 1;
+        write_desc_set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        write_desc_set.pImageInfo = nullptr;
+        write_desc_set.pBufferInfo = &buffer_info;
+        write_desc_set.pTexelBufferView = nullptr;
+
+        vkUpdateDescriptorSets(device.getVkDevice(), 1, &write_desc_set, 0, nullptr);
+    }
 
 
     // pipeline
@@ -601,9 +635,15 @@ int main()
         vkCmdBindPipeline(local_command_buffer.getVkCommandBuffer(),
                           VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getVkPipeline());
 
+        if constexpr (draw_mode == DrawMode::UniformTransform) {
+            VkDescriptorSet desc_set_i = ubo_descriptor_sets.getDescriptorSet(i).getVkDescriptorSet();
+            vkCmdBindDescriptorSets(local_command_buffer.getVkCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                pipeline_layout.getVkPipelineLayout(), 0, 1, &desc_set_i, 0, nullptr);
+        }
+
         if constexpr (draw_mode == DrawMode::Hardcoded) {
             vkCmdDraw(local_command_buffer.getVkCommandBuffer(), 3, 1, 0, 0);
-        } else if constexpr (draw_mode == DrawMode::Direct) {
+        } else if constexpr ((draw_mode == DrawMode::Direct) || (draw_mode == DrawMode::UniformTransform)) {
             VkBuffer vertexBuffers[] = { vertex_buffer.getVkBuffer() };
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(local_command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
