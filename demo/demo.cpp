@@ -35,6 +35,7 @@
 #include <gbVk/Queue.hpp>
 #include <gbVk/RenderPass.hpp>
 #include <gbVk/RenderPassBuilder.hpp>
+#include <gbVk/Sampler.hpp>
 #include <gbVk/Semaphore.hpp>
 #include <gbVk/ShaderModule.hpp>
 #include <gbVk/Spirv.hpp>
@@ -527,6 +528,9 @@ int main()
     queue.submit(command_buffer);
     queue.waitIdle();
     command_buffer.reset();
+
+    GhulbusVulkan::ImageView texture_image_view = texture_image.createImageView();
+    GhulbusVulkan::Sampler texture_sampler = device.createSampler();
 
 
     auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple_compute.spv");

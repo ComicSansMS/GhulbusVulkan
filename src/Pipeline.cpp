@@ -15,7 +15,7 @@ Pipeline::Pipeline(VkDevice logical_device, VkPipeline pipeline)
 Pipeline::Pipeline(Pipeline&& rhs)
     :m_pipeline(rhs.m_pipeline), m_device(rhs.m_device)
 {
-
+    rhs.m_pipeline = nullptr;
 }
 
 Pipeline::~Pipeline()

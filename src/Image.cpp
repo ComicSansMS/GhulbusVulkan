@@ -4,6 +4,7 @@
 #include <gbVk/CommandBuffer.hpp>
 #include <gbVk/DeviceMemory.hpp>
 #include <gbVk/Exceptions.hpp>
+#include <gbVk/ImageView.hpp>
 
 #include <gbBase/Assert.hpp>
 
@@ -117,6 +118,30 @@ uint32_t Image::getDepth() const
 VkFormat Image::getFormat() const
 {
     return m_format;
+}
+
+ImageView Image::createImageView()
+{
+    VkImageViewCreateInfo image_view_ci;
+    image_view_ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    image_view_ci.pNext = nullptr;
+    image_view_ci.flags = 0;
+    image_view_ci.image = m_image;
+    image_view_ci.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    image_view_ci.format = m_format;
+    image_view_ci.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_ci.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_ci.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_ci.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_ci.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    image_view_ci.subresourceRange.baseMipLevel = 0;
+    image_view_ci.subresourceRange.levelCount = 1;
+    image_view_ci.subresourceRange.baseArrayLayer = 0;
+    image_view_ci.subresourceRange.layerCount = 1;
+    VkImageView image_view;
+    VkResult res = vkCreateImageView(m_device, &image_view_ci, nullptr, &image_view);
+    checkVulkanError(res, "Error in vkCreateImageView.");
+    return ImageView(m_device, image_view);
 }
 
 void Image::copy(CommandBuffer& command_buffer, Buffer& source_buffer, Image& destination_image)

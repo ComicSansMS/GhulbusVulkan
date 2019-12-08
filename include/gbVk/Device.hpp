@@ -28,6 +28,7 @@ class PipelineLayoutBuilder;
 class Queue;
 class RenderPass;
 class RenderPassBuilder;
+class Sampler;
 class Semaphore;
 class ShaderModule;
 class Swapchain;
@@ -71,6 +72,15 @@ public:
     Image createImage2D(uint32_t width, uint32_t height, VkFormat format);
     Image createImage(VkExtent3D const& extent, VkFormat format, uint32_t mip_levels, uint32_t array_layers,
                       VkImageTiling tiling, VkImageUsageFlags usage_flags);
+
+    Sampler createSampler();
+
+    Sampler createSampler(VkFilter min_mag_filter, VkSamplerAddressMode address_mode, float max_anisotropy);
+
+    Sampler createSampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerMipmapMode mipmap_mode,
+                          VkSamplerAddressMode address_mode_u, VkSamplerAddressMode address_mode_v,
+                          VkSamplerAddressMode address_mode_w, float mip_lod_bias, float max_anisotropy,
+                          float min_lod, float max_lod, VkBorderColor border_color);
 
     DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags);
 

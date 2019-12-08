@@ -72,7 +72,7 @@ public:
 
     uint32_t getHeight() const;
 
-    std::vector<ImageView> getImageViews();
+    std::vector<ImageView> createImageViews();
 
     std::vector<VkImage> getVkImages();
 

@@ -16,6 +16,7 @@
 #include <gbVk/Queue.hpp>
 #include <gbVk/RenderPass.hpp>
 #include <gbVk/RenderPassBuilder.hpp>
+#include <gbVk/Sampler.hpp>
 #include <gbVk/Semaphore.hpp>
 #include <gbVk/ShaderModule.hpp>
 #include <gbVk/Spirv.hpp>
@@ -217,6 +218,48 @@ Image Device::createImage(VkExtent3D const& extent, VkFormat format, uint32_t mi
     return Image(m_device, image, extent, format);
 }
 
+Sampler Device::createSampler()
+{
+    return createSampler(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, 16.f);
+}
+
+inline Sampler Device::createSampler(VkFilter min_mag_filter, VkSamplerAddressMode address_mode, float max_anisotropy)
+{
+    return createSampler(min_mag_filter, min_mag_filter, VK_SAMPLER_MIPMAP_MODE_LINEAR,
+                         address_mode, address_mode, address_mode,
+                         0.f, max_anisotropy, 0.f, 0.f, VK_BORDER_COLOR_INT_OPAQUE_BLACK);
+}
+
+inline Sampler Device::createSampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerMipmapMode mipmap_mode,
+                                     VkSamplerAddressMode address_mode_u, VkSamplerAddressMode address_mode_v,
+                                     VkSamplerAddressMode address_mode_w, float mip_lod_bias, float max_anisotropy,
+                                     float min_lod, float max_lod, VkBorderColor border_color)
+{
+    VkSamplerCreateInfo create_info;
+    create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    create_info.pNext = nullptr;
+    create_info.flags = 0;
+    create_info.magFilter = min_filter;
+    create_info.minFilter = mag_filter;
+    create_info.mipmapMode = mipmap_mode;
+    create_info.addressModeU = address_mode_u;
+    create_info.addressModeV = address_mode_v;
+    create_info.addressModeW = address_mode_w;
+    create_info.mipLodBias = mip_lod_bias;
+    create_info.anisotropyEnable = (max_anisotropy > 0.f) ? VK_TRUE : VK_FALSE;
+    create_info.maxAnisotropy = max_anisotropy;
+    create_info.compareEnable = VK_FALSE;
+    create_info.compareOp = VK_COMPARE_OP_ALWAYS;
+    create_info.minLod = min_lod;
+    create_info.maxLod = max_lod;
+    create_info.borderColor = border_color;
+    create_info.unnormalizedCoordinates = VK_FALSE;
+    VkSampler sampler;
+    VkResult res = vkCreateSampler(m_device, &create_info, nullptr, &sampler);
+    checkVulkanError(res, "Error in vkCreateSampler.");
+    return Sampler(m_device, sampler);
+}
+
 DeviceMemory Device::allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags)
 {
     auto const memory_type_index = PhysicalDevice(m_physicalDevice).findMemoryTypeIndex(flags);
@@ -289,7 +332,7 @@ ShaderModule Device::createShaderModule(Spirv::Code const& code)
 
 std::vector<Framebuffer> Device::createFramebuffers(Swapchain& swapchain, RenderPass& render_pass)
 {
-    std::vector<GhulbusVulkan::ImageView> image_views = swapchain.getImageViews();
+    std::vector<GhulbusVulkan::ImageView> image_views = swapchain.createImageViews();
     std::vector<Framebuffer> framebuffers;
     framebuffers.reserve(image_views.size());
     for (std::size_t i = 0; i < image_views.size(); ++i) {

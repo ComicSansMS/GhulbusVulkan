@@ -53,6 +53,7 @@ Device DeviceBuilder::create()
     VkPhysicalDeviceFeatures rf = requested_features.value_or(VkPhysicalDeviceFeatures{});
                                                                     // @todo: select requested features, compare
                                                                     //        against vkGetPhysicalDeviceFeatures()
+    rf.samplerAnisotropy = VK_TRUE;             // @todo: anisotropy is currently always requested
     dev_create_info.pEnabledFeatures = &rf;     // this is used as an in/out param by vkCreateDevice
 
     VkDevice device;

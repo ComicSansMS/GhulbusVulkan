@@ -107,31 +107,12 @@ uint32_t Swapchain::getHeight() const
     return m_images.front().getHeight();
 }
 
-std::vector<ImageView> Swapchain::getImageViews()
+std::vector<ImageView> Swapchain::createImageViews()
 {
     std::vector<ImageView> ret;
     ret.reserve(m_images.size());
     for(std::size_t i = 0; i < m_images.size(); ++i) {
-        VkImageViewCreateInfo image_view_ci;
-        image_view_ci.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        image_view_ci.pNext = nullptr;
-        image_view_ci.flags = 0;
-        image_view_ci.image = m_images[i].getVkImage();
-        image_view_ci.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        image_view_ci.format = m_images[i].getFormat();
-        image_view_ci.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-        image_view_ci.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-        image_view_ci.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        image_view_ci.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-        image_view_ci.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        image_view_ci.subresourceRange.baseMipLevel = 0;
-        image_view_ci.subresourceRange.levelCount = 1;
-        image_view_ci.subresourceRange.baseArrayLayer = 0;
-        image_view_ci.subresourceRange.layerCount = 1;
-        VkImageView image_view;
-        VkResult res = vkCreateImageView(m_device, &image_view_ci, nullptr, &image_view);
-        checkVulkanError(res, "Error in vkCreateImageView.");
-        ret.emplace_back(m_device, image_view);
+        ret.emplace_back(m_images[i].createImageView());
     }
     return ret;
 }

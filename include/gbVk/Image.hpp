@@ -17,6 +17,7 @@ namespace GHULBUS_VULKAN_NAMESPACE
 class Buffer;
 class CommandBuffer;
 class DeviceMemory;
+class ImageView;
 
 class Image {
 public:
@@ -60,6 +61,8 @@ public:
     uint32_t getHeight() const;
     uint32_t getDepth() const;
     VkFormat getFormat() const;
+
+    ImageView createImageView();
 
     static void copy(CommandBuffer& command_buffer, Buffer& source_buffer, Image& destination_image);
     static void copy(CommandBuffer& command_buffer, Image& source_image, Image& destination_image);
