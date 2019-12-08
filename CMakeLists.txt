@@ -23,6 +23,38 @@ if(GB_GENERATE_COVERAGE_INFO)
     endif()
 endif()
 
+option(GB_AUTO_BUILD_DEPENDENCIES "If set, dependencies will be built automatically as part of the initial configuration" OFF)
+if(GB_AUTO_BUILD_DEPENDENCIES)
+    find_package(Git REQUIRED)
+    if(NOT EXISTS ${PROJECT_BINARY_DIR}/dependencies/build_dependencies.cmake)
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} clone https://github.com/ComicSansMS/GhulbusVulkanDependencies.git
+                    ${PROJECT_BINARY_DIR}/dependencies
+            RESULT_VARIABLE result
+        )
+        if(NOT result EQUAL 0)
+            message(FATAL_ERROR "Error cloning dependencies repo.")
+        endif()
+        message("Building dependencies (this may take a while)...")
+        list(APPEND options -DGENERATOR=${CMAKE_GENERATOR})
+        if(CMAKE_GENERATOR_TOOLSET)
+            list(APPEND options )
+        endif()
+        if(CMAKE_GENERATOR_PLATFORM)
+        endif()
+        execute_process(COMMAND ${CMAKE_COMMAND}
+            -DGENERATOR=${CMAKE_GENERATOR} -DPLATFORM=${CMAKE_GENERATOR_PLATFORM}
+            -DTOOLSET=${CMAKE_GENERATOR_TOOLSET} -P build_dependencies.cmake
+            WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/dependencies
+            OUTPUT_QUIET
+            RESULT_VARIABLE result
+        )
+        if(NOT result EQUAL 0)
+            message(FATAL_ERROR "Error building dependencies.")
+        endif()
+    endif()
+endif()
+
 if(MSVC)
     option(GB_PARALLEL_BUILD "If set, uses multiple build processes in parallel." ON)
     if(GB_PARALLEL_BUILD)
@@ -40,9 +72,6 @@ set(GB_VK_VERSION_PATCH 0)
 set(GB_VK_VERSION "${GB_VK_VERSION_MAJOR}.${GB_VK_VERSION_MINOR}.${GB_VK_VERSION_PATCH}")
 
 option(BUILD_SHARED_LIBS "If checked, generate dynamic instead of static libraries." OFF)
-
-#set(Boost_USE_STATIC_LIBS ON)
-#find_package(Boost REQUIRED)
 
 find_package(Vulkan REQUIRED)
 find_program(Vulkan_GLSLC NAMES glslc HINTS ${Vulkan_INCLUDE_DIR}/../bin ENV GLSLC_EXECUTABLE)
@@ -64,7 +93,7 @@ function(add_shader target_name output_file source_file)
     target_sources(${target_name} PRIVATE ${output_file})
 endfunction()
 
-find_package(glfw3 REQUIRED)
+find_package(glfw3 REQUIRED HINTS ${PROJECT_BINARY_DIR}/dependencies/glfw3/install)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
