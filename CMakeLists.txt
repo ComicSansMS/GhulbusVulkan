@@ -309,7 +309,9 @@ add_shader(demo ${PROJECT_BINARY_DIR}/shaders/simple_compute.spv ${PROJECT_SOURC
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_hardcoded.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_hardcoded.vert)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_direct.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_direct_vertices.vert)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_mvp.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_ubo_mvp.vert COMPILE_OPTIONS -O)
+add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_textured.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_textured.vert COMPILE_OPTIONS -O)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/frag_hardcoded.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_hardcoded.frag)
+add_shader(demo ${PROJECT_BINARY_DIR}/shaders/frag_textured.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_textured.frag)
 
 file(COPY ${PROJECT_SOURCE_DIR}/demo/textures/statue.jpg DESTINATION ${PROJECT_BINARY_DIR}/textures)
 

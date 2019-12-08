@@ -29,6 +29,8 @@ public:
 
     void addUniformBuffer(uint32_t binding, VkShaderStageFlags flags);
 
+    void addSampler(uint32_t binding, VkShaderStageFlags flags);
+
     DescriptorSetLayout create();
 };
 }

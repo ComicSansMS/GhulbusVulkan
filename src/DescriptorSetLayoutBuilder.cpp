@@ -23,6 +23,17 @@ void DescriptorSetLayoutBuilder::addUniformBuffer(uint32_t binding, VkShaderStag
     ubo_layout_binding.pImmutableSamplers = nullptr;
 }
 
+void DescriptorSetLayoutBuilder::addSampler(uint32_t binding, VkShaderStageFlags flags)
+{
+    bindings.emplace_back();
+    VkDescriptorSetLayoutBinding& sampler_layout_binding = bindings.back();
+    sampler_layout_binding.binding = binding;
+    sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    sampler_layout_binding.descriptorCount = 1;
+    sampler_layout_binding.stageFlags = flags;
+    sampler_layout_binding.pImmutableSamplers = nullptr;
+}
+
 DescriptorSetLayout DescriptorSetLayoutBuilder::create()
 {
     VkDescriptorSetLayoutCreateInfo create_info;

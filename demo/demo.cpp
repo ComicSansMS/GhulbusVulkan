@@ -57,6 +57,7 @@ struct DemoState {};
 struct Vertex {
     GhulbusMath::Vector2f position;
     GhulbusMath::Vector3f color;
+    GhulbusMath::Vector2f texCoords;
 };
 
 struct UBOMVP {
@@ -67,10 +68,10 @@ struct UBOMVP {
 
 inline std::vector<Vertex> generateVertexData()
 {
-    return { {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-             {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-             {{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
-             {{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}} };
+    return { {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+             {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+             {{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+             {{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}} };
 }
 
 inline std::vector<uint16_t> generateIndexData() {
@@ -80,12 +81,13 @@ inline std::vector<uint16_t> generateIndexData() {
 enum class DrawMode {
     Hardcoded,
     Direct,
-    UniformTransform
+    UniformTransform,
+    Textured
 };
 
 int main()
 {
-    DrawMode const draw_mode = DrawMode::UniformTransform;
+    DrawMode const draw_mode = DrawMode::Textured;
 
     Ghulbus::Log::initializeLogging();
     auto const gblog_init_guard = Ghulbus::finally([]() { Ghulbus::Log::shutdownLogging(); });
@@ -216,6 +218,7 @@ int main()
     }
 
     auto swapchain = device.createSwapChain(surface, queue_family);
+    uint32_t const swapchain_n_images = swapchain.getNumberOfImages();
 
     auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
     auto command_buffers = command_pool.allocateCommandBuffers(1);
@@ -338,7 +341,7 @@ int main()
     vertex_binding.stride = sizeof(Vertex);
     vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    VkVertexInputAttributeDescription vertex_attributes[2];
+    std::array<VkVertexInputAttributeDescription, 3> vertex_attributes;
     vertex_attributes[0].location = 0;
     vertex_attributes[0].binding = vertex_binding.binding;
     vertex_attributes[0].format = VK_FORMAT_R32G32_SFLOAT;
@@ -348,6 +351,11 @@ int main()
     vertex_attributes[1].binding = vertex_binding.binding;
     vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
     vertex_attributes[1].offset = offsetof(Vertex, color);
+
+    vertex_attributes[2].location = 2;
+    vertex_attributes[2].binding = vertex_binding.binding;
+    vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
+    vertex_attributes[2].offset = offsetof(Vertex, texCoords);
 
     GhulbusVulkan::Buffer staging_buffer = device.createBuffer(vertex_data.size() * sizeof(Vertex),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
@@ -456,9 +464,9 @@ int main()
     // ubo
     std::vector<GhulbusVulkan::Buffer> ubo_buffers;
     std::vector<GhulbusVulkan::DeviceMemory> ubo_memories;
-    ubo_buffers.reserve(swapchain.getNumberOfImages());
-    ubo_memories.reserve(swapchain.getNumberOfImages());
-    for (uint32_t i = 0; i < swapchain.getNumberOfImages(); ++i)
+    ubo_buffers.reserve(swapchain_n_images);
+    ubo_memories.reserve(swapchain_n_images);
+    for (uint32_t i = 0; i < swapchain_n_images; ++i)
     {
         ubo_buffers.push_back(device.createBuffer(sizeof(UBOMVP), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
         auto const ubo_buffer_mem_reqs = ubo_buffers.back().getMemoryRequirements();
@@ -548,12 +556,18 @@ int main()
 
     auto vert_mvp_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_mvp.spv");
     auto vert_mvp_shader_module = device.createShaderModule(vert_mvp_spirv_code);
+
+    auto vert_textured_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_textured.spv");
+    auto vert_textured_shader_module = device.createShaderModule(vert_textured_spirv_code);
+
     VkPipelineShaderStageCreateInfo vert_shader_stage_ci;
     vert_shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vert_shader_stage_ci.pNext = nullptr;
     vert_shader_stage_ci.flags = 0;
     vert_shader_stage_ci.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    if constexpr (draw_mode == DrawMode::UniformTransform) {
+    if constexpr (draw_mode == DrawMode::Textured) {
+        vert_shader_stage_ci.module = vert_textured_shader_module.getVkShaderModule();
+    } else if constexpr (draw_mode == DrawMode::UniformTransform) {
         vert_shader_stage_ci.module = vert_mvp_shader_module.getVkShaderModule();
     } else if constexpr (draw_mode == DrawMode::Hardcoded) {
         vert_shader_stage_ci.module = vert_hardcoded_shader_module.getVkShaderModule();
@@ -565,12 +579,20 @@ int main()
 
     auto frag_spirv_code = GhulbusVulkan::Spirv::load("shaders/frag_hardcoded.spv");
     auto frag_shader_module = device.createShaderModule(frag_spirv_code);
+
+    auto frag_textured_spirv_code = GhulbusVulkan::Spirv::load("shaders/frag_textured.spv");
+    auto frag_textured_shader_module = device.createShaderModule(frag_textured_spirv_code);
+
     VkPipelineShaderStageCreateInfo frag_shader_stage_ci;
     frag_shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     frag_shader_stage_ci.pNext = nullptr;
     frag_shader_stage_ci.flags = 0;
     frag_shader_stage_ci.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    frag_shader_stage_ci.module = frag_shader_module.getVkShaderModule();
+    if constexpr (draw_mode == DrawMode::Textured) {
+        frag_shader_stage_ci.module = frag_textured_shader_module.getVkShaderModule();
+    } else {
+        frag_shader_stage_ci.module = frag_shader_module.getVkShaderModule();
+    }
     frag_shader_stage_ci.pName = "main";
     frag_shader_stage_ci.pSpecializationInfo = nullptr;
 
@@ -588,35 +610,56 @@ int main()
     GhulbusVulkan::DescriptorSetLayout ubo_layout = [&device]() {
         GhulbusVulkan::DescriptorSetLayoutBuilder layout_builder = device.createDescriptorSetLayoutBuilder();
         layout_builder.addUniformBuffer(0, VK_SHADER_STAGE_VERTEX_BIT);
+        layout_builder.addSampler(1, VK_SHADER_STAGE_FRAGMENT_BIT);
         return layout_builder.create();
     }();
-    GhulbusVulkan::DescriptorPool ubo_descriptor_pool = [&device, &swapchain]() {
+    GhulbusVulkan::DescriptorPool ubo_descriptor_pool = [&device, swapchain_n_images]() {
         GhulbusVulkan::DescriptorPoolBuilder descpool_builder = device.createDescriptorPoolBuilder();
-        descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, swapchain.getNumberOfImages());
-        return descpool_builder.create(swapchain.getNumberOfImages(), 0,
+        descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, swapchain_n_images);
+        descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, swapchain_n_images);
+        return descpool_builder.create(swapchain_n_images, 0,
                                        GhulbusVulkan::DescriptorPoolBuilder::NoImplicitFreeDescriptorFlag{});
     }();
     GhulbusVulkan::DescriptorSets ubo_descriptor_sets =
-        ubo_descriptor_pool.allocateDescriptorSets(swapchain.getNumberOfImages(), ubo_layout);
-    for (uint32_t i = 0; i < swapchain.getNumberOfImages(); ++i) {
+        ubo_descriptor_pool.allocateDescriptorSets(swapchain_n_images, ubo_layout);
+    for (uint32_t i = 0; i < swapchain_n_images; ++i) {
         VkDescriptorBufferInfo buffer_info;
         buffer_info.buffer = ubo_buffers[i].getVkBuffer();
         buffer_info.offset = 0;
         buffer_info.range = sizeof(UBOMVP);
 
-        VkWriteDescriptorSet write_desc_set;
-        write_desc_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write_desc_set.pNext = nullptr;
-        write_desc_set.dstSet = ubo_descriptor_sets.getDescriptorSet(i).getVkDescriptorSet();
-        write_desc_set.dstBinding = 0;
-        write_desc_set.dstArrayElement = 0;
-        write_desc_set.descriptorCount = 1;
-        write_desc_set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        write_desc_set.pImageInfo = nullptr;
-        write_desc_set.pBufferInfo = &buffer_info;
-        write_desc_set.pTexelBufferView = nullptr;
+        std::array<VkWriteDescriptorSet, 2> write_desc_set;
+        VkWriteDescriptorSet& ubo_write_desc_set = write_desc_set[0];
+        ubo_write_desc_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        ubo_write_desc_set.pNext = nullptr;
+        ubo_write_desc_set.dstSet = ubo_descriptor_sets.getDescriptorSet(i).getVkDescriptorSet();
+        ubo_write_desc_set.dstBinding = 0;
+        ubo_write_desc_set.dstArrayElement = 0;
+        ubo_write_desc_set.descriptorCount = 1;
+        ubo_write_desc_set.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        ubo_write_desc_set.pImageInfo = nullptr;
+        ubo_write_desc_set.pBufferInfo = &buffer_info;
+        ubo_write_desc_set.pTexelBufferView = nullptr;
 
-        vkUpdateDescriptorSets(device.getVkDevice(), 1, &write_desc_set, 0, nullptr);
+        VkDescriptorImageInfo image_info;
+        image_info.sampler = texture_sampler.getVkSampler();
+        image_info.imageView = texture_image_view.getVkImageView();
+        image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+        VkWriteDescriptorSet& texture_write_desc_set = write_desc_set[1];
+        texture_write_desc_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        texture_write_desc_set.pNext = nullptr;
+        texture_write_desc_set.dstSet = ubo_descriptor_sets.getDescriptorSet(i).getVkDescriptorSet();
+        texture_write_desc_set.dstBinding = 1;
+        texture_write_desc_set.dstArrayElement = 0;
+        texture_write_desc_set.descriptorCount = 1;
+        texture_write_desc_set.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        texture_write_desc_set.pImageInfo = &image_info;
+        texture_write_desc_set.pBufferInfo = nullptr;
+        texture_write_desc_set.pTexelBufferView = nullptr;
+
+        vkUpdateDescriptorSets(device.getVkDevice(), static_cast<uint32_t>(write_desc_set.size()),
+                               write_desc_set.data(), 0, nullptr);
     }
 
 
@@ -629,10 +672,13 @@ int main()
 
     GhulbusVulkan::Pipeline pipeline = [&device, &swapchain_image, &pipeline_layout,
                                         &shader_stage_cis, &render_pass,
-                                        &vertex_binding, &vertex_attributes]() {
+                                        &vertex_binding, &vertex_attributes, draw_mode]() {
         auto builder = device.createGraphicsPipelineBuilder(swapchain_image->getWidth(),
                                                             swapchain_image->getHeight());
-        builder.addVertexBindings(&vertex_binding, 1, vertex_attributes, 2);
+        if (draw_mode != DrawMode::Hardcoded) {
+            builder.addVertexBindings(&vertex_binding, 1, vertex_attributes.data(),
+                                      static_cast<uint32_t>(vertex_attributes.size()));
+        }
         return builder.create(pipeline_layout, shader_stage_cis.data(),
                               static_cast<std::uint32_t>(shader_stage_cis.size()),
                               render_pass.getVkRenderPass());
@@ -642,7 +688,7 @@ int main()
     std::vector<GhulbusVulkan::Framebuffer> framebuffers = device.createFramebuffers(swapchain, render_pass);
 
     GhulbusVulkan::CommandBuffers triangle_draw_command_buffers =
-        command_pool.allocateCommandBuffers(swapchain.getNumberOfImages());
+        command_pool.allocateCommandBuffers(swapchain_n_images);
 
     for(uint32_t i = 0; i < triangle_draw_command_buffers.size(); ++i) {
         auto local_command_buffer = triangle_draw_command_buffers.getCommandBuffer(i);
@@ -670,15 +716,15 @@ int main()
         vkCmdBindPipeline(local_command_buffer.getVkCommandBuffer(),
                           VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getVkPipeline());
 
-        if constexpr (draw_mode == DrawMode::UniformTransform) {
+        if constexpr ((draw_mode == DrawMode::UniformTransform) || (draw_mode == DrawMode::Textured)) {
             VkDescriptorSet desc_set_i = ubo_descriptor_sets.getDescriptorSet(i).getVkDescriptorSet();
             vkCmdBindDescriptorSets(local_command_buffer.getVkCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-                pipeline_layout.getVkPipelineLayout(), 0, 1, &desc_set_i, 0, nullptr);
+                                    pipeline_layout.getVkPipelineLayout(), 0, 1, &desc_set_i, 0, nullptr);
         }
 
         if constexpr (draw_mode == DrawMode::Hardcoded) {
             vkCmdDraw(local_command_buffer.getVkCommandBuffer(), 3, 1, 0, 0);
-        } else if constexpr ((draw_mode == DrawMode::Direct) || (draw_mode == DrawMode::UniformTransform)) {
+        } else {
             VkBuffer vertexBuffers[] = { vertex_buffer.getVkBuffer() };
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(local_command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
