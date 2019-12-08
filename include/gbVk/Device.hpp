@@ -67,15 +67,14 @@ public:
 
     Buffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode);
 
-    Image createImage(uint32_t width, uint32_t height);
-    Image createImage(VkExtent3D const& extent, VkFormat format);
+    Image createImage2D(uint32_t width, uint32_t height);
+    Image createImage2D(uint32_t width, uint32_t height, VkFormat format);
     Image createImage(VkExtent3D const& extent, VkFormat format, uint32_t mip_levels, uint32_t array_layers,
                       VkImageTiling tiling, VkImageUsageFlags usage_flags);
 
     DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags);
 
-    DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags required_flags,
-                                VkMemoryRequirements const& requirements);
+    DeviceMemory allocateMemory(VkMemoryRequirements const& requirements, VkMemoryPropertyFlags required_flags);
 
     CommandPool createCommandPool(VkCommandPoolCreateFlags requested_flags, uint32_t queue_family_index);
 

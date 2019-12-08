@@ -15,8 +15,15 @@
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 class CommandBuffer {
+public:
+    enum class State {
+        Initial,
+        Recording,
+        Executable
+    };
 private:
     VkCommandBuffer m_commandBuffer;
+    State m_currentState;
 public:
     explicit CommandBuffer(VkCommandBuffer command_buffer);
     ~CommandBuffer();
@@ -27,7 +34,7 @@ public:
     CommandBuffer(CommandBuffer&& rhs);
     CommandBuffer& operator=(CommandBuffer&& rhs) = delete;
 
-    VkCommandBuffer getVkCommandBuffer();
+    State getCurrentState() const;
 
     void begin();
     void begin(VkCommandBufferUsageFlags flags);
@@ -35,6 +42,8 @@ public:
 
     void reset();
     void reset(VkCommandBufferResetFlags flags);
+
+    VkCommandBuffer getVkCommandBuffer();
 };
 }
 #endif

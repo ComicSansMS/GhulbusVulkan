@@ -1,5 +1,6 @@
 #include <gbVk/Image.hpp>
 
+#include <gbVk/Buffer.hpp>
 #include <gbVk/CommandBuffer.hpp>
 #include <gbVk/DeviceMemory.hpp>
 #include <gbVk/Exceptions.hpp>
@@ -50,6 +51,11 @@ VkMemoryRequirements Image::getMemoryRequirements()
     VkMemoryRequirements ret;
     vkGetImageMemoryRequirements(m_device, m_image, &ret);
     return ret;
+}
+
+void Image::bindMemory(DeviceMemory& memory)
+{
+    bindMemory(memory, 0);
 }
 
 void Image::bindMemory(DeviceMemory& memory, VkDeviceSize memory_offset)
@@ -113,8 +119,33 @@ VkFormat Image::getFormat() const
     return m_format;
 }
 
+void Image::copy(CommandBuffer& command_buffer, Buffer& source_buffer, Image& destination_image)
+{
+    GHULBUS_PRECONDITION(command_buffer.getCurrentState() == CommandBuffer::State::Recording);
+    GHULBUS_PRECONDITION(destination_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    VkBufferImageCopy region;
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+    region.imageOffset.x = 0;
+    region.imageOffset.y = 0;
+    region.imageOffset.z = 0;
+    region.imageExtent.width = destination_image.m_extent.width;
+    region.imageExtent.height = destination_image.m_extent.height;
+    region.imageExtent.depth = destination_image.m_extent.depth;
+
+    vkCmdCopyBufferToImage(command_buffer.getVkCommandBuffer(), source_buffer.getVkBuffer(),
+        destination_image.m_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+}
+
 void Image::copy(CommandBuffer& command_buffer, Image& source_image, Image& destination_image)
 {
+    GHULBUS_PRECONDITION(command_buffer.getCurrentState() == CommandBuffer::State::Recording);
     GHULBUS_PRECONDITION(source_image.m_format == destination_image.m_format);
     GHULBUS_PRECONDITION(source_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     GHULBUS_PRECONDITION(destination_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -143,6 +174,7 @@ void Image::copy(CommandBuffer& command_buffer, Image& source_image, Image& dest
 
 void Image::blit(CommandBuffer& command_buffer, Image& source_image, Image& destination_image)
 {
+    GHULBUS_PRECONDITION(command_buffer.getCurrentState() == CommandBuffer::State::Recording);
     GHULBUS_PRECONDITION(source_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     GHULBUS_PRECONDITION(destination_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 

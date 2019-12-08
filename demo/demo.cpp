@@ -92,13 +92,13 @@ int main()
     Ghulbus::Log::setLogHandler(logger);
     Ghulbus::Log::setLogLevel(Ghulbus::LogLevel::Trace);
 
-    if(!glfwInit())
+    if (!glfwInit())
     {
         return 1;
     }
     auto const glfw_init_guard = Ghulbus::finally([]() { glfwTerminate(); });
     glfwSetErrorCallback([](int ec, char const* msg) { GHULBUS_LOG(Error, "GLFW Error " << ec << " - " << msg); });
-    if(!glfwVulkanSupported()) {
+    if (!glfwVulkanSupported()) {
         GHULBUS_LOG(Error, "No Vulkan support in GLFW.");
         return 1;
     }
@@ -190,23 +190,23 @@ int main()
             GHULBUS_UNUSED_VARIABLE(scancode);
             GHULBUS_UNUSED_VARIABLE(action);
             GHULBUS_UNUSED_VARIABLE(mods);
-            if(key == GLFW_KEY_ESCAPE) {
+            if (key == GLFW_KEY_ESCAPE) {
                 glfwSetWindowShouldClose(window, true);
             }
         });
 
-    GhulbusVulkan::DeviceMemory memory = device.allocateMemory(1024*1024*64, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    GhulbusVulkan::DeviceMemory host_memory = device.allocateMemory(1024*1024*64, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    GhulbusVulkan::DeviceMemory memory = device.allocateMemory(1024 * 1024 * 64, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    GhulbusVulkan::DeviceMemory host_memory = device.allocateMemory(1024 * 1024 * 64, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
     {
         auto mapped = host_memory.map();
-        for(int i=0; i<1024*1024*64; ++i) { mapped[i] = std::byte(i & 0xff); }
+        for (int i = 0; i < 1024 * 1024 * 64; ++i) { mapped[i] = std::byte(i & 0xff); }
         mapped.flush();
     }
     {
         auto mapped_again = host_memory.map();
         mapped_again.invalidate();
-        for(int i=0; i<1024; ++i) {
+        for (int i = 0; i < 1024; ++i) {
             /*
             GHULBUS_LOG(Info, i << " - " << std::to_integer<int>(
                 static_cast<GhulbusVulkan::DeviceMemory::MappedMemory const&>(mapped_again)[i]));
@@ -226,7 +226,7 @@ int main()
     VkBufferCopy region;
     region.srcOffset = 0;
     region.dstOffset = 0;
-    region.size = 1024*1024*64;
+    region.size = 1024 * 1024 * 64;
     //vkCmdCopyBuffer(command_buffer.getVkCommandBuffer(), host_memory, memory, 1, & region);
     command_buffer.end();
 
@@ -241,7 +241,7 @@ int main()
     auto fence = device.createFence();
     auto images = swapchain.getVkImages();
     auto swapchain_image = swapchain.acquireNextImage(fence);
-    if(!swapchain_image) {
+    if (!swapchain_image) {
         GHULBUS_LOG(Error, "Unable to acquire image from swap chain.");
         return 1;
     }
@@ -249,10 +249,11 @@ int main()
 
     command_buffer.begin();
 
-    auto source_image = device.createImage(WINDOW_WIDTH, WINDOW_HEIGHT);
+    auto source_image = device.createImage(VkExtent3D{ WINDOW_WIDTH, WINDOW_HEIGHT, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+        1, 1, VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
     auto mem_reqs = source_image.getMemoryRequirements();
-    auto source_image_memory = device.allocateMemory(mem_reqs.size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, mem_reqs);
-    source_image.bindMemory(source_image_memory, 0);
+    auto source_image_memory = device.allocateMemory(mem_reqs, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    source_image.bindMemory(source_image_memory);
 
     // create image view
     /*
@@ -286,13 +287,13 @@ int main()
     source_image.transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
                             VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
     {
-        struct ImageDim { int x,y,comp; } dim;
+        struct ImageDim { int x, y, comp; } dim;
         auto img_data = stbi_load("textures/statue.jpg", &dim.x, &dim.y, &dim.comp, 0);
         auto mapped = source_image_memory.map();
-        for(int i=0; i<mem_reqs.size/4; ++i) {
+        for (int i = 0; i < mem_reqs.size / 4; ++i) {
             int ix = i % WINDOW_WIDTH;
             int iy = i / WINDOW_WIDTH;
-            if(!img_data || ix >= dim.x || iy >= dim.y || (dim.comp != 3 && dim.comp != 4)) {
+            if (!img_data || ix >= dim.x || iy >= dim.y || (dim.comp != 3 && dim.comp != 4)) {
                 mapped[i * 4] = std::byte(255);           //R
                 mapped[i * 4 + 1] = std::byte(0);         //G
                 mapped[i * 4 + 2] = std::byte(0);         //B
@@ -311,14 +312,14 @@ int main()
 
     // copy
     source_image.transition(command_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                            VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     GhulbusVulkan::Image::blit(command_buffer, source_image, *swapchain_image);
 
     // presentation
     swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                                VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     command_buffer.end();
     queue.submit(command_buffer);
@@ -350,18 +351,16 @@ int main()
     GhulbusVulkan::Buffer staging_buffer = device.createBuffer(vertex_data.size() * sizeof(Vertex),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     auto const staging_buffer_mem_reqs = staging_buffer.getMemoryRequirements();
-    GhulbusVulkan::DeviceMemory staging_memory = device.allocateMemory(staging_buffer_mem_reqs.size,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        staging_buffer_mem_reqs);
+    GhulbusVulkan::DeviceMemory staging_memory = device.allocateMemory(staging_buffer_mem_reqs,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     staging_buffer.bindBufferMemory(staging_memory);
 
     GhulbusVulkan::Buffer vertex_buffer = device.createBuffer(vertex_data.size() * sizeof(Vertex),
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     auto const vertex_buffer_mem_reqs = vertex_buffer.getMemoryRequirements();
     GhulbusVulkan::DeviceMemory vertex_memory =
-        device.allocateMemory(vertex_buffer_mem_reqs.size,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            vertex_buffer_mem_reqs);
+        device.allocateMemory(vertex_buffer_mem_reqs,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     vertex_buffer.bindBufferMemory(vertex_memory);
 
     auto transfer_command_buffers = transfer_command_pool.allocateCommandBuffers(2);
@@ -404,18 +403,16 @@ int main()
     GhulbusVulkan::Buffer index_staging_buffer = device.createBuffer(index_data.size() * sizeof(uint16_t),
                                                                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     auto const index_staging_buffer_mem_reqs = index_staging_buffer.getMemoryRequirements();
-    GhulbusVulkan::DeviceMemory index_staging_memory = device.allocateMemory(index_staging_buffer_mem_reqs.size,
-                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                        index_staging_buffer_mem_reqs);
+    GhulbusVulkan::DeviceMemory index_staging_memory = device.allocateMemory(index_staging_buffer_mem_reqs,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     index_staging_buffer.bindBufferMemory(index_staging_memory);
 
     GhulbusVulkan::Buffer index_buffer = device.createBuffer(index_data.size() * sizeof(uint16_t),
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     auto const index_buffer_mem_reqs = vertex_buffer.getMemoryRequirements();
     GhulbusVulkan::DeviceMemory index_memory =
-        device.allocateMemory(index_buffer_mem_reqs.size,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            index_buffer_mem_reqs);
+        device.allocateMemory(index_buffer_mem_reqs,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     index_buffer.bindBufferMemory(index_memory);
 
     // copy index buffer
@@ -460,13 +457,12 @@ int main()
     std::vector<GhulbusVulkan::DeviceMemory> ubo_memories;
     ubo_buffers.reserve(swapchain.getNumberOfImages());
     ubo_memories.reserve(swapchain.getNumberOfImages());
-    for(uint32_t i = 0; i < swapchain.getNumberOfImages(); ++i)
+    for (uint32_t i = 0; i < swapchain.getNumberOfImages(); ++i)
     {
         ubo_buffers.push_back(device.createBuffer(sizeof(UBOMVP), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
         auto const ubo_buffer_mem_reqs = ubo_buffers.back().getMemoryRequirements();
-        ubo_memories.push_back(device.allocateMemory(ubo_buffer_mem_reqs.size,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            ubo_buffer_mem_reqs));
+        ubo_memories.push_back(device.allocateMemory(ubo_buffer_mem_reqs,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
         ubo_buffers.back().bindBufferMemory(ubo_memories.back());
     }
 
@@ -476,10 +472,10 @@ int main()
         auto const t = std::chrono::steady_clock::now();
         float const time = std::chrono::duration<float>(t - timestamp).count();
         ubo_data.model = GhulbusMath::make_rotation((GhulbusMath::traits::Pi<float>::value / 2.f) * time,
-                                                GhulbusMath::Vector3f(0.f, 0.f, 1.f)).m;
+            GhulbusMath::Vector3f(0.f, 0.f, 1.f)).m;
         ubo_data.view = GhulbusMath::make_view_look_at(GhulbusMath::Vector3f(2.0f, 2.0f, 2.0f),
-                                                   GhulbusMath::Vector3f(0.0f, 0.0f, 0.0f),
-                                                   GhulbusMath::Vector3f(0.0f, 0.0f, 1.0f)).m;
+            GhulbusMath::Vector3f(0.0f, 0.0f, 0.0f),
+            GhulbusMath::Vector3f(0.0f, 0.0f, 1.0f)).m;
         ubo_data.projection = GhulbusMath::make_perspective_projection_fov(
             (GhulbusMath::traits::Pi<float>::value / 4.f),
             static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT), 0.1f, 10.f).m;
@@ -496,6 +492,41 @@ int main()
             std::memcpy(mapped_mem, &ubo_data, sizeof(UBOMVP));
         }
     };
+
+
+    // texture
+    int texture_dimensions_width, texture_dimensions_height, texture_dimensions_n_channels;
+    stbi_uc* texture_data = stbi_load("textures/statue.jpg", &texture_dimensions_width, &texture_dimensions_height,
+        &texture_dimensions_n_channels, STBI_rgb_alpha);
+    if (!texture_data) { GHULBUS_LOG(Error, "Error loading texture file."); return 1; }
+    auto texture_data_guard = Ghulbus::finally([texture_data]() { stbi_image_free(texture_data); });
+    VkDeviceSize const texture_size = texture_dimensions_width * texture_dimensions_height * 4;
+
+    auto texture_staging_buffer = device.createBuffer(texture_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    auto texture_staging_buffer_mem_reqs = texture_staging_buffer.getMemoryRequirements();
+    auto texture_staging_memory = device.allocateMemory(texture_staging_buffer_mem_reqs,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    texture_staging_buffer.bindBufferMemory(texture_staging_memory);
+    {
+        auto mapped_mem = texture_staging_memory.map();
+        std::memcpy(mapped_mem, texture_data, texture_size);
+    }
+    GhulbusVulkan::Image texture_image = device.createImage2D(texture_dimensions_width, texture_dimensions_height);
+    auto const texture_image_mem_reqs = texture_image.getMemoryRequirements();
+    GhulbusVulkan::DeviceMemory texture_image_memory = device.allocateMemory(texture_image_mem_reqs,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    texture_image.bindMemory(texture_image_memory);
+
+    command_buffer.begin();
+    texture_image.transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    GhulbusVulkan::Image::copy(command_buffer, texture_staging_buffer, texture_image);
+    texture_image.transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    command_buffer.end();
+    queue.submit(command_buffer);
+    queue.waitIdle();
+    command_buffer.reset();
 
 
     auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple_compute.spv");

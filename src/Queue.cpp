@@ -5,6 +5,8 @@
 #include <gbVk/CommandBuffers.hpp>
 #include <gbVk/Fence.hpp>
 
+#include <gbBase/Assert.hpp>
+
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 namespace {
@@ -32,6 +34,7 @@ Queue::Queue(VkQueue queue)
 
 void Queue::submit(CommandBuffer& command_buffer)
 {
+    GHULBUS_PRECONDITION(command_buffer.getCurrentState() == CommandBuffer::State::Executable);
     VkCommandBuffer cmd_buf = command_buffer.getVkCommandBuffer();
     queue_submit(m_queue, &cmd_buf, 1, VK_NULL_HANDLE);
 }

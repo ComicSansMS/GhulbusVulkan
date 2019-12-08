@@ -14,6 +14,7 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class Buffer;
 class CommandBuffer;
 class DeviceMemory;
 
@@ -45,6 +46,8 @@ public:
 
     VkMemoryRequirements getMemoryRequirements();
 
+    void bindMemory(DeviceMemory& memory);
+
     void bindMemory(DeviceMemory& memory, VkDeviceSize memory_offset);
 
     void transition(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage,
@@ -58,6 +61,7 @@ public:
     uint32_t getDepth() const;
     VkFormat getFormat() const;
 
+    static void copy(CommandBuffer& command_buffer, Buffer& source_buffer, Image& destination_image);
     static void copy(CommandBuffer& command_buffer, Image& source_image, Image& destination_image);
     static void blit(CommandBuffer& command_buffer, Image& source_image, Image& destination_image);
 };

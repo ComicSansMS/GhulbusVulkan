@@ -176,19 +176,19 @@ Buffer Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags, V
     return Buffer(m_device, buffer);
 }
 
-Image Device::createImage(uint32_t width, uint32_t height)
+Image Device::createImage2D(uint32_t width, uint32_t height)
+{
+    return createImage2D(width, height, VK_FORMAT_R8G8B8A8_UNORM);
+}
+
+Image Device::createImage2D(uint32_t width, uint32_t height, VkFormat format)
 {
     VkExtent3D extent;
     extent.width = width;
     extent.height = height;
     extent.depth = 1;
-    return createImage(extent, VK_FORMAT_R8G8B8A8_UNORM);
-}
-
-Image Device::createImage(VkExtent3D const& extent, VkFormat format)
-{
-    return createImage(extent, format, 1, 1, VK_IMAGE_TILING_LINEAR,
-                       VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    return createImage(extent, format, 1, 1, VK_IMAGE_TILING_OPTIMAL,
+                       VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 }
 
 Image Device::createImage(VkExtent3D const& extent, VkFormat format, uint32_t mip_levels, uint32_t array_layers,
@@ -235,8 +235,7 @@ DeviceMemory Device::allocateMemory(size_t requested_size, VkMemoryPropertyFlags
     return DeviceMemory(m_device, mem);
 }
 
-DeviceMemory Device::allocateMemory(size_t requested_size, VkMemoryPropertyFlags required_flags,
-                                    VkMemoryRequirements const& requirements)
+DeviceMemory Device::allocateMemory(VkMemoryRequirements const& requirements, VkMemoryPropertyFlags required_flags)
 {
     auto const memory_type_index = PhysicalDevice(m_physicalDevice).findMemoryTypeIndex(required_flags, requirements);
     if(!memory_type_index) {
@@ -245,7 +244,7 @@ DeviceMemory Device::allocateMemory(size_t requested_size, VkMemoryPropertyFlags
     VkMemoryAllocateInfo alloc_info;
     alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     alloc_info.pNext = nullptr;
-    alloc_info.allocationSize = requested_size;
+    alloc_info.allocationSize = requirements.size;
     alloc_info.memoryTypeIndex = *memory_type_index;
 
     VkDeviceMemory mem;
