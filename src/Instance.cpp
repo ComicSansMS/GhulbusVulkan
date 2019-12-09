@@ -6,6 +6,7 @@
 #include <gbBase/Assert.hpp>
 
 #include <algorithm>
+#include <cstring>
 #include <iterator>
 #include <limits>
 
@@ -92,6 +93,14 @@ Instance Instance::createInstance(char const* application_name, Version const& a
     checkVulkanError(res, "Error in vkCreateInstance.");
     GHULBUS_ASSERT(instance);
     return Instance(instance);
+}
+
+void Instance::removeDuplicates(std::vector<char const*>& v)
+{
+    std::sort(begin(v), end(v), [](char const* str1, char const* str2) { return std::strcmp(str1, str2) < 0; });
+    auto const it_to_erase = std::unique(begin(v), end(v),
+        [](char const* str1, char const* str2) { return std::strcmp(str1, str2) == 0; });
+    v.erase(it_to_erase, end(v));
 }
 
 Instance::Instance(VkInstance vk_instance)

@@ -68,6 +68,7 @@ public:
             if(LUNARG_monitor) { requested_layers.push_back("VK_LAYER_LUNARG_monitor"); }
             if(LUNARG_standard_validation) { requested_layers.push_back("VK_LAYER_LUNARG_standard_validation"); }
             requested_layers.insert(end(requested_layers), begin(additional_layers), end(additional_layers));
+            removeDuplicates(requested_layers);
             return requested_layers;
         }
     };
@@ -105,7 +106,9 @@ public:
                 requested_extensions.push_back("VK_KHR_win32_surface");
 #               endif
             }
-            requested_extensions.insert(end(requested_extensions), begin(additional_extensions), end(additional_extensions));
+            requested_extensions.insert(end(requested_extensions),
+                                        begin(additional_extensions), end(additional_extensions));
+            removeDuplicates(requested_extensions);
             return requested_extensions;
         }
     };
@@ -113,9 +116,12 @@ public:
     static std::vector<VkLayerProperties> enumerateInstanceLayerProperties();
     static std::vector<VkExtensionProperties> enumerateInstanceExtensionProperties();
     static std::vector<VkExtensionProperties> enumerateInstanceExtensionProperties(VkLayerProperties const& layer);
-    static Instance createInstance();
-    static Instance createInstance(char const* application_name, Version const& application_version,
-                                   Layers const& enabled_layers, Extensions const& enabled_extensions);
+    [[nodiscard]] static Instance createInstance();
+    [[nodiscard]] static Instance createInstance(char const* application_name, Version const& application_version,
+                                                 Layers const& enabled_layers, Extensions const& enabled_extensions);
+
+private:
+    static void removeDuplicates(std::vector<char const*>& v);
 
 private:
     VkInstance m_instance;
