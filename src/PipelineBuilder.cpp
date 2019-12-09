@@ -156,7 +156,19 @@ PipelineBuilder::PipelineBuilder(VkDevice logical_device, uint32_t viewport_widt
     stage.multisample->alphaToCoverageEnable = VK_FALSE;
     stage.multisample->alphaToOneEnable = VK_FALSE;
 
-    stage.depth_stencil = std::nullopt;
+    stage.depth_stencil = VkPipelineDepthStencilStateCreateInfo{};
+    stage.depth_stencil->sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    stage.depth_stencil->pNext = nullptr;
+    stage.depth_stencil->flags = 0;
+    stage.depth_stencil->depthTestEnable = VK_TRUE;
+    stage.depth_stencil->depthWriteEnable = VK_TRUE;
+    stage.depth_stencil->depthCompareOp = VK_COMPARE_OP_LESS;
+    stage.depth_stencil->depthBoundsTestEnable = VK_FALSE;
+    stage.depth_stencil->stencilTestEnable = VK_FALSE;
+    stage.depth_stencil->front = {};
+    stage.depth_stencil->back = {};
+    stage.depth_stencil->minDepthBounds = 0.0f;
+    stage.depth_stencil->maxDepthBounds = 1.0f;
 
     stage.color_blend = PipelineBuilder::Stages::ColorBlend{};
     stage.color_blend->attachments.push_back(VkPipelineColorBlendAttachmentState{});

@@ -192,6 +192,15 @@ Image Device::createImage2D(uint32_t width, uint32_t height, VkFormat format)
                        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 }
 
+Image Device::createImageDepthBuffer(uint32_t width, uint32_t height, VkFormat format)
+{
+    VkExtent3D extent;
+    extent.width = width;
+    extent.height = height;
+    extent.depth = 1;
+    return createImage(extent, format, 1, 1, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+}
+
 Image Device::createImage(VkExtent3D const& extent, VkFormat format, uint32_t mip_levels, uint32_t array_layers,
                           VkImageTiling tiling, VkImageUsageFlags usage_flags)
 {
@@ -353,7 +362,32 @@ std::vector<Framebuffer> Device::createFramebuffers(Swapchain& swapchain, Render
         framebuffers.emplace_back(m_device, std::move(image_views[i]), framebuffer);
     }
     return framebuffers;
+}
 
+std::vector<Framebuffer> Device::createFramebuffers(Swapchain& swapchain, RenderPass& render_pass,
+                                                    ImageView& depth_stencil)
+{
+    std::vector<GhulbusVulkan::ImageView> image_views = swapchain.createImageViews();
+    std::vector<Framebuffer> framebuffers;
+    framebuffers.reserve(image_views.size());
+    for (std::size_t i = 0; i < image_views.size(); ++i) {
+        VkImageView attachments[] = { image_views[i].getVkImageView(), depth_stencil.getVkImageView() };
+        VkFramebufferCreateInfo framebuffer_ci;
+        framebuffer_ci.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebuffer_ci.pNext = nullptr;
+        framebuffer_ci.flags = 0;
+        framebuffer_ci.renderPass = render_pass.getVkRenderPass();
+        framebuffer_ci.attachmentCount = 2;
+        framebuffer_ci.pAttachments = attachments;
+        framebuffer_ci.width = swapchain.getWidth();
+        framebuffer_ci.height = swapchain.getHeight();
+        framebuffer_ci.layers = 1;
+        VkFramebuffer framebuffer;
+        VkResult res = vkCreateFramebuffer(m_device, &framebuffer_ci, nullptr, &framebuffer);
+        checkVulkanError(res, "Error in vkCreateFramebuffer.");
+        framebuffers.emplace_back(m_device, std::move(image_views[i]), framebuffer);
+    }
+    return framebuffers;
 }
 
 RenderPassBuilder Device::createRenderPassBuilder()

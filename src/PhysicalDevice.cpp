@@ -58,6 +58,31 @@ VkFormatProperties PhysicalDevice::getFormatProperties(VkFormat format)
     return ret;
 }
 
+std::optional<VkFormat> PhysicalDevice::findSupportedFormat(std::vector<VkFormat> const& candidates,
+                                                            VkImageTiling tiling, VkFormatFeatureFlags features)
+{
+    auto matching_format = [this, tiling, features](VkFormat f) -> bool {
+        VkFormatProperties const fmt_props = getFormatProperties(f);
+        if (tiling == VK_IMAGE_TILING_LINEAR) {
+            return (fmt_props.linearTilingFeatures & features) == features;
+        } else {
+            GHULBUS_ASSERT(tiling == VK_IMAGE_TILING_OPTIMAL);
+            return (fmt_props.optimalTilingFeatures & features) == features;
+        }
+    };
+    auto const ret = std::find_if(begin(candidates), end(candidates), matching_format);
+    return (ret != end(candidates)) ? std::make_optional(*ret) : std::nullopt;
+}
+
+std::optional<VkFormat> PhysicalDevice::findDepthBufferFormat()
+{
+    std::vector<VkFormat>  const format_candidates{ VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT,
+                                                    VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D16_UNORM_S8_UINT,
+                                                    VK_FORMAT_D16_UNORM };
+    return findSupportedFormat(format_candidates, VK_IMAGE_TILING_OPTIMAL,
+                               VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+}
+
 VkImageFormatProperties PhysicalDevice::getImageFormatProperties(VkFormat format, VkImageType type,
     VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags create_flags)
 {

@@ -59,12 +59,35 @@ void RenderPassBuilder::addColorAttachment(VkFormat image_format)
     attachments.push_back(color_attachment);
 
     VkAttachmentReference color_attachment_ref;
-    color_attachment_ref.attachment = 0;
+    color_attachment_ref.attachment = static_cast<uint32_t>(attachments.size() - 1);
     color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     attachmentReferences.back().push_back(color_attachment_ref);
 
     subpassDescriptions.back().colorAttachmentCount = static_cast<uint32_t>(attachmentReferences.back().size());
     subpassDescriptions.back().pColorAttachments = attachmentReferences.back().data();
+}
+
+void RenderPassBuilder::addDepthStencilAttachment(VkFormat depth_format)
+{
+    GHULBUS_PRECONDITION(!attachmentReferenceDepthStencil);
+    VkAttachmentDescription depth_attachment;
+    depth_attachment.flags = 0;
+    depth_attachment.format = depth_format;
+    depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    attachments.push_back(depth_attachment);
+
+    VkAttachmentReference depth_attachment_ref;
+    depth_attachment_ref.attachment = static_cast<uint32_t>(attachments.size() - 1);
+    depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    attachmentReferenceDepthStencil = depth_attachment_ref;
+
+    subpassDescriptions.back().pDepthStencilAttachment = &attachmentReferenceDepthStencil.value();
 }
 
 RenderPass RenderPassBuilder::create()

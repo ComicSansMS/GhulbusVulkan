@@ -12,6 +12,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan.hpp>
 
+#include <optional>
 #include <vector>
 
 namespace GHULBUS_VULKAN_NAMESPACE
@@ -22,6 +23,7 @@ class RenderPassBuilder {
 public:
     std::vector<VkAttachmentDescription> attachments;
     std::vector<std::vector<VkAttachmentReference>> attachmentReferences;
+    std::optional<VkAttachmentReference> attachmentReferenceDepthStencil;
     std::vector<VkSubpassDescription> subpassDescriptions;
     std::vector<VkSubpassDependency> subpassDependencies;
 private:
@@ -36,6 +38,8 @@ public:
     void addSubpassGraphics();
 
     void addColorAttachment(VkFormat image_format);
+
+    void addDepthStencilAttachment(VkFormat depth_format);
 
     RenderPass create();
 };

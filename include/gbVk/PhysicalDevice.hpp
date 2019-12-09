@@ -41,6 +41,11 @@ public:
 
     VkFormatProperties getFormatProperties(VkFormat format);
 
+    std::optional<VkFormat> findSupportedFormat(std::vector<VkFormat> const& candidates,
+                                                VkImageTiling tiling, VkFormatFeatureFlags features);
+
+    std::optional<VkFormat> findDepthBufferFormat();
+
     VkImageFormatProperties getImageFormatProperties(VkFormat format, VkImageType type,
                                                      VkImageTiling tiling, VkImageUsageFlags usage,
                                                      VkImageCreateFlags create_flags);

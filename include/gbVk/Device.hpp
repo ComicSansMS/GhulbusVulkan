@@ -22,6 +22,7 @@ class DeviceMemory;
 class Fence;
 class Framebuffer;
 class Image;
+class ImageView;
 class PhysicalDevice;
 class PipelineBuilder;
 class PipelineLayoutBuilder;
@@ -70,6 +71,7 @@ public:
 
     Image createImage2D(uint32_t width, uint32_t height);
     Image createImage2D(uint32_t width, uint32_t height, VkFormat format);
+    Image createImageDepthBuffer(uint32_t width, uint32_t height, VkFormat format);
     Image createImage(VkExtent3D const& extent, VkFormat format, uint32_t mip_levels, uint32_t array_layers,
                       VkImageTiling tiling, VkImageUsageFlags usage_flags);
 
@@ -93,6 +95,9 @@ public:
     ShaderModule createShaderModule(Spirv::Code const& code);
 
     std::vector<Framebuffer> createFramebuffers(Swapchain& swapchain, RenderPass& render_pass);
+
+    std::vector<Framebuffer> createFramebuffers(Swapchain& swapchain, RenderPass& render_pass,
+                                                ImageView& depth_stencil);
 
     RenderPassBuilder createRenderPassBuilder();
 

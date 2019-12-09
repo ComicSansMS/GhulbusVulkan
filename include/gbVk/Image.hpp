@@ -63,6 +63,9 @@ public:
     VkFormat getFormat() const;
 
     ImageView createImageView();
+    ImageView createImageViewDepthBuffer();
+    ImageView createImageView2D(VkImageAspectFlags aspect_flags);
+    ImageView createImageView(VkImageViewType view_type, VkImageAspectFlags aspect_flags);
 
     static void copy(CommandBuffer& command_buffer, Buffer& source_buffer, Image& destination_image);
     static void copy(CommandBuffer& command_buffer, Image& source_image, Image& destination_image);

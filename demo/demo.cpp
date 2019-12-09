@@ -55,7 +55,7 @@
 struct DemoState {};
 
 struct Vertex {
-    GhulbusMath::Vector2f position;
+    GhulbusMath::Vector3f position;
     GhulbusMath::Vector3f color;
     GhulbusMath::Vector2f texCoords;
 };
@@ -68,14 +68,22 @@ struct UBOMVP {
 
 inline std::vector<Vertex> generateVertexData()
 {
-    return { {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-             {{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-             {{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-             {{-0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}} };
+    return {
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+        {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+        {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+        {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+        {{ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+        {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+    };
 }
 
 inline std::vector<uint16_t> generateIndexData() {
-    return { 0, 1, 2, 2, 3, 0 };
+    return { 0, 1, 2, 2, 3, 0,
+             4, 5, 6, 6, 7, 4 };
 }
 
 enum class DrawMode {
@@ -344,7 +352,7 @@ int main()
     std::array<VkVertexInputAttributeDescription, 3> vertex_attributes;
     vertex_attributes[0].location = 0;
     vertex_attributes[0].binding = vertex_binding.binding;
-    vertex_attributes[0].format = VK_FORMAT_R32G32_SFLOAT;
+    vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
     vertex_attributes[0].offset = offsetof(Vertex, position);
 
     vertex_attributes[1].location = 1;
@@ -541,6 +549,19 @@ int main()
     GhulbusVulkan::Sampler texture_sampler = device.createSampler();
 
 
+    // depth buffer attachment
+    auto const depth_buffer_opt_format = physical_device.findDepthBufferFormat();
+    if (!depth_buffer_opt_format) { GHULBUS_LOG(Error, "No supported depth buffer format found."); return 1; }
+    VkFormat const depth_buffer_format = *depth_buffer_opt_format;
+    GhulbusVulkan::Image depth_buffer_image =
+        device.createImageDepthBuffer(WINDOW_WIDTH, WINDOW_HEIGHT, depth_buffer_format);
+    auto const depth_buffer_image_mem_reqs = depth_buffer_image.getMemoryRequirements();
+    GhulbusVulkan::DeviceMemory depth_buffer_memory = device.allocateMemory(depth_buffer_image_mem_reqs,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    depth_buffer_image.bindMemory(depth_buffer_memory);
+    GhulbusVulkan::ImageView depth_buffer_image_view = depth_buffer_image.createImageViewDepthBuffer();
+
+
     auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple_compute.spv");
     auto version = spirv_code.getSpirvVersion();
     auto bound = spirv_code.getBound();
@@ -599,10 +620,11 @@ int main()
     std::vector<VkPipelineShaderStageCreateInfo> shader_stage_cis{ vert_shader_stage_ci, frag_shader_stage_ci };
 
     // render pass
-    GhulbusVulkan::RenderPass render_pass = [&device, &swapchain_image]() {
+    GhulbusVulkan::RenderPass render_pass = [&device, &swapchain_image, &depth_buffer_image]() {
             auto builder = device.createRenderPassBuilder();
             builder.addSubpassGraphics();
             builder.addColorAttachment(swapchain_image->getFormat());
+            builder.addDepthStencilAttachment(depth_buffer_image.getFormat());
             return builder.create();
         }();
 
@@ -685,7 +707,8 @@ int main()
     }();
 
 
-    std::vector<GhulbusVulkan::Framebuffer> framebuffers = device.createFramebuffers(swapchain, render_pass);
+    std::vector<GhulbusVulkan::Framebuffer> framebuffers =
+        device.createFramebuffers(swapchain, render_pass, depth_buffer_image_view);
 
     GhulbusVulkan::CommandBuffers triangle_draw_command_buffers =
         command_pool.allocateCommandBuffers(swapchain_n_images);
@@ -703,13 +726,15 @@ int main()
         render_pass_info.renderArea.offset.y = 0;
         render_pass_info.renderArea.extent.width = swapchain_image->getWidth();
         render_pass_info.renderArea.extent.height = swapchain_image->getHeight();
-        VkClearValue clear_color;
-        clear_color.color.float32[0] = 0.5f;
-        clear_color.color.float32[1] = 0.f;
-        clear_color.color.float32[2] = 0.5f;
-        clear_color.color.float32[3] = 1.f;
-        render_pass_info.clearValueCount = 1;
-        render_pass_info.pClearValues = &clear_color;
+        std::array<VkClearValue, 2> clear_color;
+        clear_color[0].color.float32[0] = 0.5f;
+        clear_color[0].color.float32[1] = 0.f;
+        clear_color[0].color.float32[2] = 0.5f;
+        clear_color[0].color.float32[3] = 1.f;
+        clear_color[1].depthStencil.depth = 1.0f;
+        clear_color[1].depthStencil.stencil = 0;
+        render_pass_info.clearValueCount = static_cast<uint32_t>(clear_color.size());
+        render_pass_info.pClearValues = clear_color.data();
 
         vkCmdBeginRenderPass(local_command_buffer.getVkCommandBuffer(),
                              &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
