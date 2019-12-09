@@ -64,6 +64,8 @@ public:
     using FaceGroupNames = std::vector<std::string>;
     
     /** Data structure for flat vertices.
+     * In OBJ, the different vertex attributes (position, normal, texcoord) are stored in independent arrays.
+     * The ObjParser flattens these into a single array-of-structures layout.
      */
     struct VertexEntryFlat {
         GhulbusMath::Point3f vertex;                ///< Geometry
@@ -176,6 +178,7 @@ public:
      * @return Name of the face group.
      */
     char const* getGroupName(IndexType i) const;
+
 private:
     /** Clear all internal mesh data.
      */

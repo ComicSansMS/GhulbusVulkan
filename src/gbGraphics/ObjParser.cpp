@@ -3,7 +3,7 @@
 #include <gbGraphics/Exceptions.hpp>
 
 #include <gbBase/Assert.hpp>
-#include <gbBase/Exception.hpp>
+#include <gbBase/Finally.hpp>
 #include <gbBase/Log.hpp>
 
 #include <algorithm>
@@ -14,6 +14,16 @@
 #include <regex>
 #include <tuple>
 #include <unordered_map>
+
+#if WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#   define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#   define NOMINMAX
+#endif
+#include <Windows.h>
+#endif
 
 namespace GHULBUS_GRAPHICS_NAMESPACE {
 namespace {
@@ -48,7 +58,6 @@ inline bool operator<(IndexTuple const& lhs, IndexTuple const& rhs) {
 struct IndexTupleHash
 {
     inline size_t operator()(IndexTuple const& t) const {
-        ///@todo more clever hashing
         return (t.vertexIndex) ^ (t.normalIndex << 16) ^ (t.textureIndex << 21);
     }
 };
@@ -190,9 +199,29 @@ void ObjParser::clearMesh()
 namespace {
 void readDataFromFile(char const* filename, Buffer* out_data)
 {
+#if WIN32
+    HANDLE fin = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_ALWAYS, 0, nullptr);
+    if (fin == INVALID_HANDLE_VALUE) {
+        GHULBUS_THROW(Exceptions::IOError{} << Exception_Info::filename(filename),
+                      "Unable to open file.");
+    }
+    auto guard_file_handle = Ghulbus::finally([fin]() { CloseHandle(fin); });
+    LARGE_INTEGER lfilesize;
+    if ((GetFileSizeEx(fin, &lfilesize) == 0) || (lfilesize.QuadPart >= std::numeric_limits<DWORD>::max())) {
+        GHULBUS_THROW(Exceptions::IOError() << Exception_Info::filename(filename),
+                      "File size error.");
+    }
+    DWORD const filesize = static_cast<DWORD>(lfilesize.QuadPart);
+    out_data->clear();
+    out_data->resize(filesize);
+    if (DWORD read; (ReadFile(fin, out_data->data(), filesize, &read, nullptr) == 0) || (read != filesize)) {
+        GHULBUS_THROW(Exceptions::IOError() << Exception_Info::filename(filename),
+                      "File read error.");
+    }
+#else
     //open file
     std::ifstream fin(filename, std::ios_base::binary);
-    if(fin.fail()) {
+    if (fin.fail()) {
         GHULBUS_THROW(Exceptions::IOError{} << Exception_Info::filename(filename),
                       "Unable to open file.");
     }
@@ -201,7 +230,7 @@ void readDataFromFile(char const* filename, Buffer* out_data)
     fin.seekg(0, std::ios_base::end);
     size_t filesize = static_cast<size_t>(fin.tellg());
     fin.seekg(0, std::ios_base::beg);
-    if((fin.fail()) || (filesize == 0)) {
+    if ((fin.fail()) || (filesize == 0)) {
         GHULBUS_THROW(Exceptions::IOError() << Exception_Info::filename(filename),
                       "File size error.");
     }
@@ -210,11 +239,12 @@ void readDataFromFile(char const* filename, Buffer* out_data)
     out_data->clear();
     out_data->resize(filesize);
     fin.read(reinterpret_cast<char*>(&out_data->front()), filesize);
-    if(static_cast<size_t>(fin.gcount()) != filesize) {
+    if (static_cast<size_t>(fin.gcount()) != filesize) {
         GHULBUS_THROW(Exceptions::IOError() << Exception_Info::filename(filename)
                                             << Exception_Info::io_offset(fin.gcount()),
                       "File read error.");
     }
+#endif
 }
 
 /** Skip to the end of the current line.
@@ -240,12 +270,12 @@ inline Buffer::const_iterator skipWhitespace(Buffer::const_iterator const& posit
 {
     Buffer::const_iterator ret = position;
     //skip whitespace
-    for(;;) {
+    for (;;) {
         ret = std::find_if_not(ret, eof, [](char c) {
                 return (c == '\r') || (c == ' ') || (c == '\t');
             });
-        if((ret == eof) || ((*ret) != '\n')) { break; }
-        if(line_count) { ++(*line_count); }
+        if ((ret == eof) || ((*ret) != '\n')) { break; }
+        if (line_count) { ++(*line_count); }
         ++ret;
     }
     return ret;
@@ -299,17 +329,17 @@ void scanFaceLayout(Buffer::const_iterator const& p,
 {
     std::string const line(p, getEndOfLine(p, eof));
     std::string tmp;        //< used to get number of vertices per face
-    if(std::regex_search(line, std::regex("(\\s)+(-)?(\\d)+//(-)?(\\d)+(\\s)+"))) {
+    if (std::regex_search(line, std::regex("(\\s)+(-)?(\\d)+//(-)?(\\d)+(\\s)+"))) {
         // layout: v//vn
         out_mesh->hasNormal = true;
         out_mesh->hasTexCoord = false;
         tmp = std::regex_replace(line, std::regex("(-)?(\\d)+//(-)?(\\d)+"), std::string("V"));
-    } else if(std::regex_search(line, std::regex("(\\s)+(-)?(\\d)+/(-)?(\\d)+(\\s)+"))) {
+    } else if (std::regex_search(line, std::regex("(\\s)+(-)?(\\d)+/(-)?(\\d)+(\\s)+"))) {
         // layout: v/vt
         out_mesh->hasNormal = false;
         out_mesh->hasTexCoord = true;
         tmp = std::regex_replace(line, std::regex("(-)?(\\d)+/(-)?(\\d)+"), std::string("V"));
-    } else if(std::regex_search(line, std::regex("(\\s)+(-)?(\\d)+/(-)?(\\d)+/(-)?(\\d)+(\\s)+"))) {
+    } else if (std::regex_search(line, std::regex("(\\s)+(-)?(\\d)+/(-)?(\\d)+/(-)?(\\d)+(\\s)+"))) {
         // layout: v/vt/vn
         out_mesh->hasNormal = true;
         out_mesh->hasTexCoord = true;
@@ -375,18 +405,18 @@ inline void parseFace(Buffer::const_iterator& p,
     char const* pos = &(*(++p));
     //parse face indices
     char* pend = NULL;
-    for(int i=0; i<out_mesh->verticesPerFace; ++i) {
+    for (int i=0; i < out_mesh->verticesPerFace; ++i) {
         //vertex index
         IndexType v = static_cast<IndexType>(std::strtoll(pos, &pend, 0));
-        if(v < 0) { v += max_vertex_index; }
+        if (v < 0) { v += max_vertex_index; }
         GHULBUS_ASSERT(v >= 0);
         out_mesh->faceVertex.push_back(v);
         (*out_index_tuple)[i].vertexIndex = v;
         //texcoord index (optional)
-        if(out_mesh->hasTexCoord) {
+        if (out_mesh->hasTexCoord) {
             pos = pend + 1;
             v = static_cast<IndexType>(std::strtoll(pos, &pend, 0));
-            if(v < 0) { v += max_texture_index; }
+            if (v < 0) { v += max_texture_index; }
             GHULBUS_ASSERT(v >= 0);
             out_mesh->faceTexCoord.push_back(v);
             (*out_index_tuple)[i].textureIndex = v;
@@ -394,11 +424,11 @@ inline void parseFace(Buffer::const_iterator& p,
             (*out_index_tuple)[i].textureIndex = 0;
         }
         //normal index (optional)
-        if(out_mesh->hasNormal) {
+        if (out_mesh->hasNormal) {
             pos = pend + 1;
-            if(*pos == '/') { ++pos; }
+            if (*pos == '/') { ++pos; }
             v = static_cast<IndexType>(std::strtoll(pos, &pend, 0));
-            if(v < 0) { v += max_normal_index; }
+            if (v < 0) { v += max_normal_index; }
             GHULBUS_ASSERT(v >= 0);
             out_mesh->faceNormal.push_back(v);
             (*out_index_tuple)[i].normalIndex = v;
@@ -409,7 +439,7 @@ inline void parseFace(Buffer::const_iterator& p,
         pos = pend + 1;
     }
     //adjust iterator
-    if(pend != nullptr) { p += pend - &(*p); }
+    if (pend != nullptr) { p += pend - &(*p); }
 }
 
 /** Retrieve a pointer to a FaceGroup from its name.
@@ -424,7 +454,7 @@ inline ObjParser::FaceData*
 {
     //get iterator to group name list
     auto it_name = std::find(group_names.begin(), group_names.end(), name);
-    if(it_name == group_names.end()) {
+    if (it_name == group_names.end()) {
         it_name = group_names.insert(it_name, name);
         face_groups.push_back(ObjParser::FaceData{});
     }
@@ -449,19 +479,19 @@ inline std::vector<ObjParser::FaceData*>
     //skip 'g'
     ++p;
     std::vector<ObjParser::FaceData*> ret;
-    while((*p) != '\n') {
+    while ((*p) != '\n') {
         //skip ' '
         ++p;
         //parse next group name
         Buffer::const_iterator group_name_start = p;
-        while( ((*p) != ' ') && ((*p) != '\n') ) { 
+        while (((*p) != ' ') && ((*p) != '\n')) { 
             ++p; 
         }
         std::string const group_name(group_name_start, p);
         //add mesh data to return list
         ret.push_back(getFaceGroupByName(group_name, face_groups, group_names));
     }
-    if(ret.empty()) {
+    if (ret.empty()) {
         //default group
         std::string const group_name("default");
         ret.push_back(getFaceGroupByName(group_name, face_groups, group_names));
@@ -479,8 +509,8 @@ inline void removeEmptyGroups(ObjParser::FaceGroups& face_groups,
     ObjParser::FaceGroups::iterator it_face = face_groups.begin();
     ObjParser::FaceGroupNames::iterator it_name = group_names.begin();
 
-    while(it_name != group_names.end()) {
-        if(it_face->faceVertex.empty()) {
+    while (it_name != group_names.end()) {
+        if (it_face->faceVertex.empty()) {
             it_face = face_groups.erase(it_face);
             it_name = group_names.erase(it_name);
         } else {
@@ -497,21 +527,21 @@ inline void addFlattenedFaces(std::vector<IndexTuple> const& index_tuples,
                               ObjParser::IndexDataFlat& out_flat_index_data)
 {
     auto const it_end = index_tuples.end();
-    for(auto it = index_tuples.begin(); it != it_end; ++it) {
+    for (auto it = index_tuples.begin(); it != it_end; ++it) {
         GHULBUS_ASSERT((it->vertexIndex > 0) && (it->vertexIndex <= vertex_data.vertex.size()));
         GHULBUS_ASSERT((vertex_data.normal.empty()) || (it->normalIndex <= vertex_data.normal.size()));
         GHULBUS_ASSERT(it->textureIndex <= vertex_data.texCoord.size());
         IndexTupleMap::iterator map_it = index_tuple_map.find(*it);
-        if(map_it == index_tuple_map.end()) {
+        if (map_it == index_tuple_map.end()) {
             /// index tuple does not exist; create a new vertex
             ObjParser::VertexEntryFlat v;
             v.vertex = vertex_data.vertex[it->vertexIndex - 1];
-            if(vertex_data.normal.empty()) {
+            if (vertex_data.normal.empty()) {
                 v.normal = GhulbusMath::Normal3f(1.0f, 0.0f, 0.0f);
             } else {
                 v.normal = vertex_data.normal[it->normalIndex - 1];
             }
-            if(vertex_data.texCoord.empty()) {
+            if (vertex_data.texCoord.empty()) {
                 v.texCoord = GhulbusMath::Vector2f(0.0f, 0.0f);
             } else {
                 v.texCoord = vertex_data.texCoord[it->textureIndex - 1];
@@ -527,7 +557,7 @@ inline void addFlattenedFaces(std::vector<IndexTuple> const& index_tuples,
             out_flat_index_data.push_back(map_it->second);
         }
     }
-    if(index_tuples.size() == 4) {
+    if (index_tuples.size() == 4) {
         ///Quad mesh; Add second triangle
         out_flat_index_data.push_back(out_flat_index_data[out_flat_index_data.size() - 4]);
         out_flat_index_data.push_back(out_flat_index_data[out_flat_index_data.size() - 3]);
@@ -551,13 +581,13 @@ void parseData(Buffer const& data,
     IndexTupleMap index_tuple_map;
     std::vector<IndexTuple> tmp_tuple;
     int line_index = 1;
-    while(position != eof) {
-        switch(*position) {
+    while (position != eof) {
+        switch (*position) {
         case '#': /* comment; skip line */  break;
         case '\0': /* end of string */  break;
         case 'g':
             face_target_groups = groupSwitch(position, out_face_groups, out_group_names);
-            if(face_target_groups.size() != 1) {
+            if (face_target_groups.size() != 1) {
                 GHULBUS_THROW(Exceptions::NotImplemented(), "Multiple target groups not supported.");
             }
             break;
@@ -565,10 +595,10 @@ void parseData(Buffer const& data,
             parseVertex(position, &out_vertex_data);
             break;
         case 'f':
-            if(face_target_groups.empty()) {
+            if (face_target_groups.empty()) {
                 face_target_groups.push_back(getFaceGroupByName("default", out_face_groups, out_group_names));
             }
-            if(face_target_groups.front()->verticesPerFace <= 0) {
+            if (face_target_groups.front()->verticesPerFace <= 0) {
                 scanFaceLayout(position, eof, face_target_groups.front());
                 tmp_tuple.resize(face_target_groups.front()->verticesPerFace, IndexTuple { 0, 0, 0 });
             }
