@@ -108,6 +108,8 @@ if(NOT ((GB_BASE_IS_SHARED AND BUILD_SHARED_LIBS) OR ((NOT GB_BASE_IS_SHARED) AN
     message(FATAL_ERROR "Mixing shared and static builds of Ghulbus libraries is not supported.")
 endif()
 find_package(gbMath REQUIRED)
+get_property(gbMath_SOURCES TARGET Ghulbus::gbMath PROPERTY INTERFACE_SOURCES)
+source_group(gbMath FILES ${gbMath_SOURCES})
 
 set(GB_VK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 set(GB_VK_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
@@ -239,6 +241,70 @@ if(WIN32 AND BUILD_SHARED_LIBS)
 endif()
 
 ###############################################################################
+## gbGraphics
+###############################################################################
+
+set(GB_GRAPHICS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/gbGraphics)
+set(GB_GRAPHICS_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
+set(GB_GRAPHICS_TEST_DIR ${PROJECT_SOURCE_DIR}/test)
+
+set(GB_GRAPHICS_SOURCE_FILES
+    ${GB_GRAPHICS_SOURCE_DIR}/ObjParser.cpp
+)
+
+set(GB_GRAPHICS_HEADER_FILES
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/config.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Exceptions.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/ObjParser.hpp
+)
+
+set(GB_GRAPHICS_TEST_SOURCES
+)
+
+add_library(gbGraphics
+    ${GB_GRAPHICS_SOURCE_FILES}
+    ${GB_GRAPHICS_HEADER_FILES}
+)
+target_include_directories(gbGraphics PUBLIC $<BUILD_INTERFACE:${GB_GRAPHICS_INCLUDE_DIR}>)
+target_link_libraries(gbGraphics PUBLIC Ghulbus::gbBase Ghulbus::gbMath gbVk)
+
+if(NOT GB_GENERATE_COVERAGE_INFO)
+    target_compile_definitions(gbGraphics PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
+endif()
+target_compile_options(gbGraphics PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
+target_compile_options(gbGraphics PUBLIC $<$<STREQUAL:$<CXX_COMPILER_ID>,MSVC>:/permissive->)
+target_compile_options(gbGraphics PUBLIC $<$<STREQUAL:$<CXX_COMPILER_ID>,MSVC>:/std:c++latest>)
+target_compile_options(gbGraphics PRIVATE
+    $<$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>>:-pedantic -Wall>)
+target_compile_options(gbGraphics PRIVATE $<$<CXX_COMPILER_ID:GNU>:-pedantic -Wall>)
+
+include(GenerateExportHeader)
+generate_export_header(gbGraphics
+    EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/generated/gbGraphics/gbGraphics_Export.hpp
+    PREFIX_NAME GHULBUS_LIBRARY_
+)
+set(GB_GRAPHICS_GENERATED_HEADER_FILES ${PROJECT_BINARY_DIR}/generated/gbGraphics/gbGraphics_Export.hpp)
+target_include_directories(gbGraphics PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated>)
+if(BUILD_SHARED_LIBS)
+    set_property(TARGET gbGraphics PROPERTY CXX_VISIBILITY_PRESET hidden)
+    set_property(TARGET gbGraphics PROPERTY VISIBILITY_INLINES_HIDDEN ON)
+endif()
+
+set_property(TARGET gbGraphics PROPERTY VERSION ${GB_VK_VERSION})
+set_property(TARGET gbGraphics PROPERTY SOVERSION ${GB_VK_VERSION_MAJOR})
+set_property(TARGET gbGraphics PROPERTY DEBUG_POSTFIX d)
+
+# Copy dlls
+if(WIN32 AND BUILD_SHARED_LIBS)
+    set(src_genexp)
+    foreach(cfg ${CMAKE_CONFIGURATION_TYPES})
+        string(TOUPPER ${cfg} cfg_upper)
+        set(src_genexp "${src_genexp}$<$<CONFIG:${cfg}>:$<TARGET_PROPERTY:Ghulbus::gbBase,IMPORTED_LOCATION_${cfg_upper}>>")
+    endforeach()
+    add_custom_command(TARGET gbGraphics POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${src_genexp} $<TARGET_FILE_DIR:gbGraphics>)
+endif()
+
+###############################################################################
 ## Tools
 ###############################################################################
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
@@ -329,7 +395,7 @@ if(GB_BUILD_TESTS)
 endif()
 
 add_executable(demo ${PROJECT_SOURCE_DIR}/demo/demo.cpp ${PROJECT_SOURCE_DIR}/demo/external/stb_image_impl.cpp)
-target_link_libraries(demo PUBLIC gbVk glfw Ghulbus::gbMath)
+target_link_libraries(demo PUBLIC gbVk glfw Ghulbus::gbMath gbGraphics)
 target_include_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/demo)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT demo)
 
