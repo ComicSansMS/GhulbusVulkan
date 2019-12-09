@@ -167,6 +167,7 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceMemory.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Exceptions.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Fence.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/ForwardDecl.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Framebuffer.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Image.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/ImageView.hpp
@@ -249,13 +250,17 @@ set(GB_GRAPHICS_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(GB_GRAPHICS_TEST_DIR ${PROJECT_SOURCE_DIR}/test)
 
 set(GB_GRAPHICS_SOURCE_FILES
+    ${GB_GRAPHICS_SOURCE_DIR}/Graphics.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/ObjParser.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/Window.cpp
 )
 
 set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/config.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Exceptions.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Graphics.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/ObjParser.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Window.hpp
 )
 
 set(GB_GRAPHICS_TEST_SOURCES
@@ -266,7 +271,7 @@ add_library(gbGraphics
     ${GB_GRAPHICS_HEADER_FILES}
 )
 target_include_directories(gbGraphics PUBLIC $<BUILD_INTERFACE:${GB_GRAPHICS_INCLUDE_DIR}>)
-target_link_libraries(gbGraphics PUBLIC Ghulbus::gbBase Ghulbus::gbMath gbVk)
+target_link_libraries(gbGraphics PUBLIC Ghulbus::gbBase Ghulbus::gbMath gbVk glfw)
 
 if(NOT GB_GENERATE_COVERAGE_INFO)
     target_compile_definitions(gbGraphics PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
@@ -395,7 +400,7 @@ if(GB_BUILD_TESTS)
 endif()
 
 add_executable(demo ${PROJECT_SOURCE_DIR}/demo/demo.cpp ${PROJECT_SOURCE_DIR}/demo/external/stb_image_impl.cpp)
-target_link_libraries(demo PUBLIC gbVk glfw Ghulbus::gbMath gbGraphics)
+target_link_libraries(demo PUBLIC gbVk glfw Ghulbus::gbMath)
 target_include_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/demo)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT demo)
 
@@ -409,6 +414,10 @@ add_shader(demo ${PROJECT_BINARY_DIR}/shaders/frag_hardcoded.spv ${PROJECT_SOURC
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/frag_textured.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_textured.frag)
 
 file(COPY ${PROJECT_SOURCE_DIR}/demo/textures/statue.jpg DESTINATION ${PROJECT_BINARY_DIR}/textures)
+
+add_executable(demo_graphics ${PROJECT_SOURCE_DIR}/demo/demo_graphics.cpp ${PROJECT_SOURCE_DIR}/demo/external/stb_image_impl.cpp)
+target_link_libraries(demo_graphics PUBLIC gbGraphics)
+target_include_directories(demo_graphics PUBLIC ${PROJECT_SOURCE_DIR}/demo)
 
 ###############################################################################
 ## Doxygen gbVk

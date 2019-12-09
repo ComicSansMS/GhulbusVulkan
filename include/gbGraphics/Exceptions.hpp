@@ -42,6 +42,9 @@ namespace Exception_Info {
 namespace Exceptions
 {
     using namespace GHULBUS_BASE_NAMESPACE::Exceptions;
+
+    struct GLFWError : public GHULBUS_BASE_NAMESPACE::Exceptions::impl::ExceptionImpl
+    {};
 }
 }
 #endif
