@@ -42,6 +42,8 @@
 #include <gbVk/StringConverters.hpp>
 #include <gbVk/Swapchain.hpp>
 
+#include <gbBase/PerfLog.hpp>
+
 #include <GLFW/glfw3.h>
 
 #include <external/stb_image.h>
@@ -97,11 +99,12 @@ int main()
 {
     DrawMode const draw_mode = DrawMode::Textured;
 
-    Ghulbus::Log::initializeLogging();
-    auto const gblog_init_guard = Ghulbus::finally([]() { Ghulbus::Log::shutdownLogging(); });
+    auto const gblog_init_guard = Ghulbus::Log::initializeLoggingWithGuard();
     Ghulbus::Log::Handlers::LogSynchronizeMutex logger(Ghulbus::Log::Handlers::logToCout);
     Ghulbus::Log::setLogHandler(logger);
     Ghulbus::Log::setLogLevel(Ghulbus::LogLevel::Trace);
+
+    Ghulbus::PerfLog perflog;
 
     if (!glfwInit())
     {
@@ -142,6 +145,7 @@ int main()
         GHULBUS_LOG(Error, "Unable to create Vulkan surface.");
     }
     auto guard_surface = Ghulbus::finally([&instance, surface]() { vkDestroySurfaceKHR(instance.getVkInstance(), surface, nullptr); });
+    perflog.tick(Ghulbus::LogLevel::Debug, "Window creation");
 
 
     // find queue family
@@ -329,6 +333,8 @@ int main()
         VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     GhulbusVulkan::Image::blit(command_buffer, source_image, *swapchain_image);
 
+    perflog.tick(Ghulbus::LogLevel::Debug, "Swapchain setup");
+
     // presentation
     swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
         VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -341,6 +347,8 @@ int main()
     swapchain.present(queue.getVkQueue(), std::move(swapchain_image));
     queue.waitIdle();
     //std::this_thread::sleep_for(std::chrono::seconds(5));
+
+    perflog.tick(Ghulbus::LogLevel::Debug, "Initial present");
 
     std::vector<Vertex> vertex_data = generateVertexData();
     std::vector<uint16_t> index_data = generateIndexData();
@@ -762,6 +770,8 @@ int main()
         vkCmdEndRenderPass(local_command_buffer.getVkCommandBuffer());
         local_command_buffer.end();
     }
+
+    perflog.tick(Ghulbus::LogLevel::Debug, "Main setup");
 
     GhulbusVulkan::Semaphore semaphore_image_available = device.createSemaphore();
     GhulbusVulkan::Semaphore semaphore_render_finished = device.createSemaphore();
