@@ -10,6 +10,7 @@
 #include <gbMath/Vector3.hpp>
 
 #include <gbGraphics/Graphics.hpp>
+#include <gbGraphics/Window.hpp>
 
 #include <gbVk/Buffer.hpp>
 #include <gbVk/CommandBuffer.hpp>
@@ -108,12 +109,14 @@ int main()
 
     Ghulbus::PerfLog perflog;
 
-    auto const gbgraphics_init_guard = GhulbusGraphics::initializeWithGuard();
+    GhulbusGraphics::GraphicsInstance graphics_instance;
     GHULBUS_LOG(Trace, "GLFW " << glfwGetVersionString() << " up and running.");
 
-    GhulbusVulkan::Instance& instance = GhulbusGraphics::getVulkanInstance();
-    GhulbusVulkan::Device& device = GhulbusGraphics::getVulkanDevice();
-    GhulbusVulkan::PhysicalDevice physical_device = GhulbusGraphics::getVulkanPhysicalDevice();
+    perflog.tick(Ghulbus::LogLevel::Debug, "gbGraphics Init");
+
+    GhulbusVulkan::Instance& instance = graphics_instance.getVulkanInstance();
+    GhulbusVulkan::Device& device = graphics_instance.getVulkanDevice();
+    GhulbusVulkan::PhysicalDevice physical_device = graphics_instance.getVulkanPhysicalDevice();
 
     auto const queue_family_properties = physical_device.getQueueFamilyProperties();
     auto dev_props = physical_device.getProperties();
@@ -126,6 +129,9 @@ int main()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     int const WINDOW_WIDTH = 1280;
     int const WINDOW_HEIGHT = 720;
+
+    //GhulbusGraphics::Window main_window(WINDOW_WIDTH, WINDOW_HEIGHT);
+
     auto main_window =
         std::unique_ptr<GLFWwindow, void(*)(GLFWwindow*)>(glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan Demo",
             nullptr, nullptr),
@@ -174,8 +180,8 @@ int main()
         }
     }
 
-    uint32_t queue_family = GhulbusGraphics::getGraphicsQueueFamilyIndex();
-    uint32_t transfer_queue_family = GhulbusGraphics::getTransferQueueFamilyIndex();
+    uint32_t queue_family = graphics_instance.getGraphicsQueueFamilyIndex();
+    uint32_t transfer_queue_family = graphics_instance.getTransferQueueFamilyIndex();
 
     auto swapchain = device.createSwapChain(surface, queue_family);
     uint32_t const swapchain_n_images = swapchain.getNumberOfImages();

@@ -8,75 +8,10 @@
 */
 
 #include <gbGraphics/config.hpp>
-
-#include <gbVk/ForwardDecl.hpp>
-
-#include <cstdint>
+#include <gbGraphics/GraphicsInstance.hpp>
+#include <gbGraphics/Window.hpp>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
-struct ApplicationVersion {
-    uint16_t major;
-    uint16_t minor;
-    uint32_t patch;
-
-    ApplicationVersion()
-        :major(0), minor(0), patch(0)
-    {}
-
-    ApplicationVersion(uint16_t major_version, uint16_t minor_version, uint32_t patch_version)
-        :major(major_version), minor(minor_version), patch(patch_version)
-    {}
-};
-
-void initialize();
-
-void initialize(char const* application_name, ApplicationVersion application_version);
-
-void shutdown();
-
-struct [[nodiscard]] InitializeGuard{
-private:
-    bool m_doShutdown;
-public:
-    InitializeGuard()
-        :m_doShutdown(true)
-    {}
-
-    ~InitializeGuard() {
-        if (m_doShutdown) { shutdown(); }
-    }
-
-    InitializeGuard(InitializeGuard const&) = delete;
-    InitializeGuard& operator=(InitializeGuard const&) = delete;
-
-    InitializeGuard(InitializeGuard&& rhs)
-        :m_doShutdown(rhs.m_doShutdown)
-    {
-        rhs.m_doShutdown = false;
-    }
-
-    InitializeGuard& operator=(InitializeGuard&& rhs) = delete;
-};
-
-InitializeGuard initializeWithGuard();
-
-InitializeGuard initializeWithGuard(char const* application_name, ApplicationVersion application_version);
-
-GhulbusVulkan::Instance& getVulkanInstance();
-
-GhulbusVulkan::PhysicalDevice getVulkanPhysicalDevice();
-
-GhulbusVulkan::Device& getVulkanDevice();
-
-GhulbusVulkan::Queue getGraphicsQueue();
-uint32_t getGraphicsQueueFamilyIndex();
-uint32_t getGraphicsQueueIndex();
-GhulbusVulkan::Queue getComputeQueue();
-uint32_t getComputeQueueFamilyIndex();
-uint32_t getComputeQueueIndex();
-GhulbusVulkan::Queue getTransferQueue();
-uint32_t getTransferQueueFamilyIndex();
-uint32_t getTransferQueueIndex();
 }
 #endif
