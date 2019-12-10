@@ -63,6 +63,8 @@ InitializeGuard initializeWithGuard();
 
 InitializeGuard initializeWithGuard(char const* application_name, ApplicationVersion application_version);
 
-GHULBUS_VULKAN_NAMESPACE::Instance& getVulkanInstance();
+GhulbusVulkan::Instance& getVulkanInstance();
+
+GhulbusVulkan::PhysicalDevice& getVulkanPhysicalDevice();
 }
 #endif

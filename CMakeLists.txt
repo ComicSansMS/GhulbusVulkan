@@ -247,7 +247,7 @@ endif()
 
 set(GB_GRAPHICS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/gbGraphics)
 set(GB_GRAPHICS_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
-set(GB_GRAPHICS_TEST_DIR ${PROJECT_SOURCE_DIR}/test)
+set(GB_GRAPHICS_TEST_DIR ${PROJECT_SOURCE_DIR}/test/gbGraphics)
 
 set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/Graphics.cpp
@@ -263,12 +263,26 @@ set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Window.hpp
 )
 
+set(GB_GRAPHICS_DETAIL_SOURCE_FILES
+    ${GB_GRAPHICS_SOURCE_DIR}/detail/QueueSelection.cpp
+)
+source_group("detail\\Source Files" FILES ${GB_GRAPHICS_DETAIL_SOURCE_FILES})
+
+set(GB_GRAPHICS_DETAIL_HEADER_FILES
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/detail/QueueSelection.hpp
+)
+source_group("detail\\Header Files" FILES ${GB_GRAPHICS_DETAIL_HEADER_FILES})
+
 set(GB_GRAPHICS_TEST_SOURCES
+    ${GB_GRAPHICS_TEST_DIR}/TestGraphics.cpp
+    ${GB_GRAPHICS_TEST_DIR}/TestQueueSelection.cpp
 )
 
 add_library(gbGraphics
     ${GB_GRAPHICS_SOURCE_FILES}
     ${GB_GRAPHICS_HEADER_FILES}
+    ${GB_GRAPHICS_DETAIL_SOURCE_FILES}
+    ${GB_GRAPHICS_DETAIL_HEADER_FILES}
 )
 target_include_directories(gbGraphics PUBLIC $<BUILD_INTERFACE:${GB_GRAPHICS_INCLUDE_DIR}>)
 target_link_libraries(gbGraphics PUBLIC Ghulbus::gbBase Ghulbus::gbMath gbVk glfw)
@@ -385,6 +399,10 @@ if(GB_BUILD_TESTS)
     add_executable(gbVk_Test ${GB_VK_TEST_SOURCES})
     target_link_libraries(gbVk_Test gbVk Catch)
     add_test(NAME TestVulkan COMMAND gbVk_Test)
+
+    add_executable(gbGraphics_Test ${GB_GRAPHICS_TEST_SOURCES})
+    target_link_libraries(gbGraphics_Test gbGraphics Catch)
+    add_test(NAME TestGraphics COMMAND gbGraphics_Test)
 
     if(GB_GENERATE_COVERAGE_INFO AND (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"))
         target_compile_options(gbVk PRIVATE --coverage -fprofile-arcs -ftest-coverage)

@@ -1,0 +1,62 @@
+#ifndef GHULBUS_LIBRARY_INCLUDE_GUARD_GRAPHICS_DETAIL_QUEUE_SELECTION_HPP
+#define GHULBUS_LIBRARY_INCLUDE_GUARD_GRAPHICS_DETAIL_QUEUE_SELECTION_HPP
+
+/** @file
+*
+* @brief Queue Selection.
+* @author Andreas Weis (der_ghulbus@ghulbus-inc.de)
+*/
+
+#include <gbGraphics/config.hpp>
+
+#include <gbVk/config.hpp>
+
+#include <vulkan/vulkan.hpp>
+
+#include <algorithm>
+#include <optional>
+#include <vector>
+
+namespace GHULBUS_GRAPHICS_NAMESPACE
+{
+namespace detail
+{
+struct PhysicalDeviceCandidate {
+    std::size_t physicalDeviceIndex;
+    std::optional<uint32_t> primary_queue_family;       ///< primary queue: must support graphics & presentation
+    std::vector<uint32_t> graphics_queue_families;      ///< all other graphics queues
+    std::vector<uint32_t> compute_queue_families;       ///< compute, but non-graphic queues
+    std::vector<uint32_t> transfer_queue_families;      ///< transfer, but non-compute and non-graphic queues
+};
+
+struct DeviceQueues {
+    struct QueueId {
+        uint32_t queue_family_index;
+        uint32_t queue_index;
+        bool is_unique;
+    };
+    QueueId primary_queue;
+    std::vector<QueueId> compute_queues;
+    std::vector<QueueId> transfer_queues;
+};
+
+inline bool queueDoesSupport(uint32_t queue_family_index, VkQueueFlagBits requested,
+                             std::vector<VkQueueFamilyProperties> const& queue_properties)
+{
+    return (queue_properties[queue_family_index].queueFlags & requested) != 0;
+}
+
+template<typename It>
+inline It findQueueSupporting(It it_begin, It it_end, VkQueueFlagBits requested,
+                              std::vector<VkQueueFamilyProperties> const& queue_properties)
+{
+    return std::find_if(it_begin, it_end, [&queue_properties, requested](uint32_t family_index) {
+            return queueDoesSupport(family_index, requested, queue_properties);
+        });
+}
+
+DeviceQueues selectQueues(PhysicalDeviceCandidate const& candidate,
+                          std::vector<VkQueueFamilyProperties> const& queue_properties);
+}
+}
+#endif
