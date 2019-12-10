@@ -47,8 +47,6 @@
 
 #include <gbBase/PerfLog.hpp>
 
-#include <GLFW/glfw3.h>
-
 #include <external/stb_image.h>
 
 #include <algorithm>
@@ -56,8 +54,6 @@
 #include <cstring>
 #include <memory>
 #include <vector>
-
-struct DemoState {};
 
 struct Vertex {
     GhulbusMath::Vector3f position;
@@ -110,11 +106,9 @@ int main()
     Ghulbus::PerfLog perflog;
 
     GhulbusGraphics::GraphicsInstance graphics_instance;
-    GHULBUS_LOG(Trace, "GLFW " << glfwGetVersionString() << " up and running.");
 
     perflog.tick(Ghulbus::LogLevel::Debug, "gbGraphics Init");
 
-    GhulbusVulkan::Instance& instance = graphics_instance.getVulkanInstance();
     GhulbusVulkan::Device& device = graphics_instance.getVulkanDevice();
     GhulbusVulkan::PhysicalDevice physical_device = graphics_instance.getVulkanPhysicalDevice();
 
@@ -125,41 +119,12 @@ int main()
                       << "Driver Version " << GhulbusVulkan::version_to_string(dev_props.driverVersion)
                       << ").");
 
-    glfwWindowHint(GLFW_RESIZABLE, 0);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     int const WINDOW_WIDTH = 1280;
     int const WINDOW_HEIGHT = 720;
 
-    //GhulbusGraphics::Window main_window(WINDOW_WIDTH, WINDOW_HEIGHT);
+    GhulbusGraphics::Window main_window(graphics_instance, WINDOW_WIDTH, WINDOW_HEIGHT, u8"Vulkan Demo");
 
-    auto main_window =
-        std::unique_ptr<GLFWwindow, void(*)(GLFWwindow*)>(glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan Demo",
-            nullptr, nullptr),
-            glfwDestroyWindow);
-    if (!main_window) {
-        return 1;
-    }
-    VkSurfaceKHR surface;
-    VkResult res = glfwCreateWindowSurface(instance.getVkInstance(), main_window.get(), nullptr, &surface);
-    if (res != VK_SUCCESS) {
-        GHULBUS_LOG(Error, "Unable to create Vulkan surface.");
-    }
-    auto guard_surface = Ghulbus::finally([&instance, surface]() { vkDestroySurfaceKHR(instance.getVkInstance(), surface, nullptr); });
     perflog.tick(Ghulbus::LogLevel::Debug, "Window creation");
-
-    DemoState state;
-    glfwSetWindowUserPointer(main_window.get(), &state);
-
-    glfwSetKeyCallback(main_window.get(),
-        [](GLFWwindow* window, int key, int scancode, int action, int mods)
-        {
-            GHULBUS_UNUSED_VARIABLE(scancode);
-            GHULBUS_UNUSED_VARIABLE(action);
-            GHULBUS_UNUSED_VARIABLE(mods);
-            if (key == GLFW_KEY_ESCAPE) {
-                glfwSetWindowShouldClose(window, true);
-            }
-        });
 
     GhulbusVulkan::DeviceMemory memory = device.allocateMemory(1024 * 1024 * 64, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     GhulbusVulkan::DeviceMemory host_memory = device.allocateMemory(1024 * 1024 * 64, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
@@ -183,7 +148,7 @@ int main()
     uint32_t queue_family = graphics_instance.getGraphicsQueueFamilyIndex();
     uint32_t transfer_queue_family = graphics_instance.getTransferQueueFamilyIndex();
 
-    auto swapchain = device.createSwapChain(surface, queue_family);
+    auto swapchain = device.createSwapChain(main_window.getSurface(), queue_family);
     uint32_t const swapchain_n_images = swapchain.getNumberOfImages();
 
     auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
@@ -732,8 +697,8 @@ int main()
 
     fence.wait();
     GHULBUS_LOG(Trace, "Entering main loop...");
-    while(!glfwWindowShouldClose(main_window.get())) {
-        glfwPollEvents();
+    while(!main_window.isClosed()) {
+        graphics_instance.pollEvents();
 
         auto frame_image = swapchain.acquireNextImage(semaphore_image_available);
         update_uniform_buffer(frame_image.getSwapchainIndex());
@@ -751,7 +716,7 @@ int main()
         VkSemaphore signal_semaphores[] = { semaphore_render_finished.getVkSemaphore() };
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = signal_semaphores;
-        res = vkQueueSubmit(queue.getVkQueue(), 1, &submit_info, VK_NULL_HANDLE);
+        VkResult const res = vkQueueSubmit(queue.getVkQueue(), 1, &submit_info, VK_NULL_HANDLE);
         if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkQueueSubmit: " << res); return 1; }
         swapchain.present(queue.getVkQueue(), semaphore_render_finished, std::move(frame_image));
         queue.waitIdle();

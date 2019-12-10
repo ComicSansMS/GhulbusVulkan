@@ -9,11 +9,19 @@
 
 #include <gbGraphics/config.hpp>
 
+/// @todo: remove
+#include <gbVk/config.hpp>
+#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
+
 #include <cstdint>
 #include <memory>
+#include <string>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
+class GraphicsInstance;
+
 class Window {
 private:
     uint32_t m_width;
@@ -21,8 +29,13 @@ private:
     struct GLFW_Pimpl;
     std::unique_ptr<GLFW_Pimpl> m_glfw;
 public:
-    Window(int width, int height);
+    Window(GraphicsInstance& instance, int width, int height, char8_t const* window_title);
     ~Window();
+
+    bool isClosed();
+
+    /// @todo: remove
+    VkSurfaceKHR getSurface();
 };
 }
 #endif

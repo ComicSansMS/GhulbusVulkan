@@ -257,4 +257,14 @@ uint32_t GraphicsInstance::getTransferQueueIndex()
     detail::DeviceQueues::QueueId const& queue = m_pimpl->queues.transfer_queues.front();
     return queue.queue_index;
 }
+
+void GraphicsInstance::pollEvents()
+{
+    glfwPollEvents();
+}
+
+void GraphicsInstance::waitEvents()
+{
+    glfwWaitEvents();
+}
 }

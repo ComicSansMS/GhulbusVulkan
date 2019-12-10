@@ -62,6 +62,9 @@ public:
     GhulbusVulkan::Queue getTransferQueue();
     uint32_t getTransferQueueFamilyIndex();
     uint32_t getTransferQueueIndex();
+
+    void pollEvents();
+    void waitEvents();
 };
 }
 #endif
