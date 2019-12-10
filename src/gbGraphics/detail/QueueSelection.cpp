@@ -126,4 +126,16 @@ DeviceQueues selectQueues(PhysicalDeviceCandidate const& candidate,
 
     return ret;
 }
+
+std::vector<DeviceQueues::QueueId> uniqueQueues(DeviceQueues const& device_queues)
+{
+    std::vector<DeviceQueues::QueueId> ret;
+    ret.reserve(device_queues.compute_queues.size() + device_queues.transfer_queues.size() + 1);
+    ret.push_back(device_queues.primary_queue);
+    ret.insert(ret.end(), device_queues.compute_queues.begin(), device_queues.compute_queues.end());
+    ret.insert(ret.end(), device_queues.transfer_queues.begin(), device_queues.transfer_queues.end());
+    std::sort(ret.begin(), ret.end());
+    ret.erase(std::unique(ret.begin(), ret.end()), ret.end());
+    return ret;
+}
 }

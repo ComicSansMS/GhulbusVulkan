@@ -65,6 +65,18 @@ InitializeGuard initializeWithGuard(char const* application_name, ApplicationVer
 
 GhulbusVulkan::Instance& getVulkanInstance();
 
-GhulbusVulkan::PhysicalDevice& getVulkanPhysicalDevice();
+GhulbusVulkan::PhysicalDevice getVulkanPhysicalDevice();
+
+GhulbusVulkan::Device& getVulkanDevice();
+
+GhulbusVulkan::Queue getGraphicsQueue();
+uint32_t getGraphicsQueueFamilyIndex();
+uint32_t getGraphicsQueueIndex();
+GhulbusVulkan::Queue getComputeQueue();
+uint32_t getComputeQueueFamilyIndex();
+uint32_t getComputeQueueIndex();
+GhulbusVulkan::Queue getTransferQueue();
+uint32_t getTransferQueueFamilyIndex();
+uint32_t getTransferQueueIndex();
 }
 #endif

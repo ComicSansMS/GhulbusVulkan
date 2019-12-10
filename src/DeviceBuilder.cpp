@@ -16,6 +16,13 @@ DeviceBuilder::DeviceBuilder(VkPhysicalDevice physical_device)
 
 void DeviceBuilder::addQueues(uint32_t queue_family, uint32_t n_queues_in_family)
 {
+    if (auto const it = std::find_if(queue_create_infos.begin(), queue_create_infos.end(),
+            [queue_family](auto const& queue_ci) { return queue_ci.queueFamilyIndex == queue_family; });
+        it != queue_create_infos.end())
+    {
+        it->queueCount += n_queues_in_family;
+        return;
+    }
     queue_create_infos.emplace_back();
     VkDeviceQueueCreateInfo& queue_ci = queue_create_infos.back();
     queue_ci.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;

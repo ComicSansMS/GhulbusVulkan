@@ -112,9 +112,10 @@ int main()
     GHULBUS_LOG(Trace, "GLFW " << glfwGetVersionString() << " up and running.");
 
     GhulbusVulkan::Instance& instance = GhulbusGraphics::getVulkanInstance();
+    GhulbusVulkan::Device& device = GhulbusGraphics::getVulkanDevice();
+    GhulbusVulkan::PhysicalDevice physical_device = GhulbusGraphics::getVulkanPhysicalDevice();
 
-    auto phys_devices = instance.enumeratePhysicalDevices();
-    auto& physical_device = phys_devices.front();
+    auto const queue_family_properties = physical_device.getQueueFamilyProperties();
     auto dev_props = physical_device.getProperties();
     GHULBUS_LOG(Info, "Using device " << dev_props.deviceName << " ("
                       << "Vulkan Version " << GhulbusVulkan::version_to_string(dev_props.apiVersion) << ", "
@@ -139,54 +140,6 @@ int main()
     }
     auto guard_surface = Ghulbus::finally([&instance, surface]() { vkDestroySurfaceKHR(instance.getVkInstance(), surface, nullptr); });
     perflog.tick(Ghulbus::LogLevel::Debug, "Window creation");
-
-    // find queue family
-    auto const queue_family_properties = physical_device.getQueueFamilyProperties();
-    auto const opt_queue_family = [&physical_device, &surface, &queue_family_properties]() -> std::optional<uint32_t> {
-        uint32_t i = 0;
-        for (auto const& qfp : queue_family_properties) {
-            if ((qfp.queueCount > 0) && (qfp.queueFlags & VK_QUEUE_GRAPHICS_BIT)) {
-                // @todo: graphics and presentation might only be available on separate queues
-                if (physical_device.getSurfaceSupport(i, surface)) {
-                    return i;
-                }
-            }
-            ++i;
-        }
-        GHULBUS_LOG(Error, "No suitable queue family found.");
-        return std::nullopt;
-    }();
-    if (!opt_queue_family) {
-        return 1;
-    }
-
-    uint32_t const queue_family = *opt_queue_family;
-
-    uint32_t const transfer_queue_family = [&physical_device, queue_family, &queue_family_properties]() {
-        uint32_t i = 0;
-        for (auto const& qfp : queue_family_properties) {
-            if ((qfp.queueCount > 0) &&
-                (qfp.queueFlags & VK_QUEUE_TRANSFER_BIT) &&
-                ((qfp.queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0)) {
-                return i;
-            }
-            ++i;
-        }
-        return queue_family;
-    }();
-
-    GhulbusVulkan::Device device = [&physical_device, queue_family, transfer_queue_family,
-                                    &queue_family_properties]()
-    {
-        GhulbusVulkan::DeviceBuilder device_builder = physical_device.createDeviceBuilder();
-        if (queue_family == transfer_queue_family) {
-            device_builder.addQueues(queue_family, std::min(queue_family_properties[queue_family].queueCount, 2u));
-        } else {
-            device_builder.addQueues(queue_family, 1);
-            device_builder.addQueues(transfer_queue_family, 1);
-        }
-        return device_builder.create();
-    }();
 
     DemoState state;
     glfwSetWindowUserPointer(main_window.get(), &state);
@@ -220,6 +173,9 @@ int main()
              */
         }
     }
+
+    uint32_t queue_family = GhulbusGraphics::getGraphicsQueueFamilyIndex();
+    uint32_t transfer_queue_family = GhulbusGraphics::getTransferQueueFamilyIndex();
 
     auto swapchain = device.createSwapChain(surface, queue_family);
     uint32_t const swapchain_n_images = swapchain.getNumberOfImages();

@@ -12,7 +12,9 @@
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 class Device;
+class DeviceBuilder;
 class Instance;
 class PhysicalDevice;
+class Queue;
 }
 #endif

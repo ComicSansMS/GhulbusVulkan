@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <tuple>
 #include <vector>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
@@ -39,8 +40,18 @@ struct DeviceQueues {
     std::vector<QueueId> transfer_queues;
 };
 
+inline bool operator==(DeviceQueues::QueueId const& lhs, DeviceQueues::QueueId const& rhs) {
+    return (lhs.queue_family_index == rhs.queue_family_index) && (lhs.queue_index == rhs.queue_index);
+}
+
+inline bool operator<(DeviceQueues::QueueId const& lhs, DeviceQueues::QueueId const& rhs) {
+    return std::tie(lhs.queue_family_index, lhs.queue_index) < std::tie(rhs.queue_family_index, rhs.queue_index);
+}
+
 DeviceQueues selectQueues(PhysicalDeviceCandidate const& candidate,
                           std::vector<VkQueueFamilyProperties> const& queue_properties);
+
+std::vector<DeviceQueues::QueueId> uniqueQueues(DeviceQueues const& device_queues);
 }
 }
 #endif
