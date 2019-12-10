@@ -148,7 +148,7 @@ int main()
     uint32_t queue_family = graphics_instance.getGraphicsQueueFamilyIndex();
     uint32_t transfer_queue_family = graphics_instance.getTransferQueueFamilyIndex();
 
-    auto swapchain = device.createSwapChain(main_window.getSurface(), queue_family);
+    GhulbusVulkan::Swapchain& swapchain = main_window.getSwapchain();
     uint32_t const swapchain_n_images = swapchain.getNumberOfImages();
 
     auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
@@ -697,7 +697,7 @@ int main()
 
     fence.wait();
     GHULBUS_LOG(Trace, "Entering main loop...");
-    while(!main_window.isClosed()) {
+    while(!main_window.isDone()) {
         graphics_instance.pollEvents();
 
         auto frame_image = swapchain.acquireNextImage(semaphore_image_available);

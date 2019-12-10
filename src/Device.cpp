@@ -58,7 +58,7 @@ PhysicalDevice Device::getPhysicalDevice()
     return PhysicalDevice(m_physicalDevice);
 }
 
-Swapchain Device::createSwapChain(VkSurfaceKHR surface, uint32_t queue_family)
+Swapchain Device::createSwapchain(VkSurfaceKHR surface, uint32_t queue_family)
 {
     VkBool32 is_supported;
     VkResult res = vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, queue_family, surface, &is_supported);

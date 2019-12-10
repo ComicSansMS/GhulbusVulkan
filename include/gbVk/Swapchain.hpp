@@ -54,6 +54,8 @@ private:
     VkDevice m_device;
     std::vector<Image> m_images;
 public:
+    Swapchain();
+
     Swapchain(VkDevice logical_device, VkSwapchainKHR swapchain, VkExtent2D const& extent, VkFormat format);
 
     ~Swapchain();
@@ -62,7 +64,7 @@ public:
     Swapchain& operator=(Swapchain const&) = delete;
 
     Swapchain(Swapchain&& rhs);
-    Swapchain& operator=(Swapchain&&) = delete;
+    Swapchain& operator=(Swapchain&& rhs);
 
     VkSwapchainKHR getVkSwapchainKHR();
 

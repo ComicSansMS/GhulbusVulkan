@@ -38,12 +38,18 @@ struct Window::GLFW_Pimpl {
         }
     }
 
-    static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+    static void static_keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+    {
+        GLFW_Pimpl* thisptr = reinterpret_cast<GLFW_Pimpl*>(glfwGetWindowUserPointer(window));
+        GHULBUS_ASSERT(thisptr->window == window);
+        thisptr->keyCallback(key, scancode, action, mods);
+    }
+
+    void keyCallback(int key, int scancode, int action, int mods)
     {
         GHULBUS_UNUSED_VARIABLE(scancode);
         GHULBUS_UNUSED_VARIABLE(action);
         GHULBUS_UNUSED_VARIABLE(mods);
-        GLFW_Pimpl* thisptr = reinterpret_cast<GLFW_Pimpl*>(glfwGetWindowUserPointer(window));
         if (key == GLFW_KEY_ESCAPE) {
             glfwSetWindowShouldClose(window, true);
         }
@@ -73,18 +79,21 @@ Window::Window(GraphicsInstance& instance, int width, int height, char8_t const*
     }
 
     glfwSetWindowUserPointer(m_glfw->window, m_glfw.get());
-    glfwSetKeyCallback(m_glfw->window, m_glfw->keyCallback);
+    glfwSetKeyCallback(m_glfw->window, GLFW_Pimpl::static_keyCallback);
+
+    m_swapchain = instance.getVulkanDevice().createSwapchain(m_glfw->surface, instance.getGraphicsQueueFamilyIndex());
 }
 
 Window::~Window() = default;
 
-bool Window::isClosed()
+bool Window::isDone()
 {
     return glfwWindowShouldClose(m_glfw->window);
 }
 
-VkSurfaceKHR Window::getSurface()
+GhulbusVulkan::Swapchain& Window::getSwapchain()
 {
-    return m_glfw->surface;
+    return m_swapchain;
 }
+
 }

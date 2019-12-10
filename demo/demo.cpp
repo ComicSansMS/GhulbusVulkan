@@ -229,7 +229,7 @@ int main()
         }
     }
 
-    auto swapchain = device.createSwapChain(surface, queue_family);
+    auto swapchain = device.createSwapchain(surface, queue_family);
     uint32_t const swapchain_n_images = swapchain.getNumberOfImages();
 
     auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);

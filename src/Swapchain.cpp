@@ -50,6 +50,10 @@ uint32_t Swapchain::AcquiredImage::getSwapchainIndex() const
     return m_swapchainIndex;
 }
 
+Swapchain::Swapchain()
+    :m_swapchain(nullptr), m_device(nullptr)
+{}
+
 Swapchain::Swapchain(VkDevice logical_device, VkSwapchainKHR swapchain, VkExtent2D const& extent, VkFormat format)
     :m_swapchain(swapchain), m_device(logical_device)
 {
@@ -79,10 +83,22 @@ Swapchain::~Swapchain()
 }
 
 Swapchain::Swapchain(Swapchain&& rhs)
-    :m_swapchain(rhs.m_swapchain), m_device(rhs.m_device)
+    :m_swapchain(rhs.m_swapchain), m_device(rhs.m_device), m_images(std::move(rhs.m_images))
 {
     rhs.m_swapchain = nullptr;
     rhs.m_device = nullptr;
+}
+
+Swapchain& Swapchain::operator=(Swapchain&& rhs)
+{
+    if (&rhs != this) {
+        if(m_swapchain) { vkDestroySwapchainKHR(m_device, m_swapchain, nullptr); }
+        m_swapchain = rhs.m_swapchain;
+        m_device = rhs.m_device;
+        m_images = std::move(rhs.m_images);
+        rhs.m_swapchain = nullptr;
+    }
+    return *this;
 }
 
 VkSwapchainKHR Swapchain::getVkSwapchainKHR()
@@ -127,7 +143,7 @@ std::vector<VkImage> Swapchain::getVkImages()
 }
 
 Swapchain::AcquiredImage Swapchain::acquireNextImage_impl(Fence* fence, Semaphore* semaphore,
-                                               std::chrono::nanoseconds* timeout)
+                                                          std::chrono::nanoseconds* timeout)
 {
     uint32_t index;
     VkResult res = vkAcquireNextImageKHR(m_device, m_swapchain,

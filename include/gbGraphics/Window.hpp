@@ -9,10 +9,7 @@
 
 #include <gbGraphics/config.hpp>
 
-/// @todo: remove
-#include <gbVk/config.hpp>
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan.hpp>
+#include <gbVk/Swapchain.hpp>
 
 #include <cstdint>
 #include <memory>
@@ -28,14 +25,14 @@ private:
     uint32_t m_height;
     struct GLFW_Pimpl;
     std::unique_ptr<GLFW_Pimpl> m_glfw;
+    GhulbusVulkan::Swapchain m_swapchain;
 public:
     Window(GraphicsInstance& instance, int width, int height, char8_t const* window_title);
     ~Window();
 
-    bool isClosed();
+    bool isDone();
 
-    /// @todo: remove
-    VkSurfaceKHR getSurface();
+    GhulbusVulkan::Swapchain& getSwapchain();
 };
 }
 #endif
