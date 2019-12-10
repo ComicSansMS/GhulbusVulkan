@@ -32,6 +32,9 @@ public:
 
     bool isDone();
 
+    uint32_t getWidth() const;
+    uint32_t getHeight() const;
+
     GhulbusVulkan::Swapchain& getSwapchain();
 };
 }

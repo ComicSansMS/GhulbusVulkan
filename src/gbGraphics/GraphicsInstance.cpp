@@ -1,6 +1,7 @@
 #include <gbGraphics/GraphicsInstance.hpp>
 
 #include <gbGraphics/Exceptions.hpp>
+#include <gbGraphics/detail/DeviceMemoryAllocator.hpp>
 #include <gbGraphics/detail/QueueSelection.hpp>
 
 #include <gbVk/Device.hpp>
@@ -13,24 +14,26 @@
 #include <gbBase/Finally.hpp>
 #include <gbBase/Log.hpp>
 
-#include <algorithm>
-#include <array>
-#include <iterator>
-#include <tuple>
-
 #ifndef GLFW_INCLUDE_VULKAN
 #   define GLFW_INCLUDE_VULKAN
 #endif
 #include <GLFW/glfw3.h>
+
+#include <algorithm>
+#include <array>
+#include <iterator>
+#include <tuple>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE {
 struct GraphicsInstance::Pimpl {
     GhulbusVulkan::Instance instance;
     GhulbusVulkan::Device device;
     detail::DeviceQueues queues;
+    detail::DeviceMemoryAllocator allocator;
 
-    Pimpl(GhulbusVulkan::Instance&& i, GhulbusVulkan::Device&& d, detail::DeviceQueues&& q)
-        :instance(std::move(i)), device(std::move(d)), queues(std::move(q))
+    Pimpl(GhulbusVulkan::Instance&& i, GhulbusVulkan::Device&& d, detail::DeviceQueues&& q,
+          detail::DeviceMemoryAllocator && a)
+        :instance(std::move(i)), device(std::move(d)), queues(std::move(q)), allocator(std::move(a))
     {}
 };
 
@@ -56,8 +59,10 @@ std::unique_ptr<GraphicsInstance::Pimpl> initializeVulkanInstance(char const* ap
     GhulbusVulkan::Instance instance =
         GhulbusVulkan::Instance::createInstance(application_name, application_version, layers, extensions);
     auto [device, queues] = initializeVulkanDevice(instance);
+    detail::DeviceMemoryAllocator allocator(instance, device);
 
-    return std::make_unique<GraphicsInstance::Pimpl>(std::move(instance), std::move(device), std::move(queues));
+    return std::make_unique<GraphicsInstance::Pimpl>(std::move(instance), std::move(device), std::move(queues),
+                                                     std::move(allocator));
 }
 
 std::tuple<GhulbusVulkan::Device, detail::DeviceQueues> initializeVulkanDevice(GhulbusVulkan::Instance& instance)

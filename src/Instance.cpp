@@ -72,7 +72,7 @@ Instance Instance::createInstance(char const* application_name, Version const& a
     app_info.applicationVersion = application_version.version;
     app_info.pEngineName = "GhulbusVulkan";
     app_info.engineVersion = VK_MAKE_VERSION(0, 1, 0);
-    app_info.apiVersion = VK_API_VERSION_1_0;
+    app_info.apiVersion = getVulkanApiVersion();
 
     VkInstanceCreateInfo create_info = {};
     create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -138,6 +138,11 @@ std::vector<PhysicalDevice> Instance::enumeratePhysicalDevices()
     std::transform(begin(physical_devices), end(physical_devices), std::back_inserter(ret),
                    [](VkPhysicalDevice const& d) { return PhysicalDevice(d); });
     return ret;
+}
+
+uint32_t Instance::getVulkanApiVersion()
+{
+    return VK_API_VERSION_1_0;
 }
 
 }

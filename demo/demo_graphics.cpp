@@ -174,7 +174,6 @@ int main()
         ((queue_family_properties[queue_family].queueCount > 1) ? 1 : 0) : 0);
 
     auto fence = device.createFence();
-    auto images = swapchain.getVkImages();
     auto swapchain_image = swapchain.acquireNextImage(fence);
     if (!swapchain_image) {
         GHULBUS_LOG(Error, "Unable to acquire image from swap chain.");
@@ -619,11 +618,11 @@ int main()
         return builder.create();
     }();
 
-    GhulbusVulkan::Pipeline pipeline = [&device, &swapchain_image, &pipeline_layout,
+    GhulbusVulkan::Pipeline pipeline = [&device, &main_window, &pipeline_layout,
                                         &shader_stage_cis, &render_pass,
                                         &vertex_binding, &vertex_attributes, draw_mode]() {
-        auto builder = device.createGraphicsPipelineBuilder(swapchain_image->getWidth(),
-                                                            swapchain_image->getHeight());
+        auto builder = device.createGraphicsPipelineBuilder(main_window.getWidth(),
+                                                            main_window.getHeight());
         if (draw_mode != DrawMode::Hardcoded) {
             builder.addVertexBindings(&vertex_binding, 1, vertex_attributes.data(),
                                       static_cast<uint32_t>(vertex_attributes.size()));
@@ -651,8 +650,8 @@ int main()
         render_pass_info.framebuffer = framebuffers[i].getVkFramebuffer();
         render_pass_info.renderArea.offset.x = 0;
         render_pass_info.renderArea.offset.y = 0;
-        render_pass_info.renderArea.extent.width = swapchain_image->getWidth();
-        render_pass_info.renderArea.extent.height = swapchain_image->getHeight();
+        render_pass_info.renderArea.extent.width = main_window.getWidth();
+        render_pass_info.renderArea.extent.height = main_window.getHeight();
         std::array<VkClearValue, 2> clear_color;
         clear_color[0].color.float32[0] = 0.5f;
         clear_color[0].color.float32[1] = 0.f;

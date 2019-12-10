@@ -139,6 +139,8 @@ public:
     VkInstance getVkInstance();
 
     std::vector<PhysicalDevice> enumeratePhysicalDevices();
+
+    static uint32_t getVulkanApiVersion();
 };
 }
 #endif

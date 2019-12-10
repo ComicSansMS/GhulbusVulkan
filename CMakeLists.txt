@@ -5,6 +5,10 @@ project(GhulbusVulkan)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+###############################################################################
+## Build Options
+###############################################################################
+
 if($ENV{TRAVIS})
     if($ENV{TRAVIS} STREQUAL "true")
         message(STATUS "Building on Travis-CI.")
@@ -62,16 +66,13 @@ if(MSVC)
     endif()
 endif()
 
-###############################################################################
-## Library gbVk
-###############################################################################
-
-set(GB_VK_VERSION_MAJOR 0)
-set(GB_VK_VERSION_MINOR 1)
-set(GB_VK_VERSION_PATCH 0)
-set(GB_VK_VERSION "${GB_VK_VERSION_MAJOR}.${GB_VK_VERSION_MINOR}.${GB_VK_VERSION_PATCH}")
-
 option(BUILD_SHARED_LIBS "If checked, generate dynamic instead of static libraries." OFF)
+
+###############################################################################
+## Dependencies
+###############################################################################
+
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 find_package(Vulkan REQUIRED)
 find_program(Vulkan_GLSLC NAMES glslc HINTS ${Vulkan_INCLUDE_DIR}/../bin ENV GLSLC_EXECUTABLE)
@@ -98,6 +99,8 @@ find_package(glfw3 REQUIRED HINTS ${PROJECT_BINARY_DIR}/dependencies/glfw3/insta
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+find_package(VulkanMemoryAllocator REQUIRED)
+
 set(GHULBUS_BASE_ROOT "" CACHE PATH "GhulbusBase installation root directory.")
 if(GHULBUS_BASE_ROOT)
     list(APPEND CMAKE_PREFIX_PATH ${GHULBUS_BASE_ROOT}/cmake)
@@ -110,6 +113,15 @@ endif()
 find_package(gbMath REQUIRED)
 get_property(gbMath_SOURCES TARGET Ghulbus::gbMath PROPERTY INTERFACE_SOURCES)
 source_group(gbMath FILES ${gbMath_SOURCES})
+
+###############################################################################
+## Library gbVk
+###############################################################################
+
+set(GB_VK_VERSION_MAJOR 0)
+set(GB_VK_VERSION_MINOR 1)
+set(GB_VK_VERSION_PATCH 0)
+set(GB_VK_VERSION "${GB_VK_VERSION_MAJOR}.${GB_VK_VERSION_MINOR}.${GB_VK_VERSION_PATCH}")
 
 set(GB_VK_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 set(GB_VK_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
@@ -252,6 +264,7 @@ set(GB_GRAPHICS_TEST_DIR ${PROJECT_SOURCE_DIR}/test/gbGraphics)
 set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/Graphics.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/GraphicsInstance.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/Image2d.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/ObjParser.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Window.cpp
 )
@@ -261,17 +274,22 @@ set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Exceptions.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Graphics.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/GraphicsInstance.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Image2d.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/ObjParser.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Window.hpp
 )
 
 set(GB_GRAPHICS_DETAIL_SOURCE_FILES
+    ${GB_GRAPHICS_SOURCE_DIR}/detail/DeviceMemoryAllocator.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/detail/QueueSelection.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/detail/VulkanMemoryAllocator.cpp
 )
 source_group("detail\\Source Files" FILES ${GB_GRAPHICS_DETAIL_SOURCE_FILES})
 
 set(GB_GRAPHICS_DETAIL_HEADER_FILES
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/detail/DeviceMemoryAllocator.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/detail/QueueSelection.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/detail/VulkanMemoryAllocator.hpp
 )
 source_group("detail\\Header Files" FILES ${GB_GRAPHICS_DETAIL_HEADER_FILES})
 
@@ -288,6 +306,7 @@ add_library(gbGraphics
 )
 target_include_directories(gbGraphics PUBLIC $<BUILD_INTERFACE:${GB_GRAPHICS_INCLUDE_DIR}>)
 target_link_libraries(gbGraphics PUBLIC Ghulbus::gbBase Ghulbus::gbMath gbVk glfw)
+target_link_libraries(gbGraphics PRIVATE VulkanMemoryAllocator::VulkanMemoryAllocator)
 
 if(NOT GB_GENERATE_COVERAGE_INFO)
     target_compile_definitions(gbGraphics PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
@@ -328,7 +347,6 @@ endif()
 ###############################################################################
 ## Tools
 ###############################################################################
-list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 option(GB_VK_BUILD_TOOLS "Uncheck this if you do not want to build the GUI tools." ON)
 if(GB_VK_BUILD_TOOLS)
     find_package(Qt5BaseDir)

@@ -91,6 +91,16 @@ bool Window::isDone()
     return glfwWindowShouldClose(m_glfw->window);
 }
 
+uint32_t Window::getWidth() const
+{
+    return m_width;
+}
+
+uint32_t Window::getHeight() const
+{
+    return m_height;
+}
+
 GhulbusVulkan::Swapchain& Window::getSwapchain()
 {
     return m_swapchain;
