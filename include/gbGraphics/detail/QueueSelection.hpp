@@ -33,27 +33,11 @@ struct DeviceQueues {
     struct QueueId {
         uint32_t queue_family_index;
         uint32_t queue_index;
-        bool is_unique;
     };
     QueueId primary_queue;
     std::vector<QueueId> compute_queues;
     std::vector<QueueId> transfer_queues;
 };
-
-inline bool queueDoesSupport(uint32_t queue_family_index, VkQueueFlagBits requested,
-                             std::vector<VkQueueFamilyProperties> const& queue_properties)
-{
-    return (queue_properties[queue_family_index].queueFlags & requested) != 0;
-}
-
-template<typename It>
-inline It findQueueSupporting(It it_begin, It it_end, VkQueueFlagBits requested,
-                              std::vector<VkQueueFamilyProperties> const& queue_properties)
-{
-    return std::find_if(it_begin, it_end, [&queue_properties, requested](uint32_t family_index) {
-            return queueDoesSupport(family_index, requested, queue_properties);
-        });
-}
 
 DeviceQueues selectQueues(PhysicalDeviceCandidate const& candidate,
                           std::vector<VkQueueFamilyProperties> const& queue_properties);

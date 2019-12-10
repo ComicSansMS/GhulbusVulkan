@@ -40,17 +40,14 @@ TEST_CASE("Queue Selection")
             queue_props.push_back(compute);
         }
         DeviceQueues queues = selectQueues(candidate, queue_props);
-        CHECK(queues.primary_queue.is_unique);
         CHECK(queues.primary_queue.queue_family_index == 0);
         CHECK(queues.primary_queue.queue_index == 0);
 
         REQUIRE(queues.compute_queues.size() == 1);
-        CHECK(queues.compute_queues[0].is_unique);
         CHECK(queues.compute_queues[0].queue_family_index == 3);
         CHECK(queues.compute_queues[0].queue_index == 0);
 
         REQUIRE(queues.transfer_queues.size() == 1);
-        CHECK(queues.transfer_queues[0].is_unique);
         CHECK(queues.transfer_queues[0].queue_family_index == 2);
         CHECK(queues.transfer_queues[0].queue_index == 0);
     }
@@ -89,17 +86,14 @@ TEST_CASE("Queue Selection")
             queue_props.push_back(compute);
         }
         DeviceQueues queues = selectQueues(candidate, queue_props);
-        CHECK(queues.primary_queue.is_unique);
         CHECK(queues.primary_queue.queue_family_index == 0);
         CHECK(queues.primary_queue.queue_index == 0);
 
         REQUIRE(queues.compute_queues.size() == 1);
-        CHECK(queues.compute_queues[0].is_unique);
         CHECK(queues.compute_queues[0].queue_family_index == 2);
         CHECK(queues.compute_queues[0].queue_index == 0);
 
         REQUIRE(queues.transfer_queues.size() == 1);
-        CHECK(queues.transfer_queues[0].is_unique);
         CHECK(queues.transfer_queues[0].queue_family_index == 2);
         CHECK(queues.transfer_queues[0].queue_index == 1);
     }
@@ -138,17 +132,14 @@ TEST_CASE("Queue Selection")
             queue_props.push_back(compute);
         }
         DeviceQueues queues = selectQueues(candidate, queue_props);
-        CHECK(queues.primary_queue.is_unique);
         CHECK(queues.primary_queue.queue_family_index == 0);
         CHECK(queues.primary_queue.queue_index == 0);
 
         REQUIRE(queues.compute_queues.size() == 1);
-        CHECK(queues.compute_queues[0].is_unique);
         CHECK(queues.compute_queues[0].queue_family_index == 2);
         CHECK(queues.compute_queues[0].queue_index == 0);
 
         REQUIRE(queues.transfer_queues.size() == 1);
-        CHECK(queues.transfer_queues[0].is_unique);
         CHECK(queues.transfer_queues[0].queue_family_index == 3);
         CHECK(queues.transfer_queues[0].queue_index == 0);
     }
@@ -180,17 +171,14 @@ TEST_CASE("Queue Selection")
             queue_props.push_back(compute);
         }
         DeviceQueues queues = selectQueues(candidate, queue_props);
-        CHECK(queues.primary_queue.is_unique);
         CHECK(queues.primary_queue.queue_family_index == 0);
         CHECK(queues.primary_queue.queue_index == 0);
 
         REQUIRE(queues.compute_queues.size() == 1);
-        CHECK(queues.compute_queues[0].is_unique);
         CHECK(queues.compute_queues[0].queue_family_index == 2);
         CHECK(queues.compute_queues[0].queue_index == 0);
 
         REQUIRE(queues.transfer_queues.size() == 1);
-        CHECK(queues.transfer_queues[0].is_unique);
         CHECK(queues.transfer_queues[0].queue_family_index == 2);
         CHECK(queues.transfer_queues[0].queue_index == 1);
     }
@@ -222,17 +210,14 @@ TEST_CASE("Queue Selection")
             queue_props.push_back(compute);
         }
         DeviceQueues queues = selectQueues(candidate, queue_props);
-        CHECK(queues.primary_queue.is_unique);
         CHECK(queues.primary_queue.queue_family_index == 0);
         CHECK(queues.primary_queue.queue_index == 0);
 
         REQUIRE(queues.compute_queues.size() == 1);
-        CHECK_FALSE(queues.compute_queues[0].is_unique);
         CHECK(queues.compute_queues[0].queue_family_index == 2);
         CHECK(queues.compute_queues[0].queue_index == 0);
 
         REQUIRE(queues.transfer_queues.size() == 1);
-        CHECK_FALSE(queues.transfer_queues[0].is_unique);
         CHECK(queues.transfer_queues[0].queue_family_index == 2);
         CHECK(queues.transfer_queues[0].queue_index == 0);
     }
@@ -264,17 +249,14 @@ TEST_CASE("Queue Selection")
             queue_props.push_back(compute);
         }
         DeviceQueues queues = selectQueues(candidate, queue_props);
-        CHECK(queues.primary_queue.is_unique);
         CHECK(queues.primary_queue.queue_family_index == 0);
         CHECK(queues.primary_queue.queue_index == 0);
 
         REQUIRE(queues.compute_queues.size() == 1);
-        CHECK(queues.compute_queues[0].is_unique);
         CHECK(queues.compute_queues[0].queue_family_index == 2);
         CHECK(queues.compute_queues[0].queue_index == 0);
 
         REQUIRE(queues.transfer_queues.size() == 1);
-        CHECK(queues.transfer_queues[0].is_unique);
         CHECK(queues.transfer_queues[0].queue_family_index == 1);
         CHECK(queues.transfer_queues[0].queue_index == 1);
     }
@@ -306,17 +288,14 @@ TEST_CASE("Queue Selection")
             queue_props.push_back(compute);
         }
         DeviceQueues queues = selectQueues(candidate, queue_props);
-        CHECK(queues.primary_queue.is_unique);
         CHECK(queues.primary_queue.queue_family_index == 0);
         CHECK(queues.primary_queue.queue_index == 0);
 
         REQUIRE(queues.compute_queues.size() == 1);
-        CHECK(queues.compute_queues[0].is_unique);
         CHECK(queues.compute_queues[0].queue_family_index == 2);
         CHECK(queues.compute_queues[0].queue_index == 0);
 
         REQUIRE(queues.transfer_queues.size() == 1);
-        CHECK(queues.transfer_queues[0].is_unique);
         CHECK(queues.transfer_queues[0].queue_family_index == 0);
         CHECK(queues.transfer_queues[0].queue_index == 1);
     }
@@ -334,18 +313,66 @@ TEST_CASE("Queue Selection")
             queue_props.push_back(primary);
         }
         DeviceQueues queues = selectQueues(candidate, queue_props);
-        CHECK_FALSE(queues.primary_queue.is_unique);
         CHECK(queues.primary_queue.queue_family_index == 0);
         CHECK(queues.primary_queue.queue_index == 0);
 
         REQUIRE(queues.compute_queues.size() == 1);
-        CHECK_FALSE(queues.compute_queues[0].is_unique);
         CHECK(queues.compute_queues[0].queue_family_index == 0);
         CHECK(queues.compute_queues[0].queue_index == 0);
 
         REQUIRE(queues.transfer_queues.size() == 1);
-        CHECK_FALSE(queues.transfer_queues[0].is_unique);
         CHECK(queues.transfer_queues[0].queue_family_index == 0);
         CHECK(queues.transfer_queues[0].queue_index == 0);
+    }
+
+    SECTION("Everything Shared With Primary, Semi-Separate Queues")
+    {
+        PhysicalDeviceCandidate candidate;
+        std::vector<VkQueueFamilyProperties> queue_props;
+        candidate.physicalDeviceIndex = 42;
+        candidate.primary_queue_family = 0;
+        {
+            VkQueueFamilyProperties primary;
+            primary.queueCount = 2;
+            primary.queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT;
+            queue_props.push_back(primary);
+        }
+        DeviceQueues queues = selectQueues(candidate, queue_props);
+        CHECK(queues.primary_queue.queue_family_index == 0);
+        CHECK(queues.primary_queue.queue_index == 0);
+
+        REQUIRE(queues.compute_queues.size() == 1);
+        CHECK(queues.compute_queues[0].queue_family_index == 0);
+        CHECK(queues.compute_queues[0].queue_index == 1);
+
+        REQUIRE(queues.transfer_queues.size() == 1);
+        CHECK(queues.transfer_queues[0].queue_family_index == 0);
+        CHECK(queues.transfer_queues[0].queue_index == 1);
+    }
+
+    SECTION("Everything Shared With Primary, Separate Queues")
+    {
+        PhysicalDeviceCandidate candidate;
+        std::vector<VkQueueFamilyProperties> queue_props;
+        candidate.physicalDeviceIndex = 42;
+        candidate.primary_queue_family = 0;
+        {
+            VkQueueFamilyProperties primary;
+            primary.queueCount = 3;
+            primary.queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT;
+            queue_props.push_back(primary);
+        }
+        DeviceQueues queues = selectQueues(candidate, queue_props);
+        CHECK(queues.primary_queue.queue_family_index == 0);
+        CHECK(queues.primary_queue.queue_index == 0);
+
+        REQUIRE(queues.compute_queues.size() == 1);
+        CHECK(queues.compute_queues[0].queue_family_index == 0);
+        CHECK(queues.compute_queues[0].queue_index == 1);
+
+        /// @todo it would be nice if this one wouldn't have to share with compute
+        REQUIRE(queues.transfer_queues.size() == 1);
+        CHECK(queues.transfer_queues[0].queue_family_index == 0);
+        CHECK(queues.transfer_queues[0].queue_index == 1);
     }
 }
