@@ -68,6 +68,8 @@ public:
     uint32_t getTransferQueueFamilyIndex();
     uint32_t getTransferQueueIndex();
 
+    void setDebugLoggingEnabled(bool enabled);
+
     void pollEvents();
     void waitEvents();
 

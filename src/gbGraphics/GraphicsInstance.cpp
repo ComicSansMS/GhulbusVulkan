@@ -5,15 +5,18 @@
 #include <gbGraphics/detail/DeviceMemoryAllocator.hpp>
 #include <gbGraphics/detail/QueueSelection.hpp>
 
+#include <gbVk/DebugReportCallback.hpp>
 #include <gbVk/Device.hpp>
 #include <gbVk/DeviceBuilder.hpp>
 #include <gbVk/Instance.hpp>
 #include <gbVk/PhysicalDevice.hpp>
 #include <gbVk/Queue.hpp>
+#include <gbVk/StringConverters.hpp>
 
 #include <gbBase/Assert.hpp>
 #include <gbBase/Finally.hpp>
 #include <gbBase/Log.hpp>
+#include <gbBase/UnusedVariable.hpp>
 
 #ifndef GLFW_INCLUDE_VULKAN
 #   define GLFW_INCLUDE_VULKAN
@@ -34,6 +37,7 @@ struct GraphicsInstance::Pimpl {
     GhulbusVulkan::Queue queue_graphics;
     GhulbusVulkan::Queue queue_compute;
     GhulbusVulkan::Queue queue_transfer;
+    std::optional<GhulbusVulkan::DebugReportCallback> debug_logging;
 
     Pimpl(GhulbusVulkan::Instance&& i, GhulbusVulkan::Device&& d, detail::DeviceQueues&& q,
           detail::DeviceMemoryAllocator && a)
@@ -157,7 +161,11 @@ std::tuple<GhulbusVulkan::Device, detail::DeviceQueues> initializeVulkanDevice(G
     }();
 
     GhulbusVulkan::PhysicalDevice& physical_device = physical_devices[winner.physicalDeviceIndex];
-    GHULBUS_LOG(Info, "Using Vulkan device '" << physical_device.getProperties().deviceName << "'");
+    auto const device_properties = physical_device.getProperties();
+    GHULBUS_LOG(Info, "Using device \'" << device_properties.deviceName << "\' (" <<
+                      "Vulkan Version " << GhulbusVulkan::version_to_string(device_properties.apiVersion) << ", " <<
+                      "Driver Version " << GhulbusVulkan::version_to_string(device_properties.driverVersion) <<
+                      ").");
 
     GhulbusVulkan::DeviceBuilder device_builder = physical_device.createDeviceBuilder();
 
@@ -198,6 +206,10 @@ GraphicsInstance::GraphicsInstance(char const* application_name, ApplicationVers
     exception_guard.defuse();
 
     m_commandPoolRegistry = std::make_unique<CommandPoolRegistry>(*this);
+
+#ifndef NDEBUG
+    setDebugLoggingEnabled(true);
+#endif
 }
 
 GraphicsInstance::~GraphicsInstance()
@@ -272,6 +284,36 @@ uint32_t GraphicsInstance::getTransferQueueIndex()
 {
     detail::DeviceQueues::QueueId const& queue = m_pimpl->queues.transfer_queues.front();
     return queue.queue_index;
+}
+
+void GraphicsInstance::setDebugLoggingEnabled(bool enabled)
+{
+    if (enabled) {
+        if (!m_pimpl->debug_logging) {
+            VkDebugReportFlagsEXT const all_the_flags = VK_DEBUG_REPORT_INFORMATION_BIT_EXT |
+                                                        VK_DEBUG_REPORT_WARNING_BIT_EXT |
+                                                        VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
+                                                        VK_DEBUG_REPORT_ERROR_BIT_EXT |
+                                                        VK_DEBUG_REPORT_DEBUG_BIT_EXT;
+            m_pimpl->debug_logging.emplace(m_pimpl->instance, all_the_flags);
+            m_pimpl->debug_logging->addCallback(
+                [](VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT object_type,
+                   uint64_t object, size_t location, int32_t message_code,
+                   const char* layer_prefix, const char* message)
+                -> GhulbusVulkan::DebugReportCallback::Return
+                {
+                    GHULBUS_UNUSED_VARIABLE(location);
+                    GHULBUS_UNUSED_VARIABLE(message_code);
+                    GHULBUS_LOG(Debug, layer_prefix << " [" <<
+                        GhulbusVulkan::DebugReportCallback::translateFlags(flags) << "] - (" <<
+                        GhulbusVulkan::DebugReportCallback::translateObjectType(object_type) << ") " <<
+                        "0x" << std::hex << object << std::dec << ": " << message);
+                    return GhulbusVulkan::DebugReportCallback::Return::Continue;
+                });
+        }
+    } else {
+        m_pimpl->debug_logging = std::nullopt;
+    }
 }
 
 void GraphicsInstance::pollEvents()

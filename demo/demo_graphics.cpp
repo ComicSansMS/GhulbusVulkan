@@ -108,21 +108,7 @@ int main()
     Ghulbus::PerfLog perflog;
 
     GhulbusGraphics::GraphicsInstance graphics_instance;
-    GhulbusVulkan::DebugReportCallback debug_report(graphics_instance.getVulkanInstance(),
-        VK_DEBUG_REPORT_INFORMATION_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT |
-        VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT);
-    debug_report.addCallback([](VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT object_type,
-                                uint64_t object, size_t location, int32_t message_code,
-                                const char* layer_prefix, const char* message)
-                             -> GhulbusVulkan::DebugReportCallback::Return
-        {
-            GHULBUS_UNUSED_VARIABLE(location);
-            GHULBUS_LOG(Debug, layer_prefix << " [" <<
-                GhulbusVulkan::DebugReportCallback::translateFlags(flags) << "] - (" <<
-                GhulbusVulkan::DebugReportCallback::translateObjectType(object_type) << ") " <<
-                std::ios::hex << object << " " << " " << message_code << ": " << message);
-            return GhulbusVulkan::DebugReportCallback::Return::Continue;
-        });
+    //graphics_instance.setDebugLoggingEnabled(false);
 
     perflog.tick(Ghulbus::LogLevel::Debug, "gbGraphics Init");
 
@@ -131,10 +117,6 @@ int main()
 
     auto const queue_family_properties = physical_device.getQueueFamilyProperties();
     auto dev_props = physical_device.getProperties();
-    GHULBUS_LOG(Info, "Using device " << dev_props.deviceName << " ("
-                      << "Vulkan Version " << GhulbusVulkan::version_to_string(dev_props.apiVersion) << ", "
-                      << "Driver Version " << GhulbusVulkan::version_to_string(dev_props.driverVersion)
-                      << ").");
 
     int const WINDOW_WIDTH = 1280;
     int const WINDOW_HEIGHT = 720;
