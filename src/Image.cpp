@@ -81,6 +81,7 @@ void Image::transition(CommandBuffer& command_buffer, VkPipelineStageFlags src_s
                        VkAccessFlags access_mask, VkImageLayout layout,
                        uint32_t queue_family, VkImageSubresourceRange const& subresource_range)
 {
+    GHULBUS_PRECONDITION(command_buffer.getCurrentState() == CommandBuffer::State::Recording);
     VkImageMemoryBarrier image_barr;
     image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     image_barr.pNext = nullptr;

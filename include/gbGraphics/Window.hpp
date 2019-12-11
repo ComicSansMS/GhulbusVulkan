@@ -59,6 +59,16 @@ public:
 
     void present(DoNotWait_T);
 
+    void present(GhulbusVulkan::Semaphore& semaphore);
+
+    void present(GhulbusVulkan::Semaphore& semaphore, DoNotWait_T);
+
+    uint32_t getNumberOfImagesInSwapchain() const;
+
+    uint32_t getCurrentImageSwapchainIndex() const;
+
+    GhulbusVulkan::Semaphore& getCurrentImageAcquireSemaphore();
+
     GhulbusVulkan::Swapchain& getSwapchain();
 
     ///@todo remove?

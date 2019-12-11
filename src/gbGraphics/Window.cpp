@@ -92,7 +92,10 @@ Window::Window(GraphicsInstance& instance, int width, int height, char8_t const*
     prepareBackbuffer();
 }
 
-Window::~Window() = default;
+Window::~Window()
+{
+    if (m_backBuffer) { m_backBuffer->fence.wait(); }
+}
 
 bool Window::isDone()
 {
@@ -111,22 +114,49 @@ uint32_t Window::getHeight() const
 
 void Window::present()
 {
+    m_backBuffer->fence.wait();
     present(DoNotWait_T{});
     m_presentFence.wait();
+    prepareBackbuffer();
 }
 
 void Window::present(DoNotWait_T)
 {
     GHULBUS_PRECONDITION(m_backBuffer);
-    auto const idx = m_backBuffer->image.getSwapchainIndex();
-    auto command_buffer = m_presentCommandBuffers.getCommandBuffer(idx);
-    // raw present (no renderpath)
-    // we need to transition manually here (otherwise this is done by the renderpath)
-    m_backBuffer->image->transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-        VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    present(m_backBuffer->semaphore, DoNotWait_T{});
+}
+
+void Window::present(GhulbusVulkan::Semaphore& semaphore)
+{
+    m_backBuffer->fence.wait();
+    present(semaphore, DoNotWait_T{});
+    m_presentFence.wait();
+    prepareBackbuffer();
+}
+
+void Window::present(GhulbusVulkan::Semaphore& semaphore, DoNotWait_T)
+{
+    GHULBUS_PRECONDITION(m_backBuffer);
+    uint32_t const idx = m_backBuffer->image.getSwapchainIndex();
     m_presentQueue->stageSubmission(m_windowSubmits);
     m_presentFence.reset();
     m_presentQueue->submitAllStaged(m_presentFence);
+    m_swapchain.present(m_presentQueue->getVkQueue(), semaphore, std::move(m_backBuffer->image));
+}
+
+uint32_t Window::getNumberOfImagesInSwapchain() const
+{
+    return m_swapchain.getNumberOfImages();
+}
+
+uint32_t Window::getCurrentImageSwapchainIndex() const
+{
+    return m_backBuffer->image.getSwapchainIndex();
+}
+
+GhulbusVulkan::Semaphore& Window::getCurrentImageAcquireSemaphore()
+{
+    return m_backBuffer->semaphore;
 }
 
 GhulbusVulkan::Swapchain& Window::getSwapchain()
@@ -150,7 +180,5 @@ void Window::prepareBackbuffer()
         m_backBuffer->fence.reset();
         m_backBuffer->image = m_swapchain.acquireNextImage(m_backBuffer->fence, m_backBuffer->semaphore);
     }
-    /// todo: what to do with the fence?
-    m_backBuffer->fence.wait();
 }
 }

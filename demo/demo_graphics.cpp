@@ -149,9 +149,6 @@ int main()
     uint32_t queue_family = graphics_instance.getGraphicsQueueFamilyIndex();
     uint32_t transfer_queue_family = graphics_instance.getTransferQueueFamilyIndex();
 
-    GhulbusVulkan::Swapchain& swapchain = main_window.getSwapchain();
-    uint32_t const swapchain_n_images = swapchain.getNumberOfImages();
-
     auto command_buffers = graphics_instance.getCommandPoolRegistry().allocateGraphicCommandBuffers(1);
     auto command_buffer = command_buffers.getCommandBuffer(0);
 
@@ -183,34 +180,6 @@ int main()
     auto mem_reqs = source_image.getMemoryRequirements();
     auto source_image_memory = device.allocateMemory(mem_reqs, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     source_image.bindMemory(source_image_memory);
-
-    // create image view
-    /*
-    VkImageView image_view;
-    VkImageViewCreateInfo color_image_view = {};
-    color_image_view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    color_image_view.pNext = nullptr;
-    color_image_view.format = VK_FORMAT_B8G8R8A8_UNORM;
-    color_image_view.components.r = VK_COMPONENT_SWIZZLE_R;
-    color_image_view.components.g = VK_COMPONENT_SWIZZLE_G;
-    color_image_view.components.b = VK_COMPONENT_SWIZZLE_B;
-    color_image_view.components.a = VK_COMPONENT_SWIZZLE_A;
-    color_image_view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    color_image_view.subresourceRange.baseMipLevel = 0;
-    color_image_view.subresourceRange.levelCount = 1;
-    color_image_view.subresourceRange.baseArrayLayer = 0;
-    color_image_view.subresourceRange.layerCount = 1;
-    color_image_view.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    color_image_view.flags = 0;
-    color_image_view.image = swapchain_image->getVkImage();
-
-    res = vkCreateImageView(device.getVkDevice(), &color_image_view, NULL, &image_view);
-    if(res != VK_SUCCESS) {
-        GHULBUS_LOG(Error, "Unable to create image view.");
-    }
-    auto guard_image_view = Ghulbus::finally([&device, &image_view]() { vkDestroyImageView(device.getVkDevice(), image_view, nullptr); });
-    */
-
 
     // fill host image
     source_image.transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
@@ -246,19 +215,18 @@ int main()
         VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     GhulbusVulkan::Image::blit(command_buffer, source_image, *swapchain_image);
 
+    swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    command_buffer.end();
+    queue.submit(command_buffer);
+
     perflog.tick(Ghulbus::LogLevel::Debug, "Swapchain setup");
 
     // presentation
-    swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-        VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    main_window.present();
 
-    command_buffer.end();
-    queue.submit(command_buffer);
-    queue.waitIdle();
     command_buffer.reset();
 
-    swapchain.present(queue.getVkQueue(), std::move(swapchain_image));
-    queue.waitIdle();
     //std::this_thread::sleep_for(std::chrono::seconds(5));
     //return 0;
 
@@ -394,6 +362,7 @@ int main()
     // ubo
     std::vector<GhulbusVulkan::Buffer> ubo_buffers;
     std::vector<GhulbusVulkan::DeviceMemory> ubo_memories;
+    uint32_t const swapchain_n_images = main_window.getNumberOfImagesInSwapchain();
     ubo_buffers.reserve(swapchain_n_images);
     ubo_memories.reserve(swapchain_n_images);
     for (uint32_t i = 0; i < swapchain_n_images; ++i)
@@ -628,7 +597,7 @@ int main()
                               render_pass.getVkRenderPass());
     }();
 
-
+    GhulbusVulkan::Swapchain& swapchain = main_window.getSwapchain();
     std::vector<GhulbusVulkan::Framebuffer> framebuffers =
         device.createFramebuffers(swapchain, render_pass, depth_buffer_image_view);
 
@@ -687,7 +656,6 @@ int main()
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Main setup");
 
-    GhulbusVulkan::Semaphore semaphore_image_available = device.createSemaphore();
     GhulbusVulkan::Semaphore semaphore_render_finished = device.createSemaphore();
 
     fence.wait();
@@ -695,25 +663,25 @@ int main()
     while(!main_window.isDone()) {
         graphics_instance.pollEvents();
 
-        auto frame_image = swapchain.acquireNextImage(semaphore_image_available);
-        update_uniform_buffer(frame_image.getSwapchainIndex());
+        uint32_t frame_image_idx = main_window.getCurrentImageSwapchainIndex();
+        update_uniform_buffer(frame_image_idx);
         VkSubmitInfo submit_info;
         submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
         submit_info.pNext = nullptr;
-        VkSemaphore wait_semaphores[] = { semaphore_image_available.getVkSemaphore() };
+        VkSemaphore wait_semaphores[] = { main_window.getCurrentImageAcquireSemaphore().getVkSemaphore() };
         VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
         submit_info.waitSemaphoreCount = 1;
         submit_info.pWaitSemaphores = wait_semaphores;
         submit_info.pWaitDstStageMask = wait_stages;
         submit_info.commandBufferCount = 1;
-        VkCommandBuffer cb = triangle_draw_command_buffers.getCommandBuffer(frame_image.getSwapchainIndex()).getVkCommandBuffer();
+        VkCommandBuffer cb = triangle_draw_command_buffers.getCommandBuffer(frame_image_idx).getVkCommandBuffer();
         submit_info.pCommandBuffers = &cb;
         VkSemaphore signal_semaphores[] = { semaphore_render_finished.getVkSemaphore() };
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = signal_semaphores;
         VkResult const res = vkQueueSubmit(queue.getVkQueue(), 1, &submit_info, VK_NULL_HANDLE);
         if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkQueueSubmit: " << res); return 1; }
-        swapchain.present(queue.getVkQueue(), semaphore_render_finished, std::move(frame_image));
+        main_window.present(semaphore_render_finished);
         queue.waitIdle();
     }
 }
