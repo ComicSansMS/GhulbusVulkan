@@ -58,13 +58,13 @@ public:
 
     GhulbusVulkan::Device& getVulkanDevice();
 
-    GhulbusVulkan::Queue getGraphicsQueue();
+    GhulbusVulkan::Queue& getGraphicsQueue();
     uint32_t getGraphicsQueueFamilyIndex();
     uint32_t getGraphicsQueueIndex();
-    GhulbusVulkan::Queue getComputeQueue();
+    GhulbusVulkan::Queue& getComputeQueue();
     uint32_t getComputeQueueFamilyIndex();
     uint32_t getComputeQueueIndex();
-    GhulbusVulkan::Queue getTransferQueue();
+    GhulbusVulkan::Queue& getTransferQueue();
     uint32_t getTransferQueueFamilyIndex();
     uint32_t getTransferQueueIndex();
 

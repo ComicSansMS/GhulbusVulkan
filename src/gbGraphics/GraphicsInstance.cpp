@@ -31,10 +31,16 @@ struct GraphicsInstance::Pimpl {
     GhulbusVulkan::Device device;
     detail::DeviceQueues queues;
     detail::DeviceMemoryAllocator allocator;
+    GhulbusVulkan::Queue queue_graphics;
+    GhulbusVulkan::Queue queue_compute;
+    GhulbusVulkan::Queue queue_transfer;
 
     Pimpl(GhulbusVulkan::Instance&& i, GhulbusVulkan::Device&& d, detail::DeviceQueues&& q,
           detail::DeviceMemoryAllocator && a)
-        :instance(std::move(i)), device(std::move(d)), queues(std::move(q)), allocator(std::move(a))
+        : instance(std::move(i)), device(std::move(d)), queues(std::move(q)), allocator(std::move(a)),
+        queue_graphics(device.getQueue(queues.primary_queue.queue_family_index, queues.primary_queue.queue_index)),
+        queue_compute(device.getQueue(queues.compute_queues.front().queue_family_index, queues.compute_queues.front().queue_index)),
+        queue_transfer(device.getQueue(queues.transfer_queues.front().queue_family_index, queues.transfer_queues.front().queue_index))
     {}
 };
 
@@ -213,10 +219,9 @@ GhulbusVulkan::Device& GraphicsInstance::getVulkanDevice()
     return m_pimpl->device;
 }
 
-GhulbusVulkan::Queue GraphicsInstance::getGraphicsQueue()
+GhulbusVulkan::Queue& GraphicsInstance::getGraphicsQueue()
 {
-    detail::DeviceQueues::QueueId const& queue = m_pimpl->queues.primary_queue;
-    return m_pimpl->device.getQueue(queue.queue_family_index, queue.queue_index);
+    return m_pimpl->queue_graphics;
 }
 
 uint32_t GraphicsInstance::getGraphicsQueueFamilyIndex()
@@ -231,10 +236,9 @@ uint32_t GraphicsInstance::getGraphicsQueueIndex()
     return queue.queue_index;
 }
 
-GhulbusVulkan::Queue GraphicsInstance::getComputeQueue()
+GhulbusVulkan::Queue& GraphicsInstance::getComputeQueue()
 {
-    detail::DeviceQueues::QueueId const& queue = m_pimpl->queues.compute_queues.front();
-    return m_pimpl->device.getQueue(queue.queue_family_index, queue.queue_index);
+    return m_pimpl->queue_compute;
 }
 
 uint32_t GraphicsInstance::getComputeQueueFamilyIndex()
@@ -249,10 +253,9 @@ uint32_t GraphicsInstance::getComputeQueueIndex()
     return queue.queue_index;
 }
 
-GhulbusVulkan::Queue GraphicsInstance::getTransferQueue()
+GhulbusVulkan::Queue& GraphicsInstance::getTransferQueue()
 {
-    detail::DeviceQueues::QueueId const& queue = m_pimpl->queues.transfer_queues.front();
-    return m_pimpl->device.getQueue(queue.queue_family_index, queue.queue_index);
+    return m_pimpl->queue_transfer;
 }
 
 uint32_t GraphicsInstance::getTransferQueueFamilyIndex()

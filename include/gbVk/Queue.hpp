@@ -9,9 +9,12 @@
 
 #include <gbVk/config.hpp>
 
+#include <gbVk/SubmitStaging.hpp>
+
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan.hpp>
 
+#include <functional>
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
@@ -22,6 +25,8 @@ class Fence;
 class Queue {
 private:
     VkQueue m_queue;
+    std::vector<SubmitStaging> m_staged;
+    std::vector<VkSubmitInfo> m_cachedSubmitInfo;       /// this is only kept around so we don't have to reallocate the vector on each submitAllStaged()
 public:
     Queue(VkQueue queue);
 
@@ -30,6 +35,12 @@ public:
     void submit(CommandBuffers& command_buffers);
 
     void submit(CommandBuffers& command_buffers, Fence& fence);
+
+    void stageSubmission(SubmitStaging staging);
+
+    void submitAllStaged();
+
+    void submitAllStaged(Fence& fence);
 
     void waitIdle();
 

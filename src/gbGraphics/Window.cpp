@@ -86,6 +86,7 @@ Window::Window(GraphicsInstance& instance, int width, int height, char8_t const*
      m_presentCommandBuffers(m_glfw->graphics_instance->getCommandPoolRegistry().allocateGraphicCommandBuffers(m_swapchain.getNumberOfImages())),
      m_presentQueue(m_glfw->graphics_instance->getGraphicsQueue())
 {
+    prepareBackbuffer();
 }
 
 Window::~Window() = default;
