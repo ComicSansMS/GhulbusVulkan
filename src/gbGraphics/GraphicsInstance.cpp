@@ -63,6 +63,10 @@ std::unique_ptr<GraphicsInstance::Pimpl> initializeVulkanInstance(char const* ap
         extensions.addExtension(glfw_extensions[i]);
     }
 
+#ifndef NDEBUG
+    extensions.enable_debug_report_extension = true;
+#endif
+
     GhulbusVulkan::Instance instance =
         GhulbusVulkan::Instance::createInstance(application_name, application_version, layers, extensions);
     auto [device, queues] = initializeVulkanDevice(instance);
