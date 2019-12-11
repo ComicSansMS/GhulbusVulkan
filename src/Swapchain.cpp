@@ -30,6 +30,17 @@ Swapchain::AcquiredImage::AcquiredImage(AcquiredImage&& rhs)
     rhs.m_swapchainIndex = std::numeric_limits<decltype(m_swapchainIndex)>::max();
 }
 
+Swapchain::AcquiredImage& Swapchain::AcquiredImage::operator=(AcquiredImage&& rhs)
+{
+    if (&rhs != this) {
+        m_image = rhs.m_image;
+        m_swapchainIndex = rhs.m_swapchainIndex;
+        rhs.m_image = nullptr;
+        rhs.m_swapchainIndex = std::numeric_limits<decltype(m_swapchainIndex)>::max();
+    }
+    return *this;
+}
+
 Image* Swapchain::AcquiredImage::operator->()
 {
     return m_image;
@@ -49,10 +60,6 @@ uint32_t Swapchain::AcquiredImage::getSwapchainIndex() const
 {
     return m_swapchainIndex;
 }
-
-Swapchain::Swapchain()
-    :m_swapchain(nullptr), m_device(nullptr)
-{}
 
 Swapchain::Swapchain(VkDevice logical_device, VkSwapchainKHR swapchain, VkExtent2D const& extent, VkFormat format)
     :m_swapchain(swapchain), m_device(logical_device)

@@ -1,5 +1,6 @@
 #include <gbGraphics/GraphicsInstance.hpp>
 
+#include <gbGraphics/CommandPoolRegistry.hpp>
 #include <gbGraphics/Exceptions.hpp>
 #include <gbGraphics/detail/DeviceMemoryAllocator.hpp>
 #include <gbGraphics/detail/QueueSelection.hpp>
@@ -185,11 +186,14 @@ GraphicsInstance::GraphicsInstance(char const* application_name, ApplicationVers
                                          application_version.minor,
                                          application_version.patch));
     exception_guard.defuse();
+
+    m_commandPoolRegistry = std::make_unique<CommandPoolRegistry>(*this);
 }
 
 GraphicsInstance::~GraphicsInstance()
 {
     // reset pimpl manually to ensure Vulkan shuts down before glfw
+    m_commandPoolRegistry.reset();
     m_pimpl.reset();
     glfwTerminate();
 }
@@ -271,5 +275,10 @@ void GraphicsInstance::pollEvents()
 void GraphicsInstance::waitEvents()
 {
     glfwWaitEvents();
+}
+
+CommandPoolRegistry& GraphicsInstance::getCommandPoolRegistry()
+{
+    return *m_commandPoolRegistry;
 }
 }

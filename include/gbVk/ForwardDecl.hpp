@@ -11,6 +11,9 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class CommandBuffer;
+class CommandBuffers;
+class CommandPool;
 class Device;
 class DeviceBuilder;
 class Instance;

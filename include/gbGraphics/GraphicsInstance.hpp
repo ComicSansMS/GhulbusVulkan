@@ -13,9 +13,12 @@
 
 #include <cstdint>
 #include <memory>
+#include <mutex>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
+class CommandPoolRegistry;
+
 struct ApplicationVersion {
     uint16_t major;
     uint16_t minor;
@@ -35,6 +38,8 @@ public:
     struct Pimpl;
 private:
     std::unique_ptr<Pimpl> m_pimpl;
+    std::unique_ptr<CommandPoolRegistry> m_commandPoolRegistry;
+    std::mutex m_mtx;
 public:
     GraphicsInstance();
 
@@ -65,6 +70,15 @@ public:
 
     void pollEvents();
     void waitEvents();
+
+    CommandPoolRegistry& getCommandPoolRegistry();
+
+    template<typename F>
+    void threadSafeDeviceAccess(F&& f)
+    {
+        std::scoped_lock lk(m_mtx);
+        f(getVulkanDevice());
+    }
 };
 }
 #endif

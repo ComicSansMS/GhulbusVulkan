@@ -40,7 +40,7 @@ public:
         AcquiredImage& operator=(AcquiredImage const&) = delete;
 
         AcquiredImage(AcquiredImage&& rhs);
-        AcquiredImage& operator=(AcquiredImage&&) = delete;
+        AcquiredImage& operator=(AcquiredImage&& rhs);
 
         Image* operator->();
         Image& operator*();
@@ -54,8 +54,6 @@ private:
     VkDevice m_device;
     std::vector<Image> m_images;
 public:
-    Swapchain();
-
     Swapchain(VkDevice logical_device, VkSwapchainKHR swapchain, VkExtent2D const& extent, VkFormat format);
 
     ~Swapchain();

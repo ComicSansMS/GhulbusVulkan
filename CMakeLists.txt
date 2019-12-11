@@ -262,6 +262,7 @@ set(GB_GRAPHICS_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(GB_GRAPHICS_TEST_DIR ${PROJECT_SOURCE_DIR}/test/gbGraphics)
 
 set(GB_GRAPHICS_SOURCE_FILES
+    ${GB_GRAPHICS_SOURCE_DIR}/CommandPoolRegistry.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Graphics.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/GraphicsInstance.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Image2d.cpp
@@ -270,6 +271,7 @@ set(GB_GRAPHICS_SOURCE_FILES
 )
 
 set(GB_GRAPHICS_HEADER_FILES
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/CommandPoolRegistry.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/config.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Exceptions.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Graphics.hpp
