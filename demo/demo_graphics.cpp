@@ -9,6 +9,7 @@
 #include <gbMath/Vector2.hpp>
 #include <gbMath/Vector3.hpp>
 
+#include <gbGraphics/CommandPoolRegistry.hpp>
 #include <gbGraphics/Graphics.hpp>
 #include <gbGraphics/Window.hpp>
 
@@ -151,11 +152,8 @@ int main()
     GhulbusVulkan::Swapchain& swapchain = main_window.getSwapchain();
     uint32_t const swapchain_n_images = swapchain.getNumberOfImages();
 
-    auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
-    auto command_buffers = command_pool.allocateCommandBuffers(1);
+    auto command_buffers = graphics_instance.getCommandPoolRegistry().allocateGraphicCommandBuffers(1);
     auto command_buffer = command_buffers.getCommandBuffer(0);
-
-    auto transfer_command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, transfer_queue_family);
 
     command_buffer.begin();
     VkBufferCopy region;
@@ -165,21 +163,18 @@ int main()
     //vkCmdCopyBuffer(command_buffer.getVkCommandBuffer(), host_memory, memory, 1, & region);
     command_buffer.end();
 
-    auto queue = device.getQueue(queue_family, 0);
+    auto& queue = graphics_instance.getGraphicsQueue();
     queue.submit(command_buffer);
     queue.waitIdle();
     command_buffer.reset();
 
-    auto transfer_queue = device.getQueue(transfer_queue_family, (transfer_queue_family == queue_family) ?
-        ((queue_family_properties[queue_family].queueCount > 1) ? 1 : 0) : 0);
+    auto& transfer_queue = graphics_instance.getTransferQueue();
 
-    auto fence = device.createFence();
-    auto swapchain_image = swapchain.acquireNextImage(fence);
+    auto& swapchain_image = main_window.getAcquiredImage();
     if (!swapchain_image) {
         GHULBUS_LOG(Error, "Unable to acquire image from swap chain.");
         return 1;
     }
-    fence.wait();
 
     command_buffer.begin();
 
@@ -265,6 +260,7 @@ int main()
     swapchain.present(queue.getVkQueue(), std::move(swapchain_image));
     queue.waitIdle();
     //std::this_thread::sleep_for(std::chrono::seconds(5));
+    //return 0;
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Initial present");
 
@@ -306,7 +302,7 @@ int main()
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     vertex_buffer.bindBufferMemory(vertex_memory);
 
-    auto transfer_command_buffers = transfer_command_pool.allocateCommandBuffers(2);
+    auto transfer_command_buffers = graphics_instance.getCommandPoolRegistry().allocateTransferCommandBuffers(2);
 
     // copy vertex buffer
     {
@@ -392,7 +388,7 @@ int main()
 
         transfer_command_buffer.end();
     }
-    fence.reset();
+    auto fence = device.createFence();
     transfer_queue.submit(transfer_command_buffers, fence);
 
     // ubo
@@ -637,7 +633,7 @@ int main()
         device.createFramebuffers(swapchain, render_pass, depth_buffer_image_view);
 
     GhulbusVulkan::CommandBuffers triangle_draw_command_buffers =
-        command_pool.allocateCommandBuffers(swapchain_n_images);
+        graphics_instance.getCommandPoolRegistry().allocateGraphicCommandBuffers(swapchain_n_images);
 
     for(uint32_t i = 0; i < triangle_draw_command_buffers.size(); ++i) {
         auto local_command_buffer = triangle_draw_command_buffers.getCommandBuffer(i);

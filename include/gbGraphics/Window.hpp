@@ -14,8 +14,8 @@
 #include <gbVk/CommandBuffers.hpp>
 #include <gbVk/Fence.hpp>
 #include <gbVk/Semaphore.hpp>
+#include <gbVk/SubmitStaging.hpp>
 #include <gbVk/Swapchain.hpp>
-#include <gbVk/Queue.hpp>
 
 #include <cstdint>
 #include <memory>
@@ -33,6 +33,8 @@ private:
         GhulbusVulkan::Fence fence;
         GhulbusVulkan::Semaphore semaphore;
     };
+
+    struct DoNotWait_T {};
 private:
     uint32_t m_width;
     uint32_t m_height;
@@ -41,7 +43,9 @@ private:
     std::optional<Backbuffer> m_backBuffer;         // this must be destroyed after m_swapchain to avoid races on the semaphore in Backbuffer
     GhulbusVulkan::Swapchain m_swapchain;
     GhulbusVulkan::CommandBuffers m_presentCommandBuffers;
-    GhulbusVulkan::Queue m_presentQueue;
+    GhulbusVulkan::SubmitStaging m_windowSubmits;
+    GhulbusVulkan::Queue* m_presentQueue;
+    GhulbusVulkan::Fence m_presentFence;
 public:
     Window(GraphicsInstance& instance, int width, int height, char8_t const* window_title);
     ~Window();
@@ -53,7 +57,12 @@ public:
 
     void present();
 
+    void present(DoNotWait_T);
+
     GhulbusVulkan::Swapchain& getSwapchain();
+
+    ///@todo remove?
+    GhulbusVulkan::Swapchain::AcquiredImage& getAcquiredImage();
 
 private:
     void prepareBackbuffer();

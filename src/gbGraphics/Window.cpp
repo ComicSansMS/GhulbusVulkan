@@ -12,6 +12,8 @@
 #include <gbVk/CommandBuffers.hpp>
 #include <gbVk/Device.hpp>
 #include <gbVk/Instance.hpp>
+#include <gbVk/SubmitStaging.hpp>
+#include <gbVk/Queue.hpp>
 
 #ifndef GLFW_INCLUDE_VULKAN
 #   define GLFW_INCLUDE_VULKAN
@@ -82,9 +84,10 @@ struct Window::GLFW_Pimpl {
 
 Window::Window(GraphicsInstance& instance, int width, int height, char8_t const* window_title)
     :m_width(width), m_height(height), m_glfw(std::make_unique<GLFW_Pimpl>(instance, width, height, window_title)),
-     m_swapchain(instance.getVulkanDevice().createSwapchain(m_glfw->surface, instance.getGraphicsQueueFamilyIndex())),
-     m_presentCommandBuffers(m_glfw->graphics_instance->getCommandPoolRegistry().allocateGraphicCommandBuffers(m_swapchain.getNumberOfImages())),
-     m_presentQueue(m_glfw->graphics_instance->getGraphicsQueue())
+    m_swapchain(instance.getVulkanDevice().createSwapchain(m_glfw->surface, instance.getGraphicsQueueFamilyIndex())),
+    m_presentCommandBuffers(m_glfw->graphics_instance->getCommandPoolRegistry().allocateGraphicCommandBuffers(m_swapchain.getNumberOfImages())),
+    m_presentQueue(&m_glfw->graphics_instance->getGraphicsQueue()),
+    m_presentFence(m_glfw->graphics_instance->getVulkanDevice().createFence())
 {
     prepareBackbuffer();
 }
@@ -108,20 +111,32 @@ uint32_t Window::getHeight() const
 
 void Window::present()
 {
+    present(DoNotWait_T{});
+    m_presentFence.wait();
+}
+
+void Window::present(DoNotWait_T)
+{
     GHULBUS_PRECONDITION(m_backBuffer);
     auto const idx = m_backBuffer->image.getSwapchainIndex();
     auto command_buffer = m_presentCommandBuffers.getCommandBuffer(idx);
     // raw present (no renderpath)
     // we need to transition manually here (otherwise this is done by the renderpath)
     m_backBuffer->image->transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                                    VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-
-
+        VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    m_presentQueue->stageSubmission(m_windowSubmits);
+    m_presentFence.reset();
+    m_presentQueue->submitAllStaged(m_presentFence);
 }
 
 GhulbusVulkan::Swapchain& Window::getSwapchain()
 {
     return m_swapchain;
+}
+
+GhulbusVulkan::Swapchain::AcquiredImage& Window::getAcquiredImage()
+{
+    return m_backBuffer->image;
 }
 
 void Window::prepareBackbuffer()
@@ -135,5 +150,7 @@ void Window::prepareBackbuffer()
         m_backBuffer->fence.reset();
         m_backBuffer->image = m_swapchain.acquireNextImage(m_backBuffer->fence, m_backBuffer->semaphore);
     }
+    /// todo: what to do with the fence?
+    m_backBuffer->fence.wait();
 }
 }
