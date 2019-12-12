@@ -125,51 +125,16 @@ int main()
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Window creation");
 
-    GhulbusVulkan::DeviceMemory memory = device.allocateMemory(1024 * 1024 * 64, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    GhulbusVulkan::DeviceMemory host_memory = device.allocateMemory(1024 * 1024 * 64, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-
-    {
-        auto mapped = host_memory.map();
-        for (int i = 0; i < 1024 * 1024 * 64; ++i) { mapped[i] = std::byte(i & 0xff); }
-        mapped.flush();
-    }
-    {
-        auto mapped_again = host_memory.map();
-        mapped_again.invalidate();
-        for (int i = 0; i < 1024; ++i) {
-            /*
-            GHULBUS_LOG(Info, i << " - " << std::to_integer<int>(
-                static_cast<GhulbusVulkan::DeviceMemory::MappedMemory const&>(mapped_again)[i]));
-             */
-        }
-    }
-
     uint32_t queue_family = graphics_instance.getGraphicsQueueFamilyIndex();
     uint32_t transfer_queue_family = graphics_instance.getTransferQueueFamilyIndex();
 
     auto command_buffers = graphics_instance.getCommandPoolRegistry().allocateGraphicCommandBuffers(1);
     auto command_buffer = command_buffers.getCommandBuffer(0);
 
-    command_buffer.begin();
-    VkBufferCopy region;
-    region.srcOffset = 0;
-    region.dstOffset = 0;
-    region.size = 1024 * 1024 * 64;
-    //vkCmdCopyBuffer(command_buffer.getVkCommandBuffer(), host_memory, memory, 1, & region);
-    command_buffer.end();
-
     auto& queue = graphics_instance.getGraphicsQueue();
-    queue.submit(command_buffer);
-    queue.waitIdle();
-    command_buffer.reset();
-
     auto& transfer_queue = graphics_instance.getTransferQueue();
 
     auto& swapchain_image = main_window.getAcquiredImage();
-    if (!swapchain_image) {
-        GHULBUS_LOG(Error, "Unable to acquire image from swap chain.");
-        return 1;
-    }
 
     command_buffer.begin();
 

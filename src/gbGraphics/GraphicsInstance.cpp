@@ -1,8 +1,9 @@
 #include <gbGraphics/GraphicsInstance.hpp>
 
 #include <gbGraphics/CommandPoolRegistry.hpp>
+#include <gbGraphics/DeviceMemoryAllocator.hpp>
 #include <gbGraphics/Exceptions.hpp>
-#include <gbGraphics/detail/DeviceMemoryAllocator.hpp>
+#include <gbGraphics/detail/DeviceMemoryAllocator_VMA.hpp>
 #include <gbGraphics/detail/QueueSelection.hpp>
 
 #include <gbVk/DebugReportCallback.hpp>
@@ -33,14 +34,14 @@ struct GraphicsInstance::Pimpl {
     GhulbusVulkan::Instance instance;
     GhulbusVulkan::Device device;
     detail::DeviceQueues queues;
-    detail::DeviceMemoryAllocator allocator;
+    detail::DeviceMemoryAllocator_VMA allocator;
     GhulbusVulkan::Queue queue_graphics;
     GhulbusVulkan::Queue queue_compute;
     GhulbusVulkan::Queue queue_transfer;
     std::optional<GhulbusVulkan::DebugReportCallback> debug_logging;
 
     Pimpl(GhulbusVulkan::Instance&& i, GhulbusVulkan::Device&& d, detail::DeviceQueues&& q,
-          detail::DeviceMemoryAllocator && a)
+          detail::DeviceMemoryAllocator_VMA && a)
         : instance(std::move(i)), device(std::move(d)), queues(std::move(q)), allocator(std::move(a)),
         queue_graphics(device.getQueue(queues.primary_queue.queue_family_index, queues.primary_queue.queue_index)),
         queue_compute(device.getQueue(queues.compute_queues.front().queue_family_index, queues.compute_queues.front().queue_index)),
@@ -74,7 +75,7 @@ std::unique_ptr<GraphicsInstance::Pimpl> initializeVulkanInstance(char const* ap
     GhulbusVulkan::Instance instance =
         GhulbusVulkan::Instance::createInstance(application_name, application_version, layers, extensions);
     auto [device, queues] = initializeVulkanDevice(instance);
-    detail::DeviceMemoryAllocator allocator(instance, device);
+    detail::DeviceMemoryAllocator_VMA allocator(instance, device);
 
     return std::make_unique<GraphicsInstance::Pimpl>(std::move(instance), std::move(device), std::move(queues),
                                                      std::move(allocator));
@@ -284,6 +285,11 @@ uint32_t GraphicsInstance::getTransferQueueIndex()
 {
     detail::DeviceQueues::QueueId const& queue = m_pimpl->queues.transfer_queues.front();
     return queue.queue_index;
+}
+
+DeviceMemoryAllocator& GraphicsInstance::getDeviceMemoryAllocator()
+{
+    return m_pimpl->allocator;
 }
 
 void GraphicsInstance::setDebugLoggingEnabled(bool enabled)

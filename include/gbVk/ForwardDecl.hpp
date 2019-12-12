@@ -11,11 +11,13 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class Buffer;
 class CommandBuffer;
 class CommandBuffers;
 class CommandPool;
 class Device;
 class DeviceBuilder;
+class Image;
 class Instance;
 class PhysicalDevice;
 class Queue;

@@ -13,6 +13,13 @@
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
+class GraphicsInstance;
+
+class BaseImage {
+public:
+    BaseImage(GraphicsInstance& instance);
+};
+
 class Image2d {
 private:
 public:

@@ -18,6 +18,7 @@
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
 class CommandPoolRegistry;
+class DeviceMemoryAllocator;
 
 struct ApplicationVersion {
     uint16_t major;
@@ -67,6 +68,8 @@ public:
     GhulbusVulkan::Queue& getTransferQueue();
     uint32_t getTransferQueueFamilyIndex();
     uint32_t getTransferQueueIndex();
+
+    DeviceMemoryAllocator& getDeviceMemoryAllocator();
 
     void setDebugLoggingEnabled(bool enabled);
 
