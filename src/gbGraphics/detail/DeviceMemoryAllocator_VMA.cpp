@@ -40,6 +40,30 @@ VkDeviceSize DeviceMemoryAllocator_VMA::HandleModel::getSize() const
     return m_allocationInfo.size;
 }
 
+void* DeviceMemoryAllocator_VMA::HandleModel::mapMemory(VkDeviceSize offset, VkDeviceSize size)
+{
+    ///@ todo
+    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not implemented");
+}
+
+void DeviceMemoryAllocator_VMA::HandleModel::unmapMemory(void* mapped_memory)
+{
+    ///@ todo
+    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not implemented");
+}
+
+void DeviceMemoryAllocator_VMA::HandleModel::flush(VkDeviceSize offset, VkDeviceSize size)
+{
+    ///@ todo
+    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not implemented");
+}
+
+void DeviceMemoryAllocator_VMA::HandleModel::invalidate(VkDeviceSize offset, VkDeviceSize size)
+{
+    ///@ todo
+    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not implemented");
+}
+
 DeviceMemoryAllocator_VMA::DeviceMemoryAllocator_VMA(GhulbusVulkan::Instance& instance, GhulbusVulkan::Device& device)
     :m_allocator(nullptr)
 {
@@ -83,8 +107,9 @@ DeviceMemoryAllocator_VMA& DeviceMemoryAllocator_VMA::operator=(DeviceMemoryAllo
     return *this;
 }
 
-VmaMemoryUsage DeviceMemoryAllocator_VMA::translateUsage(::GHULBUS_GRAPHICS_NAMESPACE::MemoryUsage usage)
+VmaMemoryUsage DeviceMemoryAllocator_VMA::translateUsage(GhulbusVulkan::MemoryUsage usage)
 {
+    using GhulbusVulkan::MemoryUsage;
     switch (usage) {
     case MemoryUsage::GpuOnly: return VMA_MEMORY_USAGE_GPU_ONLY;
     case MemoryUsage::CpuOnly: return VMA_MEMORY_USAGE_CPU_ONLY;
@@ -94,7 +119,20 @@ VmaMemoryUsage DeviceMemoryAllocator_VMA::translateUsage(::GHULBUS_GRAPHICS_NAME
     }
 }
 
-DeviceMemoryAllocator::Handle DeviceMemoryAllocator_VMA::allocateMemoryForImage(GhulbusVulkan::Image& image, MemoryUsage usage)
+auto DeviceMemoryAllocator_VMA::allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags) -> DeviceMemory
+{
+    ///@ todo
+    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not implemented");
+}
+
+auto DeviceMemoryAllocator_VMA::allocateMemory(VkMemoryRequirements const& requirements,
+    VkMemoryPropertyFlags required_flags)  -> DeviceMemory
+{
+    ///@ todo
+    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not implemented");
+}
+
+auto DeviceMemoryAllocator_VMA::allocateMemoryForImage(GhulbusVulkan::Image& image, GhulbusVulkan::MemoryUsage usage) -> DeviceMemory
 {
     VmaAllocationCreateInfo create_info;
     create_info.flags = 0;
@@ -109,12 +147,12 @@ DeviceMemoryAllocator::Handle DeviceMemoryAllocator_VMA::allocateMemoryForImage(
     VkResult const res =
         vmaAllocateMemoryForImage(m_allocator, image.getVkImage(), &create_info, &allocation, &allocation_info);
     GhulbusVulkan::checkVulkanError(res, "Error in vmaAllocateMemoryForImage.");
-    return Handle(std::make_unique<HandleModel>(m_allocator, allocation, allocation_info));
+    return DeviceMemory(std::make_unique<HandleModel>(m_allocator, allocation, allocation_info));
 }
 
-DeviceMemoryAllocator::Handle DeviceMemoryAllocator_VMA::allocateMemoryForImage(GhulbusVulkan::Image& image,
+auto DeviceMemoryAllocator_VMA::allocateMemoryForImage(GhulbusVulkan::Image& image,
                                                                                 VkMemoryRequirements const& requirements,
-                                                                                VkMemoryPropertyFlags required_flags)
+                                                                                VkMemoryPropertyFlags required_flags) -> DeviceMemory
 {
     VmaAllocationCreateInfo create_info;
     create_info.flags = 0;
@@ -129,6 +167,6 @@ DeviceMemoryAllocator::Handle DeviceMemoryAllocator_VMA::allocateMemoryForImage(
     VkResult const res =
         vmaAllocateMemoryForImage(m_allocator, image.getVkImage(), &create_info, &allocation, &allocation_info);
     GhulbusVulkan::checkVulkanError(res, "Error in vmaAllocateMemoryForImage.");
-    return Handle(std::make_unique<HandleModel>(m_allocator, allocation, allocation_info));
+    return DeviceMemory(std::make_unique<HandleModel>(m_allocator, allocation, allocation_info));
 }
 }

@@ -29,7 +29,7 @@
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 Device::Device(VkPhysicalDevice physical_device, VkDevice logical_device)
-    :m_device(logical_device), m_physicalDevice(physical_device)
+    :m_device(logical_device), m_physicalDevice(physical_device), m_allocator(logical_device, physical_device)
 {
 }
 
@@ -42,7 +42,7 @@ Device::~Device()
 }
 
 Device::Device(Device&& rhs)
-    :m_device(rhs.m_device), m_physicalDevice(rhs.m_physicalDevice)
+    :m_device(rhs.m_device), m_physicalDevice(rhs.m_physicalDevice), m_allocator(std::move(rhs.m_allocator))
 {
     rhs.m_device = nullptr;
     rhs.m_physicalDevice = nullptr;
@@ -271,38 +271,12 @@ inline Sampler Device::createSampler(VkFilter min_filter, VkFilter mag_filter, V
 
 DeviceMemory Device::allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags)
 {
-    auto const memory_type_index = PhysicalDevice(m_physicalDevice).findMemoryTypeIndex(flags);
-    if(!memory_type_index) {
-        GHULBUS_THROW(Exceptions::ProtocolViolation(), "No matching memory type available.");
-    }
-    VkMemoryAllocateInfo alloc_info;
-    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    alloc_info.pNext = nullptr;
-    alloc_info.allocationSize = requested_size;
-    alloc_info.memoryTypeIndex = *memory_type_index;
-
-    VkDeviceMemory mem;
-    VkResult res = vkAllocateMemory(m_device, &alloc_info, nullptr, &mem);
-    checkVulkanError(res, "Error in vkAllocateMemory.");
-    return DeviceMemory(m_device, mem);
+    return m_allocator.allocateMemory(requested_size, flags);
 }
 
 DeviceMemory Device::allocateMemory(VkMemoryRequirements const& requirements, VkMemoryPropertyFlags required_flags)
 {
-    auto const memory_type_index = PhysicalDevice(m_physicalDevice).findMemoryTypeIndex(required_flags, requirements);
-    if(!memory_type_index) {
-        GHULBUS_THROW(Exceptions::ProtocolViolation(), "No matching memory type available.");
-    }
-    VkMemoryAllocateInfo alloc_info;
-    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    alloc_info.pNext = nullptr;
-    alloc_info.allocationSize = requirements.size;
-    alloc_info.memoryTypeIndex = *memory_type_index;
-
-    VkDeviceMemory mem;
-    VkResult res = vkAllocateMemory(m_device, &alloc_info, nullptr, &mem);
-    checkVulkanError(res, "Error in vkAllocateMemory.");
-    return DeviceMemory(m_device, mem);
+    return m_allocator.allocateMemory(requirements, required_flags);
 }
 
 CommandPool Device::createCommandPool(VkCommandPoolCreateFlags requested_flags, uint32_t queue_family_index)

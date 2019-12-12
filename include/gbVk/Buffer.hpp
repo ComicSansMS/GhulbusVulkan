@@ -12,10 +12,10 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan.hpp>
 
+#include <gbVk/DeviceMemory.hpp>
+
 namespace GHULBUS_VULKAN_NAMESPACE
 {
-class DeviceMemory;
-
 class Buffer {
 private:
     VkBuffer m_buffer;

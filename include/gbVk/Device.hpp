@@ -12,13 +12,15 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan.hpp>
 
+#include <gbVk/DeviceMemory.hpp>
+#include <gbVk/DeviceMemoryAllocator_Trivial.hpp>
+
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 class Buffer;
 class CommandPool;
 class DescriptorPoolBuilder;
 class DescriptorSetLayoutBuilder;
-class DeviceMemory;
 class Fence;
 class Framebuffer;
 class Image;
@@ -42,6 +44,7 @@ class Device {
 private:
     VkDevice m_device;
     VkPhysicalDevice m_physicalDevice;
+    DeviceMemoryAllocator_Trivial m_allocator;
 public:
     Device(VkPhysicalDevice physical_device, VkDevice logical_device);
 

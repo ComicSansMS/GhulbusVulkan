@@ -17,6 +17,7 @@ class CommandBuffers;
 class CommandPool;
 class Device;
 class DeviceBuilder;
+class DeviceMemoryAllocator;
 class Image;
 class Instance;
 class PhysicalDevice;

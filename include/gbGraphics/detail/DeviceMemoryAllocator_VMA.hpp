@@ -9,9 +9,8 @@
 
 #include <gbGraphics/config.hpp>
 
-#include <gbGraphics/DeviceMemoryAllocator.hpp>
-
 #include <gbVk/ForwardDecl.hpp>
+#include <gbVk/DeviceMemoryAllocator.hpp>
 
 #include <vk_mem_alloc.h>
 
@@ -19,7 +18,7 @@ namespace GHULBUS_GRAPHICS_NAMESPACE
 {
 namespace detail
 {
-class DeviceMemoryAllocator_VMA : public ::GHULBUS_GRAPHICS_NAMESPACE::DeviceMemoryAllocator {
+class DeviceMemoryAllocator_VMA : public GhulbusVulkan::DeviceMemoryAllocator {
 private:
     class HandleModel : public DeviceMemoryAllocator::HandleConcept {
     private:
@@ -35,6 +34,10 @@ private:
         VkDeviceMemory getVkDeviceMemory() const override;
         VkDeviceSize getOffset() const override;
         VkDeviceSize getSize() const override;
+        void* mapMemory(VkDeviceSize offset, VkDeviceSize size) override;
+        void unmapMemory(void* mapped_memory) override;
+        void flush(VkDeviceSize offset, VkDeviceSize size) override;
+        void invalidate(VkDeviceSize offset, VkDeviceSize size) override;
     };
 private:
     VmaAllocator m_allocator;
@@ -49,12 +52,16 @@ public:
     DeviceMemoryAllocator_VMA(DeviceMemoryAllocator_VMA&& rhs);
     DeviceMemoryAllocator_VMA& operator=(DeviceMemoryAllocator_VMA&& rhs);
 
-    Handle allocateMemoryForImage(GhulbusVulkan::Image& image, MemoryUsage usage) override;
-    Handle allocateMemoryForImage(GhulbusVulkan::Image& image,
-                                  VkMemoryRequirements const& requirements,
-                                  VkMemoryPropertyFlags required_flags) override;
+    DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags) override;
+    DeviceMemory allocateMemory(VkMemoryRequirements const& requirements,
+                                VkMemoryPropertyFlags required_flags) override;
+
+    DeviceMemory allocateMemoryForImage(GhulbusVulkan::Image& image, GhulbusVulkan::MemoryUsage usage) override;
+    DeviceMemory allocateMemoryForImage(GhulbusVulkan::Image& image,
+                                        VkMemoryRequirements const& requirements,
+                                        VkMemoryPropertyFlags required_flags) override;
 private:
-    static VmaMemoryUsage translateUsage(::GHULBUS_GRAPHICS_NAMESPACE::MemoryUsage usage);
+    static VmaMemoryUsage translateUsage(GhulbusVulkan::MemoryUsage usage);
 };
 }
 }

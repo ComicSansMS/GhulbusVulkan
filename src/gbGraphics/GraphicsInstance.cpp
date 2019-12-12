@@ -1,7 +1,6 @@
 #include <gbGraphics/GraphicsInstance.hpp>
 
 #include <gbGraphics/CommandPoolRegistry.hpp>
-#include <gbGraphics/DeviceMemoryAllocator.hpp>
 #include <gbGraphics/Exceptions.hpp>
 #include <gbGraphics/detail/DeviceMemoryAllocator_VMA.hpp>
 #include <gbGraphics/detail/QueueSelection.hpp>
@@ -287,7 +286,7 @@ uint32_t GraphicsInstance::getTransferQueueIndex()
     return queue.queue_index;
 }
 
-DeviceMemoryAllocator& GraphicsInstance::getDeviceMemoryAllocator()
+GhulbusVulkan::DeviceMemoryAllocator& GraphicsInstance::getDeviceMemoryAllocator()
 {
     return m_pimpl->allocator;
 }

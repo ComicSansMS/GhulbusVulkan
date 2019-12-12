@@ -142,11 +142,14 @@ set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/Device.cpp
     ${GB_VK_SOURCE_DIR}/DeviceBuilder.cpp
     ${GB_VK_SOURCE_DIR}/DeviceMemory.cpp
+    ${GB_VK_SOURCE_DIR}/DeviceMemoryAllocator.cpp
+    ${GB_VK_SOURCE_DIR}/DeviceMemoryAllocator_Trivial.cpp
     ${GB_VK_SOURCE_DIR}/Fence.cpp
     ${GB_VK_SOURCE_DIR}/Framebuffer.cpp
     ${GB_VK_SOURCE_DIR}/Image.cpp
     ${GB_VK_SOURCE_DIR}/ImageView.cpp
     ${GB_VK_SOURCE_DIR}/Instance.cpp
+    ${GB_VK_SOURCE_DIR}/MappedMemory.cpp
     ${GB_VK_SOURCE_DIR}/PhysicalDevice.cpp
     ${GB_VK_SOURCE_DIR}/Pipeline.cpp
     ${GB_VK_SOURCE_DIR}/PipelineBuilder.cpp
@@ -180,6 +183,8 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/Device.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceBuilder.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceMemory.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/DeviceMemoryAllocator.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/DeviceMemoryAllocator_Trivial.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Exceptions.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Fence.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/ForwardDecl.hpp
@@ -187,6 +192,7 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/Image.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/ImageView.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Instance.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/MappedMemory.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/PhysicalDevice.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Pipeline.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/PipelineBuilder.hpp
@@ -267,7 +273,6 @@ set(GB_GRAPHICS_TEST_DIR ${PROJECT_SOURCE_DIR}/test/gbGraphics)
 
 set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/CommandPoolRegistry.cpp
-    ${GB_GRAPHICS_SOURCE_DIR}/DeviceMemoryAllocator.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Graphics.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/GraphicsInstance.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Image2d.cpp
@@ -278,7 +283,6 @@ set(GB_GRAPHICS_SOURCE_FILES
 
 set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/CommandPoolRegistry.hpp
-    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/DeviceMemoryAllocator.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/config.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Exceptions.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Graphics.hpp

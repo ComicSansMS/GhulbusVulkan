@@ -12,11 +12,12 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan.hpp>
 
+#include <gbVk/DeviceMemory.hpp>
+
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 class Buffer;
 class CommandBuffer;
-class DeviceMemory;
 class ImageView;
 
 class Image {
