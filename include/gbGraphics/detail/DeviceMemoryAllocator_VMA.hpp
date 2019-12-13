@@ -58,7 +58,6 @@ public:
 
     DeviceMemory allocateMemoryForImage(GhulbusVulkan::Image& image, GhulbusVulkan::MemoryUsage usage) override;
     DeviceMemory allocateMemoryForImage(GhulbusVulkan::Image& image,
-                                        VkMemoryRequirements const& requirements,
                                         VkMemoryPropertyFlags required_flags) override;
 private:
     static VmaMemoryUsage translateUsage(GhulbusVulkan::MemoryUsage usage);

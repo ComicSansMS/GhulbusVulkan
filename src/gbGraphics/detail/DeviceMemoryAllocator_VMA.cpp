@@ -8,6 +8,7 @@
 #include <gbVk/Instance.hpp>
 #include <gbVk/PhysicalDevice.hpp>
 
+#include <gbBase/UnusedVariable.hpp>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE::detail
 {
@@ -25,13 +26,13 @@ DeviceMemoryAllocator_VMA::HandleModel::~HandleModel()
 
 VkDeviceMemory DeviceMemoryAllocator_VMA::HandleModel::getVkDeviceMemory() const
 {
-    /// @todo this will change if we ever allow defragmentation of VMA
+    /// @attention this will change if we ever allow defragmentation of VMA
     return m_allocationInfo.deviceMemory;
 }
 
 VkDeviceSize DeviceMemoryAllocator_VMA::HandleModel::getOffset() const
 {
-    /// @todo this will change if we ever allow defragmentation of VMA
+    /// @attention this will change if we ever allow defragmentation of VMA
     return m_allocationInfo.offset;
 }
 
@@ -42,26 +43,27 @@ VkDeviceSize DeviceMemoryAllocator_VMA::HandleModel::getSize() const
 
 void* DeviceMemoryAllocator_VMA::HandleModel::mapMemory(VkDeviceSize offset, VkDeviceSize size)
 {
-    ///@ todo
-    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not implemented");
+    GHULBUS_UNUSED_VARIABLE(size);
+    void* mapped;
+    VkResult const res = vmaMapMemory(m_allocator, m_allocation, &mapped);
+    GhulbusVulkan::checkVulkanError(res, "Error in vmaMapMemory.");
+    return static_cast<std::byte*>(mapped) + offset;
 }
 
 void DeviceMemoryAllocator_VMA::HandleModel::unmapMemory(void* mapped_memory)
 {
-    ///@ todo
-    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not implemented");
+    GHULBUS_UNUSED_VARIABLE(mapped_memory);
+    vmaUnmapMemory(m_allocator, m_allocation);
 }
 
 void DeviceMemoryAllocator_VMA::HandleModel::flush(VkDeviceSize offset, VkDeviceSize size)
 {
-    ///@ todo
-    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not implemented");
+    vmaFlushAllocation(m_allocator, m_allocation, offset, size);
 }
 
 void DeviceMemoryAllocator_VMA::HandleModel::invalidate(VkDeviceSize offset, VkDeviceSize size)
 {
-    ///@ todo
-    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not implemented");
+    vmaInvalidateAllocation(m_allocator, m_allocation, offset, size);
 }
 
 DeviceMemoryAllocator_VMA::DeviceMemoryAllocator_VMA(GhulbusVulkan::Instance& instance, GhulbusVulkan::Device& device)
@@ -121,15 +123,30 @@ VmaMemoryUsage DeviceMemoryAllocator_VMA::translateUsage(GhulbusVulkan::MemoryUs
 
 auto DeviceMemoryAllocator_VMA::allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags) -> DeviceMemory
 {
-    ///@ todo
-    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not implemented");
+    VkMemoryRequirements requirements;
+    requirements.alignment = 0;
+    requirements.size = requested_size;
+    requirements.memoryTypeBits = 0;
+    return allocateMemory(requirements, flags);
 }
 
 auto DeviceMemoryAllocator_VMA::allocateMemory(VkMemoryRequirements const& requirements,
-    VkMemoryPropertyFlags required_flags)  -> DeviceMemory
+                                               VkMemoryPropertyFlags required_flags)  -> DeviceMemory
 {
-    ///@ todo
-    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not implemented");
+    VmaAllocationCreateInfo create_info;
+    create_info.flags = 0;
+    create_info.usage = VMA_MEMORY_USAGE_UNKNOWN;
+    create_info.requiredFlags = required_flags;
+    create_info.preferredFlags = 0;
+    create_info.memoryTypeBits = requirements.memoryTypeBits;
+    create_info.pool = VK_NULL_HANDLE;
+    create_info.pUserData = this;
+    VmaAllocation allocation;
+    VmaAllocationInfo allocation_info;
+    VkResult const res =
+        vmaAllocateMemory(m_allocator, &requirements, &create_info, &allocation, &allocation_info);
+    GhulbusVulkan::checkVulkanError(res, "Error in vmaAllocateMemoryForImage.");
+    return DeviceMemory(std::make_unique<HandleModel>(m_allocator, allocation, allocation_info));
 }
 
 auto DeviceMemoryAllocator_VMA::allocateMemoryForImage(GhulbusVulkan::Image& image, GhulbusVulkan::MemoryUsage usage) -> DeviceMemory
@@ -151,9 +168,9 @@ auto DeviceMemoryAllocator_VMA::allocateMemoryForImage(GhulbusVulkan::Image& ima
 }
 
 auto DeviceMemoryAllocator_VMA::allocateMemoryForImage(GhulbusVulkan::Image& image,
-                                                                                VkMemoryRequirements const& requirements,
-                                                                                VkMemoryPropertyFlags required_flags) -> DeviceMemory
+                                                       VkMemoryPropertyFlags required_flags) -> DeviceMemory
 {
+    VkMemoryRequirements const requirements = image.getMemoryRequirements();
     VmaAllocationCreateInfo create_info;
     create_info.flags = 0;
     create_info.usage = VMA_MEMORY_USAGE_UNKNOWN;

@@ -50,13 +50,13 @@ public:
     DeviceMemoryAllocator(DeviceMemoryAllocator&& rhs) = delete;
     DeviceMemoryAllocator& operator=(DeviceMemoryAllocator&& rhs) = delete;
 
+    /// @todo remove this? the signature with just size + flags seems not too useful
     virtual DeviceMemory allocateMemory(size_t requested_size, VkMemoryPropertyFlags flags) = 0;
     virtual DeviceMemory allocateMemory(VkMemoryRequirements const& requirements,
                                         VkMemoryPropertyFlags required_flags) = 0;
 
     virtual DeviceMemory allocateMemoryForImage(Image& image, MemoryUsage usage) = 0;
     virtual DeviceMemory allocateMemoryForImage(Image& image,
-                                                VkMemoryRequirements const& requirements,
                                                 VkMemoryPropertyFlags required_flags) = 0;
 };
 

@@ -124,15 +124,28 @@ auto DeviceMemoryAllocator_Trivial::allocateMemory(VkMemoryRequirements const& r
 
 auto DeviceMemoryAllocator_Trivial::allocateMemoryForImage(Image& image, MemoryUsage usage) -> DeviceMemory
 {
-    ///@todo
-    GHULBUS_THROW(Exceptions::NotImplemented{}, "Not yet implemented.");
+    VkMemoryRequirements const requirements = image.getMemoryRequirements();
+    VkMemoryPropertyFlags const required_flags = translateUsage(usage);
+    return allocateMemory(requirements, required_flags);
 }
 
 auto DeviceMemoryAllocator_Trivial::allocateMemoryForImage(Image& image,
-                                                           VkMemoryRequirements const& requirements,
                                                            VkMemoryPropertyFlags required_flags) -> DeviceMemory
 {
-    GHULBUS_UNUSED_VARIABLE(image);
-    return allocateMemory(requirements, required_flags);
+    return allocateMemory(image.getMemoryRequirements(), required_flags);
+}
+
+VkMemoryPropertyFlags DeviceMemoryAllocator_Trivial::translateUsage(MemoryUsage usage)
+{
+    switch (usage)
+    {
+    case MemoryUsage::GpuOnly: return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    case MemoryUsage::CpuOnly: return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    case MemoryUsage::CpuToGpu: return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    case MemoryUsage::GpuToCpu: return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                       VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+    default: GHULBUS_THROW(Exceptions::ProtocolViolation{}, "Invalid memory usage.");
+    }
+    return 0;
 }
 }

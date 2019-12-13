@@ -54,8 +54,10 @@ public:
 
     DeviceMemory allocateMemoryForImage(Image& image, MemoryUsage usage) override;
     DeviceMemory allocateMemoryForImage(Image& image,
-                                        VkMemoryRequirements const& requirements,
                                         VkMemoryPropertyFlags required_flags) override;
+
+private:
+    static VkMemoryPropertyFlags translateUsage(MemoryUsage usage);
 };
 }
 #endif
