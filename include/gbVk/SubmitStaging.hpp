@@ -45,6 +45,11 @@ public:
     void performCleanup();
 
     VkSubmitInfo getVkSubmitInfo() const;
+
+    template<typename... Args>
+    void adoptResources(Args&&... args) {
+        addCleanupCallback([... args = std::forward<Args>(args)]() {});
+    }
 };
 }
 #endif

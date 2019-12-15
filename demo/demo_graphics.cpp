@@ -112,9 +112,7 @@ void drawToBackbuffer(GhulbusGraphics::GraphicsInstance& graphics_instance, Ghul
 
     GhulbusVulkan::SubmitStaging submission;
     submission.addCommandBuffers(command_buffers);
-    submission.addCleanupCallback([s = std::move(source_image), c = std::move(command_buffers)]() {
-        GHULBUS_LOG(Trace, "Cleanup initial backbuffer draw staging");
-    });
+    submission.adoptResources(std::move(source_image), std::move(command_buffers));
     graphics_instance.getGraphicsQueue().stageSubmission(std::move(submission));
 }
 
