@@ -36,7 +36,7 @@ Image::Image(Image&& rhs)
     rhs.m_device = nullptr;
     rhs.m_extent = { 0, 0, 0 };
     rhs.m_format = VK_FORMAT_UNDEFINED;
-    rhs.m_currentAccessMask = static_cast<VkAccessFlags>(0);
+    rhs.m_currentAccessMask = 0;
     rhs.m_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     rhs.m_currentQueue = 0;
     rhs.m_hasOwnership = false;
@@ -119,6 +119,11 @@ uint32_t Image::getDepth() const
 VkFormat Image::getFormat() const
 {
     return m_format;
+}
+
+VkAccessFlags Image::getCurrentAccessMask() const
+{
+    return m_currentAccessMask;
 }
 
 ImageView Image::createImageView()

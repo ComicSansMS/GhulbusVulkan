@@ -193,6 +193,7 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/ImageView.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Instance.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/MappedMemory.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/MemoryUsage.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/PhysicalDevice.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Pipeline.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/PipelineBuilder.hpp

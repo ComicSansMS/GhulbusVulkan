@@ -9,6 +9,8 @@
 
 #include <gbVk/config.hpp>
 
+#include <gbVk/MemoryUsage.hpp>
+
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan.hpp>
 
@@ -17,13 +19,6 @@
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 class Image;
-
-enum class MemoryUsage {
-    GpuOnly,
-    CpuOnly,
-    CpuToGpu,
-    GpuToCpu
-};
 
 class DeviceMemoryAllocator {
 protected:

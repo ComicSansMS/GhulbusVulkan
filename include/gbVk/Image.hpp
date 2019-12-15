@@ -62,6 +62,7 @@ public:
     uint32_t getHeight() const;
     uint32_t getDepth() const;
     VkFormat getFormat() const;
+    VkAccessFlags getCurrentAccessMask() const;
 
     ImageView createImageView();
     ImageView createImageViewDepthBuffer();

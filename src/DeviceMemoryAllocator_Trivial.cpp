@@ -146,6 +146,5 @@ VkMemoryPropertyFlags DeviceMemoryAllocator_Trivial::translateUsage(MemoryUsage 
                                        VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
     default: GHULBUS_THROW(Exceptions::ProtocolViolation{}, "Invalid memory usage.");
     }
-    return 0;
 }
 }

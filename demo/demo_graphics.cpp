@@ -11,6 +11,7 @@
 
 #include <gbGraphics/CommandPoolRegistry.hpp>
 #include <gbGraphics/Graphics.hpp>
+#include <gbGraphics/Image2d.hpp>
 #include <gbGraphics/Window.hpp>
 
 #include <gbVk/Buffer.hpp>
@@ -138,45 +139,42 @@ int main()
 
     command_buffer.begin();
 
-    auto source_image = device.createImage(VkExtent3D{ WINDOW_WIDTH, WINDOW_HEIGHT, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
-        1, 1, VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-    auto mem_reqs = source_image.getMemoryRequirements();
-    auto source_image_memory = device.allocateMemory(mem_reqs, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-    source_image.bindMemory(source_image_memory);
+    GhulbusGraphics::Image2d source_image(graphics_instance, WINDOW_WIDTH, WINDOW_HEIGHT, VK_IMAGE_TILING_LINEAR,
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, GhulbusVulkan::MemoryUsage::CpuOnly);
 
     // fill host image
-    source_image.transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                            VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
+    //source_image.getImage().transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+    //                                   VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
     {
         struct ImageDim { int x, y, comp; } dim;
+        auto mapped = source_image.map();
         auto img_data = stbi_load("textures/statue.jpg", &dim.x, &dim.y, &dim.comp, 0);
-        auto mapped = source_image_memory.map();
-        for (int i = 0; i < mem_reqs.size / 4; ++i) {
-            int ix = i % WINDOW_WIDTH;
-            int iy = i / WINDOW_WIDTH;
-            if (!img_data || ix >= dim.x || iy >= dim.y || (dim.comp != 3 && dim.comp != 4)) {
-                mapped[i * 4] = std::byte(255);           //R
-                mapped[i * 4 + 1] = std::byte(0);         //G
-                mapped[i * 4 + 2] = std::byte(0);         //B
-                mapped[i * 4 + 3] = std::byte(255);       //A
-            } else {
-                auto const pixel_index = (iy * dim.x + ix) * dim.comp;
-                mapped[i * 4] = std::byte(img_data[pixel_index]);           //R
-                mapped[i * 4 + 1] = std::byte(img_data[pixel_index + 1]);         //G
-                mapped[i * 4 + 2] = std::byte(img_data[pixel_index + 2]);         //B
-                mapped[i * 4 + 3] = std::byte((dim.comp == 4) ? img_data[pixel_index + 3] : 255);       //A
+        for (int iy = 0; iy < WINDOW_HEIGHT; ++iy) {
+            for (int ix = 0; ix < WINDOW_WIDTH; ++ix) {
+                int const i = iy * WINDOW_WIDTH + ix;
+                if (!img_data || ix >= dim.x || iy >= dim.y || (dim.comp != 3 && dim.comp != 4)) {
+                    mapped[i * 4] = std::byte(255);           //R
+                    mapped[i * 4 + 1] = std::byte(0);         //G
+                    mapped[i * 4 + 2] = std::byte(0);         //B
+                    mapped[i * 4 + 3] = std::byte(255);       //A
+                } else {
+                    auto const pixel_index = (iy * dim.x + ix) * dim.comp;
+                    mapped[i * 4] = std::byte(img_data[pixel_index]);                                       //R
+                    mapped[i * 4 + 1] = std::byte(img_data[pixel_index + 1]);                               //G
+                    mapped[i * 4 + 2] = std::byte(img_data[pixel_index + 2]);                               //B
+                    mapped[i * 4 + 3] = std::byte((dim.comp == 4) ? img_data[pixel_index + 3] : 255);       //A
+                }
             }
         }
-        mapped.flush();
         stbi_image_free(img_data);
     }
 
     // copy
-    source_image.transition(command_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    source_image.getImage().transition(command_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
     swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    GhulbusVulkan::Image::blit(command_buffer, source_image, *swapchain_image);
+    GhulbusVulkan::Image::blit(command_buffer, source_image.getImage(), *swapchain_image);
 
     swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
         VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);

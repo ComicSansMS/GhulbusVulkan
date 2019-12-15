@@ -9,20 +9,46 @@
 
 #include <gbGraphics/config.hpp>
 
+#include <gbVk/DeviceMemory.hpp>
+#include <gbVk/Image.hpp>
+#include <gbVk/MappedMemory.hpp>
+#include <gbVk/MemoryUsage.hpp>
+
 #include <cstdint>
+#include <optional>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
 class GraphicsInstance;
 
-class BaseImage {
-public:
-    BaseImage(GraphicsInstance& instance);
-};
-
 class Image2d {
-private:
 public:
+    struct NoDeviceMemory_T {};
+    static constexpr NoDeviceMemory_T noDeviceMemory = {};
+private:
+    GhulbusVulkan::Image m_image;
+    std::optional<GhulbusVulkan::DeviceMemory> m_deviceMemory;
+    GhulbusGraphics::GraphicsInstance* m_instance;
+    VkImageTiling m_tiling;
+    VkImageUsageFlags m_imageUsage;
+    GhulbusVulkan::MemoryUsage m_memoryUsage;
+public:
+    Image2d(GraphicsInstance& instance, uint32_t width, uint32_t height, VkImageTiling tiling,
+            VkImageUsageFlags image_usage, GhulbusVulkan::MemoryUsage memory_usage);
+
+    Image2d(GraphicsInstance& instance, GhulbusVulkan::Image image, VkImageTiling tiling, NoDeviceMemory_T);
+
+    ~Image2d();
+
+    Image2d(Image2d&&) = default;
+
+    bool isMappable() const;
+
+    GhulbusVulkan::MappedMemory map();
+
+    GhulbusVulkan::MappedMemory map(VkDeviceSize offset, VkDeviceSize size);
+
+    GhulbusVulkan::Image& getImage();
 };
 }
 #endif
