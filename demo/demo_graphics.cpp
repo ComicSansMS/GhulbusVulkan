@@ -46,6 +46,7 @@
 #include <gbVk/ShaderModule.hpp>
 #include <gbVk/Spirv.hpp>
 #include <gbVk/StringConverters.hpp>
+#include <gbVk/SubmitStaging.hpp>
 #include <gbVk/Swapchain.hpp>
 
 #include <gbBase/PerfLog.hpp>
@@ -57,6 +58,65 @@
 #include <cstring>
 #include <memory>
 #include <vector>
+
+void drawToBackbuffer(GhulbusGraphics::GraphicsInstance& graphics_instance, GhulbusGraphics::Window& main_window)
+{
+    auto command_buffers = graphics_instance.getCommandPoolRegistry().allocateGraphicCommandBuffers_Transient(1);
+    auto command_buffer = command_buffers.getCommandBuffer(0);
+
+    auto& swapchain_image = main_window.getAcquiredImage();
+
+    command_buffer.begin();
+
+    GhulbusGraphics::Image2d source_image(graphics_instance, main_window.getWidth(), main_window.getHeight(),
+        VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        GhulbusVulkan::MemoryUsage::CpuOnly);
+
+    // fill host image
+    //source_image.getImage().transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+    //                                   VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
+    {
+        struct ImageDim { int x, y, comp; } dim;
+        auto mapped = source_image.map();
+        auto img_data = stbi_load("textures/statue.jpg", &dim.x, &dim.y, &dim.comp, 0);
+        for (int iy = 0; iy < main_window.getHeight(); ++iy) {
+            for (int ix = 0; ix < main_window.getWidth(); ++ix) {
+                int const i = iy * main_window.getWidth() + ix;
+                if (!img_data || ix >= dim.x || iy >= dim.y || (dim.comp != 3 && dim.comp != 4)) {
+                    mapped[i * 4] = std::byte(255);           //R
+                    mapped[i * 4 + 1] = std::byte(0);         //G
+                    mapped[i * 4 + 2] = std::byte(0);         //B
+                    mapped[i * 4 + 3] = std::byte(255);       //A
+                } else {
+                    auto const pixel_index = (iy * dim.x + ix) * dim.comp;
+                    mapped[i * 4] = std::byte(img_data[pixel_index]);                                       //R
+                    mapped[i * 4 + 1] = std::byte(img_data[pixel_index + 1]);                               //G
+                    mapped[i * 4 + 2] = std::byte(img_data[pixel_index + 2]);                               //B
+                    mapped[i * 4 + 3] = std::byte((dim.comp == 4) ? img_data[pixel_index + 3] : 255);       //A
+                }
+            }
+        }
+        stbi_image_free(img_data);
+    }
+
+    // copy
+    source_image.getImage().transition(command_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    GhulbusVulkan::Image::blit(command_buffer, source_image.getImage(), *swapchain_image);
+
+    swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    command_buffer.end();
+
+    GhulbusVulkan::SubmitStaging submission;
+    submission.addCommandBuffers(command_buffers);
+    submission.addCleanupCallback([s = std::move(source_image), c = std::move(command_buffers)]() {
+        GHULBUS_LOG(Trace, "Cleanup initial backbuffer draw staging");
+    });
+    graphics_instance.getGraphicsQueue().stageSubmission(std::move(submission));
+}
 
 struct Vertex {
     GhulbusMath::Vector3f position;
@@ -126,67 +186,16 @@ int main()
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Window creation");
 
-    uint32_t queue_family = graphics_instance.getGraphicsQueueFamilyIndex();
-    uint32_t transfer_queue_family = graphics_instance.getTransferQueueFamilyIndex();
-
-    auto command_buffers = graphics_instance.getCommandPoolRegistry().allocateGraphicCommandBuffers(1);
-    auto command_buffer = command_buffers.getCommandBuffer(0);
-
-    auto& queue = graphics_instance.getGraphicsQueue();
-    auto& transfer_queue = graphics_instance.getTransferQueue();
-
     auto& swapchain_image = main_window.getAcquiredImage();
 
-    command_buffer.begin();
-
-    GhulbusGraphics::Image2d source_image(graphics_instance, WINDOW_WIDTH, WINDOW_HEIGHT, VK_IMAGE_TILING_LINEAR,
-        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, GhulbusVulkan::MemoryUsage::CpuOnly);
-
-    // fill host image
-    //source_image.getImage().transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-    //                                   VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
-    {
-        struct ImageDim { int x, y, comp; } dim;
-        auto mapped = source_image.map();
-        auto img_data = stbi_load("textures/statue.jpg", &dim.x, &dim.y, &dim.comp, 0);
-        for (int iy = 0; iy < WINDOW_HEIGHT; ++iy) {
-            for (int ix = 0; ix < WINDOW_WIDTH; ++ix) {
-                int const i = iy * WINDOW_WIDTH + ix;
-                if (!img_data || ix >= dim.x || iy >= dim.y || (dim.comp != 3 && dim.comp != 4)) {
-                    mapped[i * 4] = std::byte(255);           //R
-                    mapped[i * 4 + 1] = std::byte(0);         //G
-                    mapped[i * 4 + 2] = std::byte(0);         //B
-                    mapped[i * 4 + 3] = std::byte(255);       //A
-                } else {
-                    auto const pixel_index = (iy * dim.x + ix) * dim.comp;
-                    mapped[i * 4] = std::byte(img_data[pixel_index]);                                       //R
-                    mapped[i * 4 + 1] = std::byte(img_data[pixel_index + 1]);                               //G
-                    mapped[i * 4 + 2] = std::byte(img_data[pixel_index + 2]);                               //B
-                    mapped[i * 4 + 3] = std::byte((dim.comp == 4) ? img_data[pixel_index + 3] : 255);       //A
-                }
-            }
-        }
-        stbi_image_free(img_data);
-    }
-
-    // copy
-    source_image.getImage().transition(command_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    GhulbusVulkan::Image::blit(command_buffer, source_image.getImage(), *swapchain_image);
-
-    swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-        VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-    command_buffer.end();
-    queue.submit(command_buffer);
-
     perflog.tick(Ghulbus::LogLevel::Debug, "Swapchain setup");
+
+    drawToBackbuffer(graphics_instance, main_window);
 
     // presentation
     main_window.present();
 
-    command_buffer.reset();
+    graphics_instance.getGraphicsQueue().clearAllStaged();
 
     //std::this_thread::sleep_for(std::chrono::seconds(5));
     //return 0;
@@ -232,6 +241,12 @@ int main()
     vertex_buffer.bindBufferMemory(vertex_memory);
 
     auto transfer_command_buffers = graphics_instance.getCommandPoolRegistry().allocateTransferCommandBuffers(2);
+
+
+    auto& queue = graphics_instance.getGraphicsQueue();
+    auto& transfer_queue = graphics_instance.getTransferQueue();
+    uint32_t queue_family = graphics_instance.getGraphicsQueueFamilyIndex();
+    uint32_t transfer_queue_family = graphics_instance.getTransferQueueFamilyIndex();
 
     // copy vertex buffer
     {
@@ -385,6 +400,9 @@ int main()
     GhulbusVulkan::DeviceMemory texture_image_memory = device.allocateMemory(texture_image_mem_reqs,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     texture_image.bindMemory(texture_image_memory);
+
+    auto command_buffers = graphics_instance.getCommandPoolRegistry().allocateGraphicCommandBuffers(1);
+    auto command_buffer = command_buffers.getCommandBuffer(0);
 
     command_buffer.begin();
     texture_image.transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,

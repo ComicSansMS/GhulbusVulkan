@@ -80,6 +80,13 @@ void Queue::submitAllStaged(Fence& fence)
     checkVulkanError(res, "Error in vkQueueSubmit.");
 }
 
+void Queue::clearAllStaged()
+{
+    for (auto& s : m_staged) { s.performCleanup(); }
+    m_staged.clear();
+    m_cachedSubmitInfo.clear();
+}
+
 void Queue::waitIdle()
 {
     VkResult const res = vkQueueWaitIdle(m_queue);

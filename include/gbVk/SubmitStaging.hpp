@@ -12,6 +12,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan.hpp>
 
+#include <gbBase/AnyInvocable.hpp>
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
@@ -20,11 +21,14 @@ class CommandBuffers;
 class Semaphore;
 
 class SubmitStaging {
+public:
+    using Callback = Ghulbus::AnyInvocable<void()>;
 private:
     std::vector<VkCommandBuffer> m_commandBuffers;
     std::vector<VkSemaphore> m_waitingSemaphores;
     std::vector<VkPipelineStageFlags> m_waitingSemaphoreStageFlags;
     std::vector<VkSemaphore> m_signallingSemaphores;
+    std::vector<Callback> m_callbacks;
 public:
     SubmitStaging() = default;
 
@@ -35,6 +39,10 @@ public:
     void addCommandBuffer(CommandBuffer& command_buffer);
 
     void addCommandBuffers(CommandBuffers& command_buffers);
+
+    void addCleanupCallback(Callback cb);
+
+    void performCleanup();
 
     VkSubmitInfo getVkSubmitInfo() const;
 };

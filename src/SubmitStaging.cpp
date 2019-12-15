@@ -30,6 +30,20 @@ void SubmitStaging::addCommandBuffers(CommandBuffers& command_buffers)
     m_commandBuffers.insert(m_commandBuffers.end(), p, p + command_buffers.size());
 }
 
+void SubmitStaging::addCleanupCallback(Callback cb)
+{
+    m_callbacks.emplace_back(std::move(cb));
+}
+
+void SubmitStaging::performCleanup()
+{
+    for (auto& cb : m_callbacks) {
+        Callback c = std::move(cb);
+        c();
+    }
+    m_callbacks.clear();
+}
+
 VkSubmitInfo SubmitStaging::getVkSubmitInfo() const
 {
     VkSubmitInfo submit_info;

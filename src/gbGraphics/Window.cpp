@@ -102,12 +102,12 @@ bool Window::isDone()
     return glfwWindowShouldClose(m_glfw->window);
 }
 
-uint32_t Window::getWidth() const
+int Window::getWidth() const
 {
     return m_width;
 }
 
-uint32_t Window::getHeight() const
+int Window::getHeight() const
 {
     return m_height;
 }
@@ -138,7 +138,8 @@ void Window::present(GhulbusVulkan::Semaphore& semaphore, DoNotWait_T)
 {
     GHULBUS_PRECONDITION(m_backBuffer);
     uint32_t const idx = m_backBuffer->image.getSwapchainIndex();
-    m_presentQueue->stageSubmission(m_windowSubmits);
+    m_presentQueue->stageSubmission(std::move(m_windowSubmits));
+    m_windowSubmits = GhulbusVulkan::SubmitStaging{};
     m_presentFence.reset();
     m_presentQueue->submitAllStaged(m_presentFence);
     m_swapchain.present(m_presentQueue->getVkQueue(), semaphore, std::move(m_backBuffer->image));

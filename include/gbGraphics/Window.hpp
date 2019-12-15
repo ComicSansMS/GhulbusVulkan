@@ -36,8 +36,8 @@ private:
 
     struct DoNotWait_T {};
 private:
-    uint32_t m_width;
-    uint32_t m_height;
+    int m_width;
+    int m_height;
     struct GLFW_Pimpl;
     std::unique_ptr<GLFW_Pimpl> m_glfw;
     std::optional<Backbuffer> m_backBuffer;         // this must be destroyed after m_swapchain to avoid races on the semaphore in Backbuffer
@@ -52,8 +52,8 @@ public:
 
     bool isDone();
 
-    uint32_t getWidth() const;
-    uint32_t getHeight() const;
+    int getWidth() const;
+    int getHeight() const;
 
     void present();
 

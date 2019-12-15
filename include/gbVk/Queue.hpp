@@ -42,6 +42,8 @@ public:
 
     void submitAllStaged(Fence& fence);
 
+    void clearAllStaged();
+
     void waitIdle();
 
     VkQueue getVkQueue();
