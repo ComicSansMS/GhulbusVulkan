@@ -13,6 +13,7 @@
 #include <gbVk/Image.hpp>
 #include <gbVk/MappedMemory.hpp>
 #include <gbVk/MemoryUsage.hpp>
+#include <gbVk/SubmitStaging.hpp>
 
 #include <cstdint>
 #include <optional>
@@ -33,6 +34,8 @@ private:
     VkImageUsageFlags m_imageUsage;
     GhulbusVulkan::MemoryUsage m_memoryUsage;
 public:
+    Image2d(GraphicsInstance& instance, uint32_t width, uint32_t height);
+
     Image2d(GraphicsInstance& instance, uint32_t width, uint32_t height, VkImageTiling tiling,
             VkImageUsageFlags image_usage, GhulbusVulkan::MemoryUsage memory_usage);
 
@@ -47,6 +50,8 @@ public:
     GhulbusVulkan::MappedMemory map();
 
     GhulbusVulkan::MappedMemory map(VkDeviceSize offset, VkDeviceSize size);
+
+    GhulbusVulkan::SubmitStaging setDataAsynchronously(std::byte const* data);
 
     GhulbusVulkan::Image& getImage();
 };

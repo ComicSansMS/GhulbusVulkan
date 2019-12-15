@@ -381,39 +381,14 @@ int main()
     stbi_uc* texture_data = stbi_load("textures/statue.jpg", &texture_dimensions_width, &texture_dimensions_height,
         &texture_dimensions_n_channels, STBI_rgb_alpha);
     if (!texture_data) { GHULBUS_LOG(Error, "Error loading texture file."); return 1; }
-    auto texture_data_guard = Ghulbus::finally([texture_data]() { stbi_image_free(texture_data); });
-    VkDeviceSize const texture_size = texture_dimensions_width * texture_dimensions_height * 4;
+    GhulbusGraphics::Image2d texture(graphics_instance, texture_dimensions_width, texture_dimensions_height);
+    graphics_instance.getGraphicsQueue().stageSubmission(
+        texture.setDataAsynchronously(reinterpret_cast<std::byte const*>(texture_data)));
+    graphics_instance.getGraphicsQueue().submitAllStaged();
+    graphics_instance.getGraphicsQueue().waitIdle();
+    graphics_instance.getGraphicsQueue().clearAllStaged();
 
-    auto texture_staging_buffer = device.createBuffer(texture_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-    auto texture_staging_buffer_mem_reqs = texture_staging_buffer.getMemoryRequirements();
-    auto texture_staging_memory = device.allocateMemory(texture_staging_buffer_mem_reqs,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    texture_staging_buffer.bindBufferMemory(texture_staging_memory);
-    {
-        auto mapped_mem = texture_staging_memory.map();
-        std::memcpy(mapped_mem, texture_data, texture_size);
-    }
-    GhulbusVulkan::Image texture_image = device.createImage2D(texture_dimensions_width, texture_dimensions_height);
-    auto const texture_image_mem_reqs = texture_image.getMemoryRequirements();
-    GhulbusVulkan::DeviceMemory texture_image_memory = device.allocateMemory(texture_image_mem_reqs,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    texture_image.bindMemory(texture_image_memory);
-
-    auto command_buffers = graphics_instance.getCommandPoolRegistry().allocateGraphicCommandBuffers(1);
-    auto command_buffer = command_buffers.getCommandBuffer(0);
-
-    command_buffer.begin();
-    texture_image.transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    GhulbusVulkan::Image::copy(command_buffer, texture_staging_buffer, texture_image);
-    texture_image.transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    command_buffer.end();
-    queue.submit(command_buffer);
-    queue.waitIdle();
-    command_buffer.reset();
-
-    GhulbusVulkan::ImageView texture_image_view = texture_image.createImageView();
+    GhulbusVulkan::ImageView texture_image_view = texture.getImage().createImageView();
     GhulbusVulkan::Sampler texture_sampler = device.createSampler();
 
 
