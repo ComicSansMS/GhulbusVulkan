@@ -140,9 +140,23 @@ std::vector<PhysicalDevice> Instance::enumeratePhysicalDevices()
     return ret;
 }
 
+uint32_t Instance::getMaximumSupportedVulkanApiVersion()
+{
+    PFN_vkEnumerateInstanceVersion const pEnumInstanceVersion =
+        reinterpret_cast<PFN_vkEnumerateInstanceVersion>(vkGetInstanceProcAddr(VK_NULL_HANDLE,
+            "vkEnumerateInstanceVersion"));
+    if (!pEnumInstanceVersion) {
+        return VK_API_VERSION_1_0;
+    }
+    uint32_t api_version;
+    VkResult const res = pEnumInstanceVersion(&api_version);
+    checkVulkanError(res, "Error in vkEnumerateInstanceVersion.");
+    return api_version;
+}
+
 uint32_t Instance::getVulkanApiVersion()
 {
-    return VK_API_VERSION_1_0;
+    return (getMaximumSupportedVulkanApiVersion() >= VK_API_VERSION_1_1) ? VK_API_VERSION_1_1 : VK_API_VERSION_1_0;
 }
 
 }

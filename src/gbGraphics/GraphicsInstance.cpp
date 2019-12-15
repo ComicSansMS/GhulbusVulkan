@@ -124,6 +124,11 @@ std::tuple<GhulbusVulkan::Device, detail::DeviceQueues> initializeVulkanDevice(G
                 continue;
             }
 
+            // required: Vulkan 1.1 support
+            if (pd.getProperties().apiVersion < VK_API_VERSION_1_1) {
+                continue;
+            }
+
             // required: extensions
             std::array<bool, sizeof(required_extensions) / sizeof(char*)> required_extension_supported;
             required_extension_supported.fill(false);

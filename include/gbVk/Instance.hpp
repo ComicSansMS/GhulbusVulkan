@@ -143,6 +143,8 @@ public:
 
     std::vector<PhysicalDevice> enumeratePhysicalDevices();
 
+    static uint32_t getMaximumSupportedVulkanApiVersion();
+
     static uint32_t getVulkanApiVersion();
 };
 }
