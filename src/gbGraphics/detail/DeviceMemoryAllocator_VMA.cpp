@@ -2,6 +2,7 @@
 
 #include <gbGraphics/Exceptions.hpp>
 
+#include <gbVk/Buffer.hpp>
 #include <gbVk/Device.hpp>
 #include <gbVk/Exceptions.hpp>
 #include <gbVk/Image.hpp>
@@ -109,9 +110,8 @@ DeviceMemoryAllocator_VMA& DeviceMemoryAllocator_VMA::operator=(DeviceMemoryAllo
     return *this;
 }
 
-VmaMemoryUsage DeviceMemoryAllocator_VMA::translateUsage(GhulbusVulkan::MemoryUsage usage)
+VmaMemoryUsage DeviceMemoryAllocator_VMA::translateUsage(MemoryUsage usage)
 {
-    using GhulbusVulkan::MemoryUsage;
     switch (usage) {
     case MemoryUsage::GpuOnly: return VMA_MEMORY_USAGE_GPU_ONLY;
     case MemoryUsage::CpuOnly: return VMA_MEMORY_USAGE_CPU_ONLY;
@@ -149,7 +149,47 @@ auto DeviceMemoryAllocator_VMA::allocateMemory(VkMemoryRequirements const& requi
     return DeviceMemory(std::make_unique<HandleModel>(m_allocator, allocation, allocation_info));
 }
 
-auto DeviceMemoryAllocator_VMA::allocateMemoryForImage(GhulbusVulkan::Image& image, GhulbusVulkan::MemoryUsage usage) -> DeviceMemory
+auto DeviceMemoryAllocator_VMA::allocateMemoryForBuffer(GhulbusVulkan::Buffer& buffer,
+                                                        MemoryUsage usage) -> DeviceMemory
+{
+    VmaAllocationCreateInfo create_info;
+    create_info.flags = 0;
+    create_info.usage = translateUsage(usage);
+    create_info.requiredFlags = 0;
+    create_info.preferredFlags = 0;
+    create_info.memoryTypeBits = 0;
+    create_info.pool = VK_NULL_HANDLE;
+    create_info.pUserData = this;
+    VmaAllocation allocation;
+    VmaAllocationInfo allocation_info;
+    VkResult const res =
+        vmaAllocateMemoryForBuffer(m_allocator, buffer.getVkBuffer(), &create_info, &allocation, &allocation_info);
+    GhulbusVulkan::checkVulkanError(res, "Error in vmaAllocateMemoryForBuffer.");
+    return DeviceMemory(std::make_unique<HandleModel>(m_allocator, allocation, allocation_info));
+}
+
+auto DeviceMemoryAllocator_VMA::allocateMemoryForBuffer(GhulbusVulkan::Buffer& buffer,
+                                                        VkMemoryPropertyFlags required_flags) -> DeviceMemory
+{
+    VkMemoryRequirements const requirements = buffer.getMemoryRequirements();
+    VmaAllocationCreateInfo create_info;
+    create_info.flags = 0;
+    create_info.usage = VMA_MEMORY_USAGE_UNKNOWN;
+    create_info.requiredFlags = required_flags;
+    create_info.preferredFlags = 0;
+    create_info.memoryTypeBits = requirements.memoryTypeBits;
+    create_info.pool = VK_NULL_HANDLE;
+    create_info.pUserData = this;
+    VmaAllocation allocation;
+    VmaAllocationInfo allocation_info;
+    VkResult const res =
+        vmaAllocateMemoryForBuffer(m_allocator, buffer.getVkBuffer(), &create_info, &allocation, &allocation_info);
+    GhulbusVulkan::checkVulkanError(res, "Error in vmaAllocateMemoryForBuffer.");
+    return DeviceMemory(std::make_unique<HandleModel>(m_allocator, allocation, allocation_info));
+}
+
+auto DeviceMemoryAllocator_VMA::allocateMemoryForImage(GhulbusVulkan::Image& image,
+                                                       MemoryUsage usage) -> DeviceMemory
 {
     VmaAllocationCreateInfo create_info;
     create_info.flags = 0;

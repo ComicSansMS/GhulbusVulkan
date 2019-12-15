@@ -18,6 +18,7 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class Buffer;
 class Image;
 
 class DeviceMemoryAllocator {
@@ -50,6 +51,9 @@ public:
     virtual DeviceMemory allocateMemory(VkMemoryRequirements const& requirements,
                                         VkMemoryPropertyFlags required_flags) = 0;
 
+    virtual DeviceMemory allocateMemoryForBuffer(Buffer& buffer, MemoryUsage usage) = 0;
+    virtual DeviceMemory allocateMemoryForBuffer(Buffer& buffer,
+                                                 VkMemoryPropertyFlags required_flags) = 0;
     virtual DeviceMemory allocateMemoryForImage(Image& image, MemoryUsage usage) = 0;
     virtual DeviceMemory allocateMemoryForImage(Image& image,
                                                 VkMemoryPropertyFlags required_flags) = 0;

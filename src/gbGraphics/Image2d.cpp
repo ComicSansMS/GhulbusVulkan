@@ -9,18 +9,17 @@
 #include <gbVk/Device.hpp>
 
 #include <gbBase/Assert.hpp>
-#include <gbBase/Log.hpp>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
 
 Image2d::Image2d(GraphicsInstance& instance, uint32_t width, uint32_t height)
     :Image2d(instance, width, height, VK_IMAGE_TILING_OPTIMAL,
-             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, GhulbusVulkan::MemoryUsage::GpuOnly)
+             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, MemoryUsage::GpuOnly)
 {}
 
 Image2d::Image2d(GraphicsInstance& instance, uint32_t width, uint32_t height, VkImageTiling tiling,
-    VkImageUsageFlags image_usage, GhulbusVulkan::MemoryUsage memory_usage)
+    VkImageUsageFlags image_usage, MemoryUsage memory_usage)
     :m_image(instance.getVulkanDevice().createImage(VkExtent3D{ width, height, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
         1, 1, tiling, image_usage)),
     m_deviceMemory(instance.getDeviceMemoryAllocator().allocateMemoryForImage(m_image, memory_usage)),
@@ -31,7 +30,7 @@ Image2d::Image2d(GraphicsInstance& instance, uint32_t width, uint32_t height, Vk
 
 Image2d::~Image2d()
 {
-    // make sure image is destroy first, before the memory that backs it up
+    // make sure image is destroyed first, before the memory that backs it up
     GhulbusVulkan::Image destroyer(std::move(m_image));
 }
 
@@ -42,7 +41,6 @@ GhulbusVulkan::Image& Image2d::getImage()
 
 bool Image2d::isMappable() const
 {
-    using GhulbusVulkan::MemoryUsage;
     return m_deviceMemory && ((m_memoryUsage == MemoryUsage::CpuOnly) ||
                               (m_memoryUsage == MemoryUsage::CpuToGpu) ||
                               (m_memoryUsage == MemoryUsage::GpuToCpu));

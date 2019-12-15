@@ -20,6 +20,8 @@
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
+using GhulbusVulkan::MemoryUsage;
+
 class GraphicsInstance;
 
 class Image2d {
@@ -32,12 +34,12 @@ private:
     GhulbusGraphics::GraphicsInstance* m_instance;
     VkImageTiling m_tiling;
     VkImageUsageFlags m_imageUsage;
-    GhulbusVulkan::MemoryUsage m_memoryUsage;
+    MemoryUsage m_memoryUsage;
 public:
     Image2d(GraphicsInstance& instance, uint32_t width, uint32_t height);
 
     Image2d(GraphicsInstance& instance, uint32_t width, uint32_t height, VkImageTiling tiling,
-            VkImageUsageFlags image_usage, GhulbusVulkan::MemoryUsage memory_usage);
+            VkImageUsageFlags image_usage, MemoryUsage memory_usage);
 
     Image2d(GraphicsInstance& instance, GhulbusVulkan::Image image, VkImageTiling tiling, NoDeviceMemory_T);
 

@@ -16,6 +16,7 @@
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
+using GhulbusVulkan::MemoryUsage;
 namespace detail
 {
 class DeviceMemoryAllocator_VMA : public GhulbusVulkan::DeviceMemoryAllocator {
@@ -56,11 +57,15 @@ public:
     DeviceMemory allocateMemory(VkMemoryRequirements const& requirements,
                                 VkMemoryPropertyFlags required_flags) override;
 
-    DeviceMemory allocateMemoryForImage(GhulbusVulkan::Image& image, GhulbusVulkan::MemoryUsage usage) override;
+    DeviceMemory allocateMemoryForBuffer(GhulbusVulkan::Buffer& buffer, MemoryUsage usage) override;
+    DeviceMemory allocateMemoryForBuffer(GhulbusVulkan::Buffer& buffer,
+                                         VkMemoryPropertyFlags required_flags) override;
+
+    DeviceMemory allocateMemoryForImage(GhulbusVulkan::Image& image, MemoryUsage usage) override;
     DeviceMemory allocateMemoryForImage(GhulbusVulkan::Image& image,
                                         VkMemoryPropertyFlags required_flags) override;
 private:
-    static VmaMemoryUsage translateUsage(GhulbusVulkan::MemoryUsage usage);
+    static VmaMemoryUsage translateUsage(MemoryUsage usage);
 };
 }
 }

@@ -52,6 +52,10 @@ public:
     DeviceMemory allocateMemory(VkMemoryRequirements const& requirements,
                                 VkMemoryPropertyFlags required_flags) override;
 
+    DeviceMemory allocateMemoryForBuffer(Buffer& buffer, MemoryUsage usage) override;
+    DeviceMemory allocateMemoryForBuffer(Buffer& buffer,
+                                         VkMemoryPropertyFlags required_flags) override;
+
     DeviceMemory allocateMemoryForImage(Image& image, MemoryUsage usage) override;
     DeviceMemory allocateMemoryForImage(Image& image,
                                         VkMemoryPropertyFlags required_flags) override;

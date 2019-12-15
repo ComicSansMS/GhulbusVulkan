@@ -12,6 +12,7 @@
 #include <gbGraphics/CommandPoolRegistry.hpp>
 #include <gbGraphics/Graphics.hpp>
 #include <gbGraphics/Image2d.hpp>
+#include <gbGraphics/MemoryBuffer.hpp>
 #include <gbGraphics/Window.hpp>
 
 #include <gbVk/Buffer.hpp>
@@ -70,7 +71,7 @@ void drawToBackbuffer(GhulbusGraphics::GraphicsInstance& graphics_instance, Ghul
 
     GhulbusGraphics::Image2d source_image(graphics_instance, main_window.getWidth(), main_window.getHeight(),
         VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-        GhulbusVulkan::MemoryUsage::CpuOnly);
+        GhulbusGraphics::MemoryUsage::CpuOnly);
 
     // fill host image
     //source_image.getImage().transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
@@ -223,13 +224,22 @@ int main()
     vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
     vertex_attributes[2].offset = offsetof(Vertex, texCoords);
 
+    GhulbusGraphics::MemoryBuffer staging_buffer(graphics_instance, vertex_data.size() * sizeof(Vertex),
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, GhulbusGraphics::MemoryUsage::CpuOnly);
+    /*
     GhulbusVulkan::Buffer staging_buffer = device.createBuffer(vertex_data.size() * sizeof(Vertex),
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     auto const staging_buffer_mem_reqs = staging_buffer.getMemoryRequirements();
     GhulbusVulkan::DeviceMemory staging_memory = device.allocateMemory(staging_buffer_mem_reqs,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     staging_buffer.bindBufferMemory(staging_memory);
+    */
 
+
+#if USE_GBGRAPHICS_VERTEX_BUFFER
+    GhulbusGraphics::MemoryBuffer vertex_buffer(graphics_instance, vertex_data.size() * sizeof(Vertex),
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, GhulbusGraphics::MemoryUsage::CpuToGpu);
+#else
     GhulbusVulkan::Buffer vertex_buffer = device.createBuffer(vertex_data.size() * sizeof(Vertex),
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
     auto const vertex_buffer_mem_reqs = vertex_buffer.getMemoryRequirements();
@@ -237,7 +247,7 @@ int main()
         device.allocateMemory(vertex_buffer_mem_reqs,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     vertex_buffer.bindBufferMemory(vertex_memory);
-
+#endif
     auto transfer_command_buffers = graphics_instance.getCommandPoolRegistry().allocateTransferCommandBuffers(2);
 
 
@@ -248,7 +258,7 @@ int main()
 
     // copy vertex buffer
     {
-        auto mapped_memory = staging_memory.map();
+        auto mapped_memory = staging_buffer.map();
         std::memcpy(mapped_memory, vertex_data.data(), vertex_data.size() * sizeof(Vertex));
     }
     {
@@ -260,8 +270,12 @@ int main()
         buffer_copy.dstOffset = 0;
         buffer_copy.size = vertex_data.size() * sizeof(Vertex);
 
-        vkCmdCopyBuffer(transfer_command_buffer.getVkCommandBuffer(), staging_buffer.getVkBuffer(),
+        vkCmdCopyBuffer(transfer_command_buffer.getVkCommandBuffer(), staging_buffer.getBuffer().getVkBuffer(),
+#if USE_GBGRAPHICS_VERTEX_BUFFER
+                        vertex_buffer.getBuffer().getVkBuffer(), 1, &buffer_copy);
+#else
                         vertex_buffer.getVkBuffer(), 1, &buffer_copy);
+#endif
 
         VkBufferMemoryBarrier barrier;
         barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
@@ -270,7 +284,11 @@ int main()
         barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
         barrier.srcQueueFamilyIndex = transfer_queue_family;
         barrier.dstQueueFamilyIndex = queue_family;
+#if USE_GBGRAPHICS_VERTEX_BUFFER
+        barrier.buffer = vertex_buffer.getBuffer().getVkBuffer();
+#else
         barrier.buffer = vertex_buffer.getVkBuffer();
+#endif
         barrier.offset = 0;
         barrier.size = VK_WHOLE_SIZE;
         vkCmdPipelineBarrier(transfer_command_buffer.getVkCommandBuffer(),
@@ -290,7 +308,7 @@ int main()
 
     GhulbusVulkan::Buffer index_buffer = device.createBuffer(index_data.size() * sizeof(uint16_t),
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    auto const index_buffer_mem_reqs = vertex_buffer.getMemoryRequirements();
+    auto const index_buffer_mem_reqs = index_buffer.getMemoryRequirements();
     GhulbusVulkan::DeviceMemory index_memory =
         device.allocateMemory(index_buffer_mem_reqs,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -593,7 +611,11 @@ int main()
         if constexpr (draw_mode == DrawMode::Hardcoded) {
             vkCmdDraw(local_command_buffer.getVkCommandBuffer(), 3, 1, 0, 0);
         } else {
+#if USE_GBGRAPHICS_VERTEX_BUFFER
+            VkBuffer vertexBuffers[] = { vertex_buffer.getBuffer().getVkBuffer() };
+#else
             VkBuffer vertexBuffers[] = { vertex_buffer.getVkBuffer() };
+#endif
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(local_command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
             vkCmdBindIndexBuffer(local_command_buffer.getVkCommandBuffer(), index_buffer.getVkBuffer(),

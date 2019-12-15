@@ -1,5 +1,6 @@
 #include <gbVk/DeviceMemoryAllocator_Trivial.hpp>
 
+#include <gbVk/Buffer.hpp>
 #include <gbVk/Exceptions.hpp>
 #include <gbVk/Image.hpp>
 #include <gbVk/PhysicalDevice.hpp>
@@ -120,6 +121,19 @@ auto DeviceMemoryAllocator_Trivial::allocateMemory(VkMemoryRequirements const& r
     VkResult res = vkAllocateMemory(m_device, &alloc_info, nullptr, &mem);
     checkVulkanError(res, "Error in vkAllocateMemory.");
     return DeviceMemory(std::make_unique<HandleModel>(m_device, mem, requirements.size));
+}
+
+auto DeviceMemoryAllocator_Trivial::allocateMemoryForBuffer(Buffer& buffer, MemoryUsage usage) -> DeviceMemory
+{
+    VkMemoryRequirements const requirements = buffer.getMemoryRequirements();
+    VkMemoryPropertyFlags const required_flags = translateUsage(usage);
+    return allocateMemory(requirements, required_flags);
+}
+
+auto DeviceMemoryAllocator_Trivial::allocateMemoryForBuffer(Buffer& buffer,
+                                                            VkMemoryPropertyFlags required_flags) -> DeviceMemory
+{
+    return allocateMemory(buffer.getMemoryRequirements(), required_flags);
 }
 
 auto DeviceMemoryAllocator_Trivial::allocateMemoryForImage(Image& image, MemoryUsage usage) -> DeviceMemory
