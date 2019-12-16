@@ -6,22 +6,30 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
-CommandBuffer::CommandBuffer(VkCommandBuffer command_buffer)
-    :m_commandBuffer(command_buffer), m_currentState(State::Initial)
+CommandBuffer::CommandBuffer(VkCommandBuffer command_buffer, uint32_t queue_family_index)
+    :m_commandBuffer(command_buffer), m_currentState(State::Initial), m_queueFamilyIndex(queue_family_index)
 {}
 
 CommandBuffer::~CommandBuffer()
 {}
 
 CommandBuffer::CommandBuffer(CommandBuffer&& rhs)
-    :m_commandBuffer(rhs.m_commandBuffer)
+    :m_commandBuffer(rhs.m_commandBuffer), m_currentState(rhs.m_currentState),
+     m_queueFamilyIndex(rhs.m_queueFamilyIndex)
 {
     rhs.m_commandBuffer = nullptr;
+    rhs.m_currentState = State::Initial;
+    rhs.m_queueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 }
 
 CommandBuffer::State CommandBuffer::getCurrentState() const
 {
     return m_currentState;
+}
+
+uint32_t CommandBuffer::getQueueFamilyIndex() const
+{
+    return m_queueFamilyIndex;
 }
 
 void CommandBuffer::begin()

@@ -22,9 +22,10 @@ private:
     std::vector<VkCommandBuffer> m_commandBuffers;
     VkDevice m_device;
     VkCommandPool m_commandPool;
+    uint32_t m_queueFamilyIndex;
 public:
     CommandBuffers(VkDevice logical_device, VkCommandPool command_pool,
-                   std::vector<VkCommandBuffer> command_buffers);
+                   std::vector<VkCommandBuffer> command_buffers, uint32_t queue_family_index);
 
     ~CommandBuffers();
 
@@ -35,6 +36,8 @@ public:
     CommandBuffers& operator=(CommandBuffers&&) = delete;
 
     uint32_t size() const;
+
+    uint32_t getQueueFamilyIndex() const;
 
     CommandBuffer getCommandBuffer(uint32_t index);
 

@@ -9,8 +9,8 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
-CommandPool::CommandPool(VkDevice device, VkCommandPool command_pool)
-    :m_commandPool(command_pool), m_device(device)
+CommandPool::CommandPool(VkDevice device, VkCommandPool command_pool, uint32_t queue_family_index)
+    :m_commandPool(command_pool), m_device(device), m_queueFamilyIndex(queue_family_index)
 {
 }
 
@@ -20,10 +20,16 @@ CommandPool::~CommandPool()
 }
 
 CommandPool::CommandPool(CommandPool&& rhs)
-    :m_commandPool(rhs.m_commandPool), m_device(rhs.m_device)
+    :m_commandPool(rhs.m_commandPool), m_device(rhs.m_device), m_queueFamilyIndex(rhs.m_queueFamilyIndex)
 {
     rhs.m_commandPool = nullptr;
     rhs.m_device = nullptr;
+    rhs.m_queueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+}
+
+uint32_t CommandPool::getQueueFamilyIndex() const
+{
+    return m_queueFamilyIndex;
 }
 
 CommandBuffers CommandPool::allocateCommandBuffers(std::uint32_t command_buffer_count)
@@ -39,7 +45,7 @@ CommandBuffers CommandPool::allocateCommandBuffers(std::uint32_t command_buffer_
     buffers.resize(command_buffer_count);
     VkResult res = vkAllocateCommandBuffers(m_device, &alloc_info, buffers.data());
     checkVulkanError(res, "Error in vkAllocateCommandBuffers.");
-    return CommandBuffers(m_device, m_commandPool, std::move(buffers));
+    return CommandBuffers(m_device, m_commandPool, std::move(buffers), m_queueFamilyIndex);
 }
 
 void CommandPool::reset()

@@ -24,8 +24,9 @@ public:
 private:
     VkCommandBuffer m_commandBuffer;
     State m_currentState;
+    uint32_t m_queueFamilyIndex;
 public:
-    explicit CommandBuffer(VkCommandBuffer command_buffer);
+    explicit CommandBuffer(VkCommandBuffer command_buffer, uint32_t queue_family_index);
     ~CommandBuffer();
 
     CommandBuffer(CommandBuffer const&) = delete;
@@ -35,6 +36,7 @@ public:
     CommandBuffer& operator=(CommandBuffer&& rhs) = delete;
 
     State getCurrentState() const;
+    uint32_t getQueueFamilyIndex() const;
 
     void begin();
     void begin(VkCommandBufferUsageFlags flags);

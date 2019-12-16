@@ -289,7 +289,7 @@ CommandPool Device::createCommandPool(VkCommandPoolCreateFlags requested_flags, 
     VkCommandPool command_pool;
     VkResult res = vkCreateCommandPool(m_device, &pool_create_info, nullptr, &command_pool);
     checkVulkanError(res, "Error in vkCreateCommandPool.");
-    return CommandPool(m_device, command_pool);
+    return CommandPool(m_device, command_pool, queue_family_index);
 }
 
 Queue Device::getQueue(uint32_t queue_family, uint32_t queue_index)

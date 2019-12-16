@@ -20,8 +20,9 @@ class CommandPool {
 private:
     VkCommandPool m_commandPool;
     VkDevice m_device;
+    uint32_t m_queueFamilyIndex;
 public:
-    CommandPool(VkDevice device, VkCommandPool command_pool);
+    CommandPool(VkDevice device, VkCommandPool command_pool, uint32_t queue_family_index);
     ~CommandPool();
 
     CommandPool(CommandPool const&) = delete;
@@ -29,6 +30,8 @@ public:
 
     CommandPool(CommandPool&& rhs);
     CommandPool& operator=(CommandPool&& rhs) = delete;
+
+    uint32_t getQueueFamilyIndex() const;
 
     CommandBuffers allocateCommandBuffers(std::uint32_t command_buffer_count);
 
