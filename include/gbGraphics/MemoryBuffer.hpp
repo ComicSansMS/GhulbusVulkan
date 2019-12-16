@@ -36,6 +36,9 @@ public:
     MemoryBuffer(GraphicsInstance& instance, VkDeviceSize size,
                  VkBufferUsageFlags buffer_usage, MemoryUsage memory_usage);
 
+    MemoryBuffer(GraphicsInstance& instance, VkDeviceSize size,
+                 VkBufferUsageFlags buffer_usage, VkMemoryPropertyFlags required_flags);
+
     ~MemoryBuffer();
 
     MemoryBuffer(MemoryBuffer&&) = default;
