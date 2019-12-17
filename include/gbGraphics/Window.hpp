@@ -57,11 +57,7 @@ public:
 
     void present();
 
-    void present(DoNotWait_T);
-
     void present(GhulbusVulkan::Semaphore& semaphore);
-
-    void present(GhulbusVulkan::Semaphore& semaphore, DoNotWait_T);
 
     uint32_t getNumberOfImagesInSwapchain() const;
 

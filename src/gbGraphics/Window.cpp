@@ -114,35 +114,23 @@ int Window::getHeight() const
 
 void Window::present()
 {
-    m_backBuffer->fence.wait();
-    present(DoNotWait_T{});
-    m_presentFence.wait();
-    prepareBackbuffer();
-}
-
-void Window::present(DoNotWait_T)
-{
-    GHULBUS_PRECONDITION(m_backBuffer);
-    present(m_backBuffer->semaphore, DoNotWait_T{});
+    present(m_backBuffer->semaphore);
 }
 
 void Window::present(GhulbusVulkan::Semaphore& semaphore)
 {
-    m_backBuffer->fence.wait();
-    present(semaphore, DoNotWait_T{});
-    m_presentFence.wait();
-    prepareBackbuffer();
-}
-
-void Window::present(GhulbusVulkan::Semaphore& semaphore, DoNotWait_T)
-{
     GHULBUS_PRECONDITION(m_backBuffer);
+    m_backBuffer->fence.wait();
+
     uint32_t const idx = m_backBuffer->image.getSwapchainIndex();
     m_presentQueue->stageSubmission(std::move(m_windowSubmits));
     m_windowSubmits = GhulbusVulkan::SubmitStaging{};
     m_presentFence.reset();
     m_presentQueue->submitAllStaged(m_presentFence);
     m_swapchain.present(m_presentQueue->getVkQueue(), semaphore, std::move(m_backBuffer->image));
+
+    m_presentFence.wait();
+    prepareBackbuffer();
 }
 
 uint32_t Window::getNumberOfImagesInSwapchain() const
