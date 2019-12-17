@@ -284,14 +284,13 @@ int main()
         index_buffer.setDataAsynchronously(reinterpret_cast<std::byte const*>(index_data.data()),
                                            graphics_instance.getGraphicsQueueFamilyIndex()));
 
-    auto fence = device.createFence();
-    graphics_instance.getTransferQueue().submitAllStaged(fence);
-    graphics_instance.getTransferQueue().waitIdle();
-    graphics_instance.getTransferQueue().clearAllStaged();
+    auto transfer_fence = device.createFence();
+    graphics_instance.getTransferQueue().submitAllStaged(transfer_fence);
 
-    auto sync_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
-    auto sync_command_buffer = sync_command_buffers.getCommandBuffer(0);
     {
+        GhulbusVulkan::SubmitStaging graphics_transfer_sync;
+        auto sync_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
+        auto sync_command_buffer = sync_command_buffers.getCommandBuffer(0);
         sync_command_buffer.begin();
         vertex_buffer.getBuffer().transitionAcquire(sync_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                                     VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
@@ -300,8 +299,10 @@ int main()
                                                    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_INDEX_READ_BIT,
                                                    graphics_instance.getTransferQueueFamilyIndex());
         sync_command_buffer.end();
+        graphics_transfer_sync.addCommandBuffers(sync_command_buffers);
+        graphics_transfer_sync.adoptResources(std::move(sync_command_buffers));
+        graphics_instance.getGraphicsQueue().stageSubmission(std::move(graphics_transfer_sync));
     }
-    graphics_instance.getGraphicsQueue().submit(sync_command_buffers);
 
     // ubo
     std::vector<GhulbusGraphics::MemoryBuffer> ubo_buffers;
@@ -573,7 +574,8 @@ int main()
 
     GhulbusVulkan::Semaphore semaphore_render_finished = device.createSemaphore();
 
-    fence.wait();
+    transfer_fence.wait();
+    graphics_instance.getTransferQueue().clearAllStaged();
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!main_window.isDone()) {
         graphics_instance.pollEvents();
