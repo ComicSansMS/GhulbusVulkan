@@ -144,6 +144,7 @@ set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/DeviceMemory.cpp
     ${GB_VK_SOURCE_DIR}/DeviceMemoryAllocator.cpp
     ${GB_VK_SOURCE_DIR}/DeviceMemoryAllocator_Trivial.cpp
+    ${GB_VK_SOURCE_DIR}/Event.cpp
     ${GB_VK_SOURCE_DIR}/Fence.cpp
     ${GB_VK_SOURCE_DIR}/Framebuffer.cpp
     ${GB_VK_SOURCE_DIR}/Image.cpp
@@ -185,6 +186,7 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceMemory.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceMemoryAllocator.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/DeviceMemoryAllocator_Trivial.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/Event.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Exceptions.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Fence.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/ForwardDecl.hpp

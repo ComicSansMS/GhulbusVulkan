@@ -5,6 +5,7 @@
 #include <gbVk/DescriptorPoolBuilder.hpp>
 #include <gbVk/DescriptorSetLayoutBuilder.hpp>
 #include <gbVk/DeviceMemory.hpp>
+#include <gbVk/Event.hpp>
 #include <gbVk/Exceptions.hpp>
 #include <gbVk/Fence.hpp>
 #include <gbVk/Framebuffer.hpp>
@@ -153,6 +154,18 @@ Semaphore Device::createSemaphore()
     VkResult res = vkCreateSemaphore(m_device, &semaphore_ci, nullptr, &semaphore);
     checkVulkanError(res, "Error in vkCreateSemaphore.");
     return Semaphore(m_device, semaphore);
+}
+
+Event Device::createEvent()
+{
+    VkEventCreateInfo event_ci;
+    event_ci.sType = VK_STRUCTURE_TYPE_EVENT_CREATE_INFO;
+    event_ci.pNext = nullptr;
+    event_ci.flags = 0;
+    VkEvent event_v;
+    VkResult const res = vkCreateEvent(m_device, &event_ci, nullptr, &event_v);
+    checkVulkanError(res, "Error in vkCreateEvent.");
+    return Event(m_device, event_v);
 }
 
 Buffer Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags)

@@ -21,6 +21,7 @@ class Buffer;
 class CommandPool;
 class DescriptorPoolBuilder;
 class DescriptorSetLayoutBuilder;
+class Event;
 class Fence;
 class Framebuffer;
 class Image;
@@ -67,6 +68,8 @@ public:
     Fence createFence(VkFenceCreateFlags flags);
 
     Semaphore createSemaphore();
+
+    Event createEvent();
 
     Buffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage_flags);
 
