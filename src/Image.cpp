@@ -38,7 +38,7 @@ Image::Image(Image&& rhs)
     rhs.m_format = VK_FORMAT_UNDEFINED;
     rhs.m_currentAccessMask = 0;
     rhs.m_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    rhs.m_currentQueue = 0;
+    rhs.m_currentQueue = VK_QUEUE_FAMILY_IGNORED;
     rhs.m_hasOwnership = false;
 }
 
