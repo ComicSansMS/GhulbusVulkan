@@ -52,8 +52,6 @@ public:
 
     VkMemoryRequirements getMemoryRequirements();
 
-    void bindBufferMemory(DeviceMemory& memory);
-
     void bindBufferMemory(DeviceMemory& memory, VkDeviceSize offset);
 };
 }

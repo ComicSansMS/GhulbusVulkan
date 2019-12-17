@@ -8,6 +8,7 @@
 */
 
 #include <gbGraphics/config.hpp>
+#include <gbGraphics/CommandPoolRegistry.hpp>
 #include <gbGraphics/GraphicsInstance.hpp>
 #include <gbGraphics/Window.hpp>
 

@@ -378,7 +378,7 @@ int main()
     auto const staging_buffer_mem_reqs = staging_buffer.getMemoryRequirements();
     GhulbusVulkan::DeviceMemory staging_memory = device.allocateMemory(staging_buffer_mem_reqs,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    staging_buffer.bindBufferMemory(staging_memory);
+    staging_buffer.bindBufferMemory(staging_memory, 0);
 
     GhulbusVulkan::Buffer vertex_buffer = device.createBuffer(vertex_data.size() * sizeof(Vertex),
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
@@ -386,7 +386,7 @@ int main()
     GhulbusVulkan::DeviceMemory vertex_memory =
         device.allocateMemory(vertex_buffer_mem_reqs,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    vertex_buffer.bindBufferMemory(vertex_memory);
+    vertex_buffer.bindBufferMemory(vertex_memory, 0);
 
     auto transfer_command_buffers = transfer_command_pool.allocateCommandBuffers(2);
 
@@ -430,7 +430,7 @@ int main()
     auto const index_staging_buffer_mem_reqs = index_staging_buffer.getMemoryRequirements();
     GhulbusVulkan::DeviceMemory index_staging_memory = device.allocateMemory(index_staging_buffer_mem_reqs,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    index_staging_buffer.bindBufferMemory(index_staging_memory);
+    index_staging_buffer.bindBufferMemory(index_staging_memory, 0);
 
     GhulbusVulkan::Buffer index_buffer = device.createBuffer(index_data.size() * sizeof(uint16_t),
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
@@ -438,7 +438,7 @@ int main()
     GhulbusVulkan::DeviceMemory index_memory =
         device.allocateMemory(index_buffer_mem_reqs,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    index_buffer.bindBufferMemory(index_memory);
+    index_buffer.bindBufferMemory(index_memory, 0);
 
     // copy index buffer
     {
@@ -488,7 +488,7 @@ int main()
         auto const ubo_buffer_mem_reqs = ubo_buffers.back().getMemoryRequirements();
         ubo_memories.push_back(device.allocateMemory(ubo_buffer_mem_reqs,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
-        ubo_buffers.back().bindBufferMemory(ubo_memories.back());
+        ubo_buffers.back().bindBufferMemory(ubo_memories.back(), 0);
     }
 
     auto timestamp = std::chrono::steady_clock::now();
@@ -531,7 +531,7 @@ int main()
     auto texture_staging_buffer_mem_reqs = texture_staging_buffer.getMemoryRequirements();
     auto texture_staging_memory = device.allocateMemory(texture_staging_buffer_mem_reqs,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    texture_staging_buffer.bindBufferMemory(texture_staging_memory);
+    texture_staging_buffer.bindBufferMemory(texture_staging_memory, 0);
     {
         auto mapped_mem = texture_staging_memory.map();
         std::memcpy(mapped_mem, texture_data, texture_size);

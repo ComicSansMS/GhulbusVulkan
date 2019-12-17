@@ -37,11 +37,6 @@ VkMemoryRequirements Buffer::getMemoryRequirements()
     return ret;
 }
 
-void Buffer::bindBufferMemory(DeviceMemory& memory)
-{
-    bindBufferMemory(memory, 0);
-}
-
 void Buffer::bindBufferMemory(DeviceMemory& memory, VkDeviceSize offset)
 {
     VkResult const res = vkBindBufferMemory(m_device, m_buffer, memory.getVkDeviceMemory(), offset);
