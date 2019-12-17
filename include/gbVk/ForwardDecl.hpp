@@ -22,5 +22,6 @@ class Image;
 class Instance;
 class PhysicalDevice;
 class Queue;
+class [[nodiscard]] SubmitStaging;
 }
 #endif

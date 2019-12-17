@@ -280,6 +280,7 @@ set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/GraphicsInstance.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Image2d.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/MemoryBuffer.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/Mesh.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/ObjParser.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Window.cpp
 )
@@ -292,6 +293,7 @@ set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/GraphicsInstance.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Image2d.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/MemoryBuffer.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Mesh.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/ObjParser.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Window.hpp
 )

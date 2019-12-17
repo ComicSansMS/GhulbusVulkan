@@ -33,8 +33,6 @@ private:
         GhulbusVulkan::Fence fence;
         GhulbusVulkan::Semaphore semaphore;
     };
-
-    struct DoNotWait_T {};
 private:
     int m_width;
     int m_height;
