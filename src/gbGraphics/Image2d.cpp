@@ -2,8 +2,8 @@
 
 #include <gbGraphics/CommandPoolRegistry.hpp>
 #include <gbGraphics/GraphicsInstance.hpp>
+#include <gbGraphics/MemoryBuffer.hpp>
 
-#include <gbVk/Buffer.hpp>
 #include <gbVk/CommandBuffer.hpp>
 #include <gbVk/CommandBuffers.hpp>
 #include <gbVk/Device.hpp>
@@ -66,33 +66,26 @@ GhulbusVulkan::SubmitStaging Image2d::setDataAsynchronously(std::byte const* dat
     VkDeviceSize const texture_size = texture_width * texture_height * 4;
     GhulbusVulkan::Device& device = m_instance->getVulkanDevice();
 
-    auto texture_staging_buffer = device.createBuffer(texture_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-    auto texture_staging_buffer_mem_reqs = texture_staging_buffer.getMemoryRequirements();
-    /// @todo use instance allocator
-    /// @todo use buffer object
-    auto texture_staging_memory = device.allocateMemory(texture_staging_buffer_mem_reqs,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    texture_staging_memory.bindBuffer(texture_staging_buffer);
+    GhulbusGraphics::MemoryBuffer staging_buffer(*m_instance, texture_size,
+                                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryUsage::CpuOnly);
     {
-        auto mapped_mem = texture_staging_memory.map();
+        auto mapped_mem = staging_buffer.map();
         std::memcpy(mapped_mem, data, texture_size);
     }
-
     auto command_buffers = m_instance->getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
     auto command_buffer = command_buffers.getCommandBuffer(0);
 
     command_buffer.begin();
     m_image.transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    GhulbusVulkan::Image::copy(command_buffer, texture_staging_buffer, m_image);
+    GhulbusVulkan::Image::copy(command_buffer, staging_buffer.getBuffer(), m_image);
     m_image.transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
         VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     command_buffer.end();
 
     GhulbusVulkan::SubmitStaging ret;
     ret.addCommandBuffers(command_buffers);
-    ret.adoptResources(std::move(command_buffers), std::move(texture_staging_memory),
-        std::move(texture_staging_buffer));
+    ret.adoptResources(std::move(command_buffers), std::move(staging_buffer));
     return ret;
 }
 }
