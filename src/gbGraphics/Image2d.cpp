@@ -58,7 +58,8 @@ GhulbusVulkan::MappedMemory Image2d::map(VkDeviceSize offset, VkDeviceSize size)
     return m_deviceMemory->map(offset, size);
 }
 
-GhulbusVulkan::SubmitStaging Image2d::setDataAsynchronously(std::byte const* data)
+GhulbusVulkan::SubmitStaging Image2d::setDataAsynchronously(std::byte const* data,
+                                                            std::optional<uint32_t> target_queue)
 {
     GHULBUS_ASSERT(m_image.getFormat() == VK_FORMAT_R8G8B8A8_UNORM);
     auto const texture_width = m_image.getWidth();
@@ -71,15 +72,24 @@ GhulbusVulkan::SubmitStaging Image2d::setDataAsynchronously(std::byte const* dat
         auto mapped_mem = staging_buffer.map();
         std::memcpy(mapped_mem, data, texture_size);
     }
-    auto command_buffers = m_instance->getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
+    auto command_buffers = m_instance->getCommandPoolRegistry().allocateCommandBuffersTransfer_Transient(1);
     auto command_buffer = command_buffers.getCommandBuffer(0);
 
     command_buffer.begin();
-    m_image.transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    m_image.transitionLayout(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             0, VK_ACCESS_TRANSFER_WRITE_BIT,
+                             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     GhulbusVulkan::Image::copy(command_buffer, staging_buffer.getBuffer(), m_image);
-    m_image.transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    if (!target_queue) {
+        m_image.transitionLayout(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                 VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    } else {
+        m_image.transitionRelease(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                  VK_ACCESS_TRANSFER_WRITE_BIT, *target_queue,
+                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
     command_buffer.end();
 
     GhulbusVulkan::SubmitStaging ret;

@@ -48,6 +48,18 @@ public:
 
     VkMemoryRequirements getMemoryRequirements();
 
+    void transitionLayout(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage,
+                          VkAccessFlags src_access_mask, VkAccessFlags dst_access_mask,
+                          VkImageLayout old_layout, VkImageLayout new_layout);
+
+    void transitionRelease(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage,
+                           VkPipelineStageFlags dst_stage, VkAccessFlags src_access_mask,
+                           uint32_t dst_queue_family, VkImageLayout old_layout, VkImageLayout new_layout);
+
+    void transitionAcquire(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage,
+                           VkPipelineStageFlags dst_stage, VkAccessFlags dst_access_mask,
+                           uint32_t src_queue_family, VkImageLayout old_layout, VkImageLayout new_layout);
+
     void transition(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage,
                     VkAccessFlags access_mask, VkImageLayout layout);
     void transition(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage,

@@ -53,7 +53,8 @@ public:
 
     GhulbusVulkan::MappedMemory map(VkDeviceSize offset, VkDeviceSize size);
 
-    GhulbusVulkan::SubmitStaging setDataAsynchronously(std::byte const* data);
+    GhulbusVulkan::SubmitStaging setDataAsynchronously(std::byte const* data,
+                                                       std::optional<uint32_t> target_queue = std::nullopt);
 
     GhulbusVulkan::Image& getImage();
 };

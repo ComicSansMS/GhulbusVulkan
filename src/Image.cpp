@@ -54,6 +54,87 @@ VkMemoryRequirements Image::getMemoryRequirements()
     return ret;
 }
 
+void Image::transitionLayout(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage,
+                             VkAccessFlags src_access_mask, VkAccessFlags dst_access_mask, VkImageLayout old_layout,
+                             VkImageLayout new_layout)
+{
+    GHULBUS_PRECONDITION(command_buffer.getCurrentState() == CommandBuffer::State::Recording);
+    VkImageSubresourceRange range;
+    range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    range.baseMipLevel = 0;
+    range.levelCount = 1;
+    range.baseArrayLayer = 0;
+    range.layerCount = 1;
+
+    VkImageMemoryBarrier image_barr;
+    image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    image_barr.pNext = nullptr;
+    image_barr.srcAccessMask = src_access_mask;
+    image_barr.dstAccessMask = dst_access_mask;
+    image_barr.oldLayout = old_layout;
+    image_barr.newLayout = new_layout;
+    image_barr.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    image_barr.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    image_barr.image = m_image;
+    image_barr.subresourceRange = range;
+    vkCmdPipelineBarrier(command_buffer.getVkCommandBuffer(), src_stage, dst_stage, 0,
+                         0, nullptr, 0, nullptr, 1, &image_barr);
+}
+
+void Image::transitionRelease(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage,
+                              VkPipelineStageFlags dst_stage, VkAccessFlags src_access_mask,
+                              uint32_t dst_queue_family, VkImageLayout old_layout, VkImageLayout new_layout)
+{
+    GHULBUS_PRECONDITION(command_buffer.getCurrentState() == CommandBuffer::State::Recording);
+    VkImageSubresourceRange range;
+    range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    range.baseMipLevel = 0;
+    range.levelCount = 1;
+    range.baseArrayLayer = 0;
+    range.layerCount = 1;
+
+    VkImageMemoryBarrier image_barr;
+    image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    image_barr.pNext = nullptr;
+    image_barr.srcAccessMask = src_access_mask;
+    image_barr.dstAccessMask = 0;
+    image_barr.oldLayout = old_layout;
+    image_barr.newLayout = new_layout;
+    image_barr.srcQueueFamilyIndex = command_buffer.getQueueFamilyIndex();
+    image_barr.dstQueueFamilyIndex = dst_queue_family;
+    image_barr.image = m_image;
+    image_barr.subresourceRange = range;
+    vkCmdPipelineBarrier(command_buffer.getVkCommandBuffer(), src_stage, dst_stage, 0,
+                         0, nullptr, 0, nullptr, 1, &image_barr);
+}
+
+void Image::transitionAcquire(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage,
+                              VkPipelineStageFlags dst_stage, VkAccessFlags dst_access_mask,
+                              uint32_t src_queue_family, VkImageLayout old_layout, VkImageLayout new_layout)
+{
+    GHULBUS_PRECONDITION(command_buffer.getCurrentState() == CommandBuffer::State::Recording);
+    VkImageSubresourceRange range;
+    range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    range.baseMipLevel = 0;
+    range.levelCount = 1;
+    range.baseArrayLayer = 0;
+    range.layerCount = 1;
+
+    VkImageMemoryBarrier image_barr;
+    image_barr.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    image_barr.pNext = nullptr;
+    image_barr.srcAccessMask = 0;
+    image_barr.dstAccessMask = dst_access_mask;
+    image_barr.oldLayout = old_layout;
+    image_barr.newLayout = new_layout;
+    image_barr.srcQueueFamilyIndex = src_queue_family;
+    image_barr.dstQueueFamilyIndex = command_buffer.getQueueFamilyIndex();
+    image_barr.image = m_image;
+    image_barr.subresourceRange = range;
+    vkCmdPipelineBarrier(command_buffer.getVkCommandBuffer(), src_stage, dst_stage, 0,
+                         0, nullptr, 0, nullptr, 1, &image_barr);
+}
+
 void Image::transition(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage,
                        VkAccessFlags access_mask, VkImageLayout layout)
 {
@@ -157,7 +238,6 @@ ImageView Image::createImageView(VkImageViewType view_type, VkImageAspectFlags a
 void Image::copy(CommandBuffer& command_buffer, Buffer& source_buffer, Image& destination_image)
 {
     GHULBUS_PRECONDITION(command_buffer.getCurrentState() == CommandBuffer::State::Recording);
-    GHULBUS_PRECONDITION(destination_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     VkBufferImageCopy region;
     region.bufferOffset = 0;
@@ -182,8 +262,6 @@ void Image::copy(CommandBuffer& command_buffer, Image& source_image, Image& dest
 {
     GHULBUS_PRECONDITION(command_buffer.getCurrentState() == CommandBuffer::State::Recording);
     GHULBUS_PRECONDITION(source_image.m_format == destination_image.m_format);
-    GHULBUS_PRECONDITION(source_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    GHULBUS_PRECONDITION(destination_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     GHULBUS_PRECONDITION(source_image.m_extent.width == destination_image.m_extent.width);
     GHULBUS_PRECONDITION(source_image.m_extent.height == destination_image.m_extent.height);
     GHULBUS_PRECONDITION(source_image.m_extent.depth == destination_image.m_extent.depth);
@@ -210,8 +288,6 @@ void Image::copy(CommandBuffer& command_buffer, Image& source_image, Image& dest
 void Image::blit(CommandBuffer& command_buffer, Image& source_image, Image& destination_image)
 {
     GHULBUS_PRECONDITION(command_buffer.getCurrentState() == CommandBuffer::State::Recording);
-    GHULBUS_PRECONDITION(source_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    GHULBUS_PRECONDITION(destination_image.m_currentLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     VkImageBlit region;
     region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

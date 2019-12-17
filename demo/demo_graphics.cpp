@@ -284,25 +284,6 @@ int main()
         index_buffer.setDataAsynchronously(reinterpret_cast<std::byte const*>(index_data.data()),
                                            graphics_instance.getGraphicsQueueFamilyIndex()));
 
-    auto transfer_fence = device.createFence();
-    graphics_instance.getTransferQueue().submitAllStaged(transfer_fence);
-
-    {
-        GhulbusVulkan::SubmitStaging graphics_transfer_sync;
-        auto sync_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
-        auto sync_command_buffer = sync_command_buffers.getCommandBuffer(0);
-        sync_command_buffer.begin();
-        vertex_buffer.getBuffer().transitionAcquire(sync_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                                    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-                                                    graphics_instance.getTransferQueueFamilyIndex());
-        index_buffer.getBuffer().transitionAcquire(sync_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                                   VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_INDEX_READ_BIT,
-                                                   graphics_instance.getTransferQueueFamilyIndex());
-        sync_command_buffer.end();
-        graphics_transfer_sync.addCommandBuffers(sync_command_buffers);
-        graphics_transfer_sync.adoptResources(std::move(sync_command_buffers));
-        graphics_instance.getGraphicsQueue().stageSubmission(std::move(graphics_transfer_sync));
-    }
 
     // ubo
     std::vector<GhulbusGraphics::MemoryBuffer> ubo_buffers;
@@ -348,11 +329,37 @@ int main()
         &texture_dimensions_n_channels, STBI_rgb_alpha);
     if (!texture_data) { GHULBUS_LOG(Error, "Error loading texture file."); return 1; }
     GhulbusGraphics::Image2d texture(graphics_instance, texture_dimensions_width, texture_dimensions_height);
-    graphics_instance.getGraphicsQueue().stageSubmission(
-        texture.setDataAsynchronously(reinterpret_cast<std::byte const*>(texture_data)));
-    graphics_instance.getGraphicsQueue().submitAllStaged();
-    graphics_instance.getGraphicsQueue().waitIdle();
-    graphics_instance.getGraphicsQueue().clearAllStaged();
+    graphics_instance.getTransferQueue().stageSubmission(
+        texture.setDataAsynchronously(reinterpret_cast<std::byte const*>(texture_data),
+                                      graphics_instance.getGraphicsQueueFamilyIndex()));
+
+
+    auto transfer_fence = device.createFence();
+    graphics_instance.getTransferQueue().submitAllStaged(transfer_fence);
+    {
+        GhulbusVulkan::SubmitStaging graphics_transfer_sync;
+        auto sync_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
+        auto sync_command_buffer = sync_command_buffers.getCommandBuffer(0);
+        sync_command_buffer.begin();
+        vertex_buffer.getBuffer().transitionAcquire(sync_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                                    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+                                                    graphics_instance.getTransferQueueFamilyIndex());
+        index_buffer.getBuffer().transitionAcquire(sync_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                                   VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_INDEX_READ_BIT,
+                                                   graphics_instance.getTransferQueueFamilyIndex());
+        texture.getImage().transitionAcquire(sync_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT,
+                                             graphics_instance.getTransferQueueFamilyIndex(),
+                                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        sync_command_buffer.end();
+        graphics_transfer_sync.addCommandBuffers(sync_command_buffers);
+        graphics_transfer_sync.adoptResources(std::move(sync_command_buffers));
+        graphics_instance.getGraphicsQueue().stageSubmission(std::move(graphics_transfer_sync));
+    }
+    auto graphics_sync_fence = device.createFence();
+    graphics_instance.getGraphicsQueue().submitAllStaged(graphics_sync_fence);
+
 
     GhulbusVulkan::ImageView texture_image_view = texture.getImage().createImageView();
     GhulbusVulkan::Sampler texture_sampler = device.createSampler();
@@ -576,6 +583,8 @@ int main()
 
     transfer_fence.wait();
     graphics_instance.getTransferQueue().clearAllStaged();
+    graphics_sync_fence.wait();
+    graphics_instance.getGraphicsQueue().clearAllStaged();
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!main_window.isDone()) {
         graphics_instance.pollEvents();
