@@ -585,29 +585,23 @@ int main()
     graphics_instance.getTransferQueue().clearAllStaged();
     graphics_sync_fence.wait();
     graphics_instance.getGraphicsQueue().clearAllStaged();
+
     GHULBUS_LOG(Trace, "Entering main loop...");
     while(!main_window.isDone()) {
         graphics_instance.pollEvents();
 
         uint32_t frame_image_idx = main_window.getCurrentImageSwapchainIndex();
         update_uniform_buffer(frame_image_idx);
-        VkSubmitInfo submit_info;
-        submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submit_info.pNext = nullptr;
-        VkSemaphore wait_semaphores[] = { main_window.getCurrentImageAcquireSemaphore().getVkSemaphore() };
-        VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        submit_info.waitSemaphoreCount = 1;
-        submit_info.pWaitSemaphores = wait_semaphores;
-        submit_info.pWaitDstStageMask = wait_stages;
-        submit_info.commandBufferCount = 1;
-        VkCommandBuffer cb = triangle_draw_command_buffers.getCommandBuffer(frame_image_idx).getVkCommandBuffer();
-        submit_info.pCommandBuffers = &cb;
-        VkSemaphore signal_semaphores[] = { semaphore_render_finished.getVkSemaphore() };
-        submit_info.signalSemaphoreCount = 1;
-        submit_info.pSignalSemaphores = signal_semaphores;
-        VkResult const res = vkQueueSubmit(graphics_instance.getGraphicsQueue().getVkQueue(), 1, &submit_info, VK_NULL_HANDLE);
-        if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkQueueSubmit: " << res); return 1; }
+        {
+            GhulbusVulkan::SubmitStaging loop_stage;
+            loop_stage.addWaitingSemaphore(main_window.getCurrentImageAcquireSemaphore(),
+                                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+            auto command_buffer = triangle_draw_command_buffers.getCommandBuffer(frame_image_idx);
+            loop_stage.addCommandBuffer(command_buffer);
+            loop_stage.addSignalingSemaphore(semaphore_render_finished);
+            graphics_instance.getGraphicsQueue().stageSubmission(std::move(loop_stage));
+        }
         main_window.present(semaphore_render_finished);
-        graphics_instance.getGraphicsQueue().waitIdle();
+        graphics_instance.getGraphicsQueue().clearAllStaged();
     }
 }
