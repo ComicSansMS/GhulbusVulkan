@@ -13,6 +13,8 @@
 #include <gbGraphics/Graphics.hpp>
 #include <gbGraphics/Image2d.hpp>
 #include <gbGraphics/MemoryBuffer.hpp>
+#include <gbGraphics/Mesh.hpp>
+#include <gbGraphics/ObjParser.hpp>
 #include <gbGraphics/Window.hpp>
 
 #include <gbVk/Buffer.hpp>
@@ -193,17 +195,8 @@ inline std::vector<uint16_t> generateIndexData() {
              4, 5, 6, 6, 7, 4 };
 }
 
-enum class DrawMode {
-    Hardcoded,
-    Direct,
-    UniformTransform,
-    Textured
-};
-
 int main()
 {
-    DrawMode const draw_mode = DrawMode::Textured;
-
     auto const gblog_init_guard = Ghulbus::Log::initializeLoggingWithGuard();
     Ghulbus::Log::Handlers::LogSynchronizeMutex logger(Ghulbus::Log::Handlers::logToCout);
     Ghulbus::Log::setLogHandler(logger);
@@ -376,21 +369,6 @@ int main()
     depth_buffer_memory.bindImage(depth_buffer_image);
     GhulbusVulkan::ImageView depth_buffer_image_view = depth_buffer_image.createImageViewDepthBuffer();
 
-    auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple_compute.spv");
-    auto version = spirv_code.getSpirvVersion();
-    auto bound = spirv_code.getBound();
-    GHULBUS_UNUSED_VARIABLE(version);
-    GHULBUS_UNUSED_VARIABLE(bound);
-    auto shader_module = device.createShaderModule(spirv_code);
-
-    auto vert_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_hardcoded.spv");
-    auto vert_hardcoded_shader_module = device.createShaderModule(vert_spirv_code);
-
-    auto vert_direct_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_direct.spv");
-    auto vert_direct_shader_module = device.createShaderModule(vert_direct_spirv_code);
-
-    auto vert_mvp_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_mvp.spv");
-    auto vert_mvp_shader_module = device.createShaderModule(vert_mvp_spirv_code);
 
     auto vert_textured_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_textured.spv");
     auto vert_textured_shader_module = device.createShaderModule(vert_textured_spirv_code);
@@ -400,20 +378,9 @@ int main()
     vert_shader_stage_ci.pNext = nullptr;
     vert_shader_stage_ci.flags = 0;
     vert_shader_stage_ci.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    if constexpr (draw_mode == DrawMode::Textured) {
-        vert_shader_stage_ci.module = vert_textured_shader_module.getVkShaderModule();
-    } else if constexpr (draw_mode == DrawMode::UniformTransform) {
-        vert_shader_stage_ci.module = vert_mvp_shader_module.getVkShaderModule();
-    } else if constexpr (draw_mode == DrawMode::Hardcoded) {
-        vert_shader_stage_ci.module = vert_hardcoded_shader_module.getVkShaderModule();
-    } else if constexpr (draw_mode == DrawMode::Direct) {
-        vert_shader_stage_ci.module = vert_direct_shader_module.getVkShaderModule();
-    }
+    vert_shader_stage_ci.module = vert_textured_shader_module.getVkShaderModule();
     vert_shader_stage_ci.pName = "main";
     vert_shader_stage_ci.pSpecializationInfo = nullptr;
-
-    auto frag_spirv_code = GhulbusVulkan::Spirv::load("shaders/frag_hardcoded.spv");
-    auto frag_shader_module = device.createShaderModule(frag_spirv_code);
 
     auto frag_textured_spirv_code = GhulbusVulkan::Spirv::load("shaders/frag_textured.spv");
     auto frag_textured_shader_module = device.createShaderModule(frag_textured_spirv_code);
@@ -423,11 +390,7 @@ int main()
     frag_shader_stage_ci.pNext = nullptr;
     frag_shader_stage_ci.flags = 0;
     frag_shader_stage_ci.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    if constexpr (draw_mode == DrawMode::Textured) {
-        frag_shader_stage_ci.module = frag_textured_shader_module.getVkShaderModule();
-    } else {
-        frag_shader_stage_ci.module = frag_shader_module.getVkShaderModule();
-    }
+    frag_shader_stage_ci.module = frag_textured_shader_module.getVkShaderModule();
     frag_shader_stage_ci.pName = "main";
     frag_shader_stage_ci.pSpecializationInfo = nullptr;
 
@@ -508,13 +471,11 @@ int main()
 
     GhulbusVulkan::Pipeline pipeline = [&device, &main_window, &pipeline_layout,
                                         &shader_stage_cis, &render_pass,
-                                        &vertex_binding, &vertex_attributes, draw_mode]() {
+                                        &vertex_binding, &vertex_attributes]() {
         auto builder = device.createGraphicsPipelineBuilder(main_window.getWidth(),
                                                             main_window.getHeight());
-        if (draw_mode != DrawMode::Hardcoded) {
-            builder.addVertexBindings(&vertex_binding, 1, vertex_attributes.data(),
-                                      static_cast<uint32_t>(vertex_attributes.size()));
-        }
+        builder.addVertexBindings(&vertex_binding, 1, vertex_attributes.data(),
+                                  static_cast<uint32_t>(vertex_attributes.size()));
         return builder.create(pipeline_layout, shader_stage_cis.data(),
                               static_cast<std::uint32_t>(shader_stage_cis.size()),
                               render_pass.getVkRenderPass());
@@ -555,23 +516,17 @@ int main()
         vkCmdBindPipeline(local_command_buffer.getVkCommandBuffer(),
                           VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getVkPipeline());
 
-        if constexpr ((draw_mode == DrawMode::UniformTransform) || (draw_mode == DrawMode::Textured)) {
-            VkDescriptorSet desc_set_i = ubo_descriptor_sets.getDescriptorSet(i).getVkDescriptorSet();
-            vkCmdBindDescriptorSets(local_command_buffer.getVkCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                    pipeline_layout.getVkPipelineLayout(), 0, 1, &desc_set_i, 0, nullptr);
-        }
+        VkDescriptorSet desc_set_i = ubo_descriptor_sets.getDescriptorSet(i).getVkDescriptorSet();
+        vkCmdBindDescriptorSets(local_command_buffer.getVkCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                pipeline_layout.getVkPipelineLayout(), 0, 1, &desc_set_i, 0, nullptr);
 
-        if constexpr (draw_mode == DrawMode::Hardcoded) {
-            vkCmdDraw(local_command_buffer.getVkCommandBuffer(), 3, 1, 0, 0);
-        } else {
-            VkBuffer vertexBuffers[] = { vertex_buffer.getBuffer().getVkBuffer() };
-            VkDeviceSize offsets[] = { 0 };
-            vkCmdBindVertexBuffers(local_command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(local_command_buffer.getVkCommandBuffer(), index_buffer.getBuffer().getVkBuffer(),
-                                 0, VK_INDEX_TYPE_UINT16);
-            vkCmdDrawIndexed(local_command_buffer.getVkCommandBuffer(), static_cast<uint32_t>(index_data.size()),
-                             1, 0, 0, 0);
-        }
+        VkBuffer vertexBuffers[] = { vertex_buffer.getBuffer().getVkBuffer() };
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(local_command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
+        vkCmdBindIndexBuffer(local_command_buffer.getVkCommandBuffer(), index_buffer.getBuffer().getVkBuffer(),
+                             0, VK_INDEX_TYPE_UINT16);
+        vkCmdDrawIndexed(local_command_buffer.getVkCommandBuffer(), static_cast<uint32_t>(index_data.size()),
+                         1, 0, 0, 0);
 
         vkCmdEndRenderPass(local_command_buffer.getVkCommandBuffer());
         local_command_buffer.end();
