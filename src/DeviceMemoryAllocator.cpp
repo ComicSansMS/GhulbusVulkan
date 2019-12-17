@@ -1,5 +1,8 @@
 #include <gbVk/DeviceMemoryAllocator.hpp>
 
+#include <gbVk/Buffer.hpp>
+#include <gbVk/Image.hpp>
+
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 DeviceMemoryAllocator::HandleConcept::~HandleConcept() = default;
@@ -11,6 +14,16 @@ DeviceMemory::DeviceMemory(std::unique_ptr<HandleConcept>&& handle)
 {}
 
 DeviceMemory::~DeviceMemory() = default;
+
+void DeviceMemory::bindBuffer(Buffer& buffer)
+{
+    m_handle->bindBuffer(buffer.getVkBuffer());
+}
+
+void DeviceMemory::bindImage(Image& image)
+{
+    m_handle->bindImage(image.getVkImage());
+}
 
 VkDeviceMemory DeviceMemory::getVkDeviceMemory() const
 {

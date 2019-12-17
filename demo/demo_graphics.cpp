@@ -299,7 +299,6 @@ int main()
         vertex_command_buffer.end();
     }
     graphics_instance.getTransferQueue().submit(vertex_command_buffers);
-    graphics_instance.getTransferQueue().waitIdle();
 
     auto sync_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
     auto sync_command_buffer = sync_command_buffers.getCommandBuffer(0);
@@ -311,7 +310,6 @@ int main()
         sync_command_buffer.end();
     }
     graphics_instance.getGraphicsQueue().submit(sync_command_buffers);
-    graphics_instance.getGraphicsQueue().waitIdle();
 
     auto transfer_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersTransfer(1);
     auto& transfer_queue = graphics_instance.getTransferQueue();
@@ -322,7 +320,7 @@ int main()
     auto const index_staging_buffer_mem_reqs = index_staging_buffer.getMemoryRequirements();
     GhulbusVulkan::DeviceMemory index_staging_memory = device.allocateMemory(index_staging_buffer_mem_reqs,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    index_staging_buffer.bindBufferMemory(index_staging_memory, 0);
+    index_staging_memory.bindBuffer(index_staging_buffer);
 
     GhulbusVulkan::Buffer index_buffer = device.createBuffer(index_data.size() * sizeof(uint16_t),
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
@@ -330,7 +328,7 @@ int main()
     GhulbusVulkan::DeviceMemory index_memory =
         device.allocateMemory(index_buffer_mem_reqs,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    index_buffer.bindBufferMemory(index_memory, 0);
+    index_memory.bindBuffer(index_buffer);
 
     // copy index buffer
     {
@@ -381,7 +379,7 @@ int main()
         auto const ubo_buffer_mem_reqs = ubo_buffers.back().getMemoryRequirements();
         ubo_memories.push_back(device.allocateMemory(ubo_buffer_mem_reqs,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
-        ubo_buffers.back().bindBufferMemory(ubo_memories.back(), 0);
+        ubo_memories.back().bindBuffer(ubo_buffers.back());
     }
 
     auto timestamp = std::chrono::steady_clock::now();
@@ -437,7 +435,7 @@ int main()
     auto const depth_buffer_image_mem_reqs = depth_buffer_image.getMemoryRequirements();
     GhulbusVulkan::DeviceMemory depth_buffer_memory = device.allocateMemory(depth_buffer_image_mem_reqs,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    depth_buffer_image.bindMemory(depth_buffer_memory, 0);
+    depth_buffer_memory.bindImage(depth_buffer_image);
     GhulbusVulkan::ImageView depth_buffer_image_view = depth_buffer_image.createImageViewDepthBuffer();
 
 

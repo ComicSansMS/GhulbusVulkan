@@ -17,7 +17,7 @@ MemoryBuffer::MemoryBuffer(GraphicsInstance& instance, VkDeviceSize size,
      m_deviceMemory(instance.getDeviceMemoryAllocator().allocateMemoryForBuffer(m_buffer, memory_usage)),
      m_instance(&instance), m_size(size), m_bufferUsage(buffer_usage), m_memoryUsage(memory_usage)
 {
-    m_buffer.bindBufferMemory(m_deviceMemory, m_deviceMemory.getOffset());
+    m_deviceMemory.bindBuffer(m_buffer);
 }
 
 MemoryBuffer::MemoryBuffer(GraphicsInstance& instance, VkDeviceSize size,
@@ -26,7 +26,7 @@ MemoryBuffer::MemoryBuffer(GraphicsInstance& instance, VkDeviceSize size,
      m_deviceMemory(instance.getDeviceMemoryAllocator().allocateMemoryForBuffer(m_buffer, required_flags)),
      m_instance(&instance), m_size(size), m_bufferUsage(buffer_usage), m_memoryUsage(MemoryUsage::CpuOnly)
 {
-    m_buffer.bindBufferMemory(m_deviceMemory, m_deviceMemory.getOffset());
+    m_deviceMemory.bindBuffer(m_buffer);
 }
 
 MemoryBuffer::~MemoryBuffer()

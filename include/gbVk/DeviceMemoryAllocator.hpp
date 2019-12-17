@@ -32,6 +32,8 @@ protected:
         virtual void unmapMemory(void* mapped_memory) = 0;
         virtual void flush(VkDeviceSize offset, VkDeviceSize size) = 0;
         virtual void invalidate(VkDeviceSize offset, VkDeviceSize size) = 0;
+        virtual void bindBuffer(VkBuffer buffer) = 0;
+        virtual void bindImage(VkImage image) = 0;
     };
 public:
     class DeviceMemory;
@@ -77,6 +79,9 @@ public:
 
     DeviceMemory(DeviceMemory&&) = default;
     DeviceMemory& operator=(DeviceMemory&&) = default;
+
+    void bindBuffer(Buffer& buffer);
+    void bindImage(Image& image);
 
     VkDeviceMemory getVkDeviceMemory() const;
     VkDeviceSize getOffset() const;

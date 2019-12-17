@@ -54,12 +54,6 @@ VkMemoryRequirements Image::getMemoryRequirements()
     return ret;
 }
 
-void Image::bindMemory(DeviceMemory& memory, VkDeviceSize memory_offset)
-{
-    VkResult res = vkBindImageMemory(m_device, m_image, memory.getVkDeviceMemory(), memory_offset);
-    checkVulkanError(res, "Error in vkBindImageMemory.");
-}
-
 void Image::transition(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage,
                        VkAccessFlags access_mask, VkImageLayout layout)
 {

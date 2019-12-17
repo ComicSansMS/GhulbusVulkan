@@ -25,7 +25,7 @@ Image2d::Image2d(GraphicsInstance& instance, uint32_t width, uint32_t height, Vk
     m_deviceMemory(instance.getDeviceMemoryAllocator().allocateMemoryForImage(m_image, memory_usage)),
     m_instance(&instance), m_tiling(tiling), m_imageUsage(image_usage), m_memoryUsage(memory_usage)
 {
-    m_image.bindMemory(*m_deviceMemory, m_deviceMemory->getOffset());
+    m_deviceMemory->bindImage(m_image);
 }
 
 Image2d::~Image2d()
@@ -72,7 +72,7 @@ GhulbusVulkan::SubmitStaging Image2d::setDataAsynchronously(std::byte const* dat
     /// @todo use buffer object
     auto texture_staging_memory = device.allocateMemory(texture_staging_buffer_mem_reqs,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    texture_staging_buffer.bindBufferMemory(texture_staging_memory, 0);
+    texture_staging_memory.bindBuffer(texture_staging_buffer);
     {
         auto mapped_mem = texture_staging_memory.map();
         std::memcpy(mapped_mem, data, texture_size);

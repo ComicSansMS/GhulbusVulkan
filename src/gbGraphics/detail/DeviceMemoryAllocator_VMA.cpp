@@ -67,6 +67,18 @@ void DeviceMemoryAllocator_VMA::HandleModel::invalidate(VkDeviceSize offset, VkD
     vmaInvalidateAllocation(m_allocator, m_allocation, offset, size);
 }
 
+void DeviceMemoryAllocator_VMA::HandleModel::bindBuffer(VkBuffer buffer)
+{
+    VkResult const res = vmaBindBufferMemory(m_allocator, m_allocation, buffer);
+    GhulbusVulkan::checkVulkanError(res, "Error in vmaBindBufferMemory.");
+}
+
+void DeviceMemoryAllocator_VMA::HandleModel::bindImage(VkImage image)
+{
+    VkResult const res = vmaBindImageMemory(m_allocator, m_allocation, image);
+    GhulbusVulkan::checkVulkanError(res, "Error in vmaBindImageMemory.");
+}
+
 DeviceMemoryAllocator_VMA::DeviceMemoryAllocator_VMA(GhulbusVulkan::Instance& instance, GhulbusVulkan::Device& device)
     :m_allocator(nullptr)
 {

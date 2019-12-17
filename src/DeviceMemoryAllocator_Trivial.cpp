@@ -73,6 +73,18 @@ void DeviceMemoryAllocator_Trivial::HandleModel::invalidate(VkDeviceSize offset,
     checkVulkanError(res, "Error in vkInvalidateMappedMemoryRanges.");
 }
 
+void DeviceMemoryAllocator_Trivial::HandleModel::bindBuffer(VkBuffer buffer)
+{
+    VkResult const res = vkBindBufferMemory(m_device, buffer, m_memory, 0);
+    checkVulkanError(res, "Error in vkBindBufferMemory.");
+}
+
+void DeviceMemoryAllocator_Trivial::HandleModel::bindImage(VkImage image)
+{
+    VkResult res = vkBindImageMemory(m_device, image, m_memory, 0);
+    checkVulkanError(res, "Error in vkBindImageMemory.");
+}
+
 DeviceMemoryAllocator_Trivial::DeviceMemoryAllocator_Trivial(VkDevice logical_device, VkPhysicalDevice physical_device)
     : m_device(logical_device), m_physicalDevice(physical_device)
 {}

@@ -37,12 +37,6 @@ VkMemoryRequirements Buffer::getMemoryRequirements()
     return ret;
 }
 
-void Buffer::bindBufferMemory(DeviceMemory& memory, VkDeviceSize offset)
-{
-    VkResult const res = vkBindBufferMemory(m_device, m_buffer, memory.getVkDeviceMemory(), offset);
-    checkVulkanError(res, "Error in vkBindBufferMemory.");
-}
-
 void Buffer::transitionRelease(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage,
                                VkPipelineStageFlags dst_stage, VkAccessFlags src_access_mask,
                                uint32_t dst_queue_family)

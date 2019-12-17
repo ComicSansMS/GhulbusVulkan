@@ -39,6 +39,8 @@ private:
         void unmapMemory(void* mapped_memory) override;
         void flush(VkDeviceSize offset, VkDeviceSize size) override;
         void invalidate(VkDeviceSize offset, VkDeviceSize size) override;
+        void bindBuffer(VkBuffer buffer) override;
+        void bindImage(VkImage image) override;
     };
 private:
     VmaAllocator m_allocator;
