@@ -14,7 +14,7 @@ CommandPoolRegistry::CommandPoolRegistry(GraphicsInstance& instance)
 {
 }
 
-GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateGraphicCommandBuffers(std::uint32_t command_buffer_count)
+GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersGraphics(std::uint32_t command_buffer_count)
 {
     QueuePools& p = getThreadPools();
     if(!p.graphics.default_pool) {
@@ -28,7 +28,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateGraphicCommandBuffers
     return p.graphics.default_pool->allocateCommandBuffers(command_buffer_count);
 }
 
-GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateGraphicCommandBuffers_Transient(std::uint32_t command_buffer_count)
+GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersGraphics_Transient(std::uint32_t command_buffer_count)
 {
     QueuePools& p = getThreadPools();
     if(!p.graphics.transient) {
@@ -42,7 +42,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateGraphicCommandBuffers
     return p.graphics.transient->allocateCommandBuffers(command_buffer_count);
 }
 
-GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateGraphicCommandBuffers_NonResetable(std::uint32_t command_buffer_count)
+GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersGraphics_NonResetable(std::uint32_t command_buffer_count)
 {
     QueuePools& p = getThreadPools();
     if(!p.graphics.non_resetable) {
@@ -56,7 +56,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateGraphicCommandBuffers
     return p.graphics.non_resetable->allocateCommandBuffers(command_buffer_count);
 }
 
-GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateComputeCommandBuffers(std::uint32_t command_buffer_count)
+GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersCompute(std::uint32_t command_buffer_count)
 {
     QueuePools& p = getThreadPools();
     if(!p.compute.default_pool) {
@@ -70,7 +70,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateComputeCommandBuffers
     return p.compute.default_pool->allocateCommandBuffers(command_buffer_count);
 }
 
-GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateComputeCommandBuffers_Transient(std::uint32_t command_buffer_count)
+GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersCompute_Transient(std::uint32_t command_buffer_count)
 {
     QueuePools& p = getThreadPools();
     if(!p.compute.transient) {
@@ -84,7 +84,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateComputeCommandBuffers
     return p.compute.transient->allocateCommandBuffers(command_buffer_count);
 }
 
-GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateComputeCommandBuffers_NonResetable(std::uint32_t command_buffer_count)
+GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersCompute_NonResetable(std::uint32_t command_buffer_count)
 {
     QueuePools& p = getThreadPools();
     if(!p.compute.non_resetable) {
@@ -98,7 +98,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateComputeCommandBuffers
     return p.compute.non_resetable->allocateCommandBuffers(command_buffer_count);
 }
 
-GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateTransferCommandBuffers(std::uint32_t command_buffer_count)
+GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersTransfer(std::uint32_t command_buffer_count)
 {
     QueuePools& p = getThreadPools();
     if(!p.transfer.default_pool) {
@@ -112,7 +112,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateTransferCommandBuffer
     return p.transfer.default_pool->allocateCommandBuffers(command_buffer_count);
 }
 
-GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateTransferCommandBuffers_Transient(std::uint32_t command_buffer_count)
+GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersTransfer_Transient(std::uint32_t command_buffer_count)
 {
     QueuePools& p = getThreadPools();
     if(!p.transfer.transient) {
@@ -126,7 +126,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateTransferCommandBuffer
     return p.transfer.transient->allocateCommandBuffers(command_buffer_count);
 }
 
-GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateTransferCommandBuffers_NonResetable(std::uint32_t command_buffer_count)
+GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersTransfer_NonResetable(std::uint32_t command_buffer_count)
 {
     QueuePools& p = getThreadPools();
     if(!p.transfer.non_resetable) {

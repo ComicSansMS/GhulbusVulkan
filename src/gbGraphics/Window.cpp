@@ -85,7 +85,7 @@ struct Window::GLFW_Pimpl {
 Window::Window(GraphicsInstance& instance, int width, int height, char8_t const* window_title)
     :m_width(width), m_height(height), m_glfw(std::make_unique<GLFW_Pimpl>(instance, width, height, window_title)),
     m_swapchain(instance.getVulkanDevice().createSwapchain(m_glfw->surface, instance.getGraphicsQueueFamilyIndex())),
-    m_presentCommandBuffers(m_glfw->graphics_instance->getCommandPoolRegistry().allocateGraphicCommandBuffers(m_swapchain.getNumberOfImages())),
+    m_presentCommandBuffers(m_glfw->graphics_instance->getCommandPoolRegistry().allocateCommandBuffersGraphics(m_swapchain.getNumberOfImages())),
     m_presentQueue(&m_glfw->graphics_instance->getGraphicsQueue()),
     m_presentFence(m_glfw->graphics_instance->getVulkanDevice().createFence())
 {

@@ -50,17 +50,17 @@ public:
     CommandPoolRegistry(CommandPoolRegistry&&) = delete;
     CommandPoolRegistry& operator=(CommandPoolRegistry&&) = delete;
 
-    GhulbusVulkan::CommandBuffers allocateGraphicCommandBuffers(std::uint32_t command_buffer_count);
-    GhulbusVulkan::CommandBuffers allocateGraphicCommandBuffers_Transient(std::uint32_t command_buffer_count);
-    GhulbusVulkan::CommandBuffers allocateGraphicCommandBuffers_NonResetable(std::uint32_t command_buffer_count);
+    GhulbusVulkan::CommandBuffers allocateCommandBuffersGraphics(std::uint32_t command_buffer_count);
+    GhulbusVulkan::CommandBuffers allocateCommandBuffersGraphics_Transient(std::uint32_t command_buffer_count);
+    GhulbusVulkan::CommandBuffers allocateCommandBuffersGraphics_NonResetable(std::uint32_t command_buffer_count);
 
-    GhulbusVulkan::CommandBuffers allocateComputeCommandBuffers(std::uint32_t command_buffer_count);
-    GhulbusVulkan::CommandBuffers allocateComputeCommandBuffers_Transient(std::uint32_t command_buffer_count);
-    GhulbusVulkan::CommandBuffers allocateComputeCommandBuffers_NonResetable(std::uint32_t command_buffer_count);
+    GhulbusVulkan::CommandBuffers allocateCommandBuffersCompute(std::uint32_t command_buffer_count);
+    GhulbusVulkan::CommandBuffers allocateCommandBuffersCompute_Transient(std::uint32_t command_buffer_count);
+    GhulbusVulkan::CommandBuffers allocateCommandBuffersCompute_NonResetable(std::uint32_t command_buffer_count);
 
-    GhulbusVulkan::CommandBuffers allocateTransferCommandBuffers(std::uint32_t command_buffer_count);
-    GhulbusVulkan::CommandBuffers allocateTransferCommandBuffers_Transient(std::uint32_t command_buffer_count);
-    GhulbusVulkan::CommandBuffers allocateTransferCommandBuffers_NonResetable(std::uint32_t command_buffer_count);
+    GhulbusVulkan::CommandBuffers allocateCommandBuffersTransfer(std::uint32_t command_buffer_count);
+    GhulbusVulkan::CommandBuffers allocateCommandBuffersTransfer_Transient(std::uint32_t command_buffer_count);
+    GhulbusVulkan::CommandBuffers allocateCommandBuffersTransfer_NonResetable(std::uint32_t command_buffer_count);
 
 private:
     QueuePools& getThreadPools();

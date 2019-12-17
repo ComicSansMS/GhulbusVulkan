@@ -72,13 +72,13 @@ GhulbusVulkan::SubmitStaging Image2d::setDataAsynchronously(std::byte const* dat
     /// @todo use buffer object
     auto texture_staging_memory = device.allocateMemory(texture_staging_buffer_mem_reqs,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    texture_staging_buffer.bindBufferMemory(texture_staging_memory);
+    texture_staging_buffer.bindBufferMemory(texture_staging_memory, 0);
     {
         auto mapped_mem = texture_staging_memory.map();
         std::memcpy(mapped_mem, data, texture_size);
     }
 
-    auto command_buffers = m_instance->getCommandPoolRegistry().allocateGraphicCommandBuffers_Transient(1);
+    auto command_buffers = m_instance->getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
     auto command_buffer = command_buffers.getCommandBuffer(0);
 
     command_buffer.begin();
