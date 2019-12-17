@@ -276,15 +276,12 @@ int main()
 
     auto& queue = graphics_instance.getGraphicsQueue();
     uint32_t queue_family = graphics_instance.getGraphicsQueueFamilyIndex();
-    auto vertex_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
+    auto vertex_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersTransfer_Transient(1);
     auto vertex_command_buffer = vertex_command_buffers.getCommandBuffer(0);
-
     // copy vertex buffer
     {
         auto mapped_memory = staging_buffer.map();
         std::memcpy(mapped_memory, vertex_data.data(), vertex_data.size() * sizeof(Vertex));
-        /// @todo: flushing probably not needed
-        mapped_memory.flush();
     }
     {
         vertex_command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -301,20 +298,20 @@ int main()
                                                     queue_family);
         vertex_command_buffer.end();
     }
-    graphics_instance.getGraphicsQueue().submit(vertex_command_buffers);
-    graphics_instance.getGraphicsQueue().waitIdle();
+    graphics_instance.getTransferQueue().submit(vertex_command_buffers);
+    graphics_instance.getTransferQueue().waitIdle();
 
-    //auto sync_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics(1);
-    //auto sync_command_buffer = sync_command_buffers.getCommandBuffer(0);
-    //{
-    //    sync_command_buffer.begin();
-    //    vertex_buffer.getBuffer().transitionAcquire(sync_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-    //                                                VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-    //                                                queue_family);
-    //    sync_command_buffer.end();
-    //}
-    //graphics_instance.getGraphicsQueue().submit(sync_command_buffers);
-    //graphics_instance.getGraphicsQueue().waitIdle();
+    auto sync_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
+    auto sync_command_buffer = sync_command_buffers.getCommandBuffer(0);
+    {
+        sync_command_buffer.begin();
+        vertex_buffer.getBuffer().transitionAcquire(sync_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                                    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+                                                    graphics_instance.getTransferQueueFamilyIndex());
+        sync_command_buffer.end();
+    }
+    graphics_instance.getGraphicsQueue().submit(sync_command_buffers);
+    graphics_instance.getGraphicsQueue().waitIdle();
 
     auto transfer_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersTransfer(1);
     auto& transfer_queue = graphics_instance.getTransferQueue();
