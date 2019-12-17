@@ -294,6 +294,8 @@ uint32_t GraphicsInstance::getTransferQueueIndex()
 GhulbusVulkan::DeviceMemoryAllocator& GraphicsInstance::getDeviceMemoryAllocator()
 {
     return m_pimpl->allocator;
+    //static GhulbusVulkan::DeviceMemoryAllocator_Trivial allocator(m_pimpl->device.getVkDevice(), m_pimpl->device.getPhysicalDevice().getVkPhysicalDevice());
+    //return allocator;
 }
 
 void GraphicsInstance::setDebugLoggingEnabled(bool enabled)

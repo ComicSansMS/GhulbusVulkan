@@ -54,11 +54,6 @@ VkMemoryRequirements Image::getMemoryRequirements()
     return ret;
 }
 
-void Image::bindMemory(DeviceMemory& memory)
-{
-    bindMemory(memory, 0);
-}
-
 void Image::bindMemory(DeviceMemory& memory, VkDeviceSize memory_offset)
 {
     VkResult res = vkBindImageMemory(m_device, m_image, memory.getVkDeviceMemory(), memory_offset);

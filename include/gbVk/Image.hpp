@@ -48,8 +48,6 @@ public:
 
     VkMemoryRequirements getMemoryRequirements();
 
-    void bindMemory(DeviceMemory& memory);
-
     void bindMemory(DeviceMemory& memory, VkDeviceSize memory_offset);
 
     void transition(CommandBuffer& command_buffer, VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage,

@@ -440,7 +440,7 @@ int main()
     auto const depth_buffer_image_mem_reqs = depth_buffer_image.getMemoryRequirements();
     GhulbusVulkan::DeviceMemory depth_buffer_memory = device.allocateMemory(depth_buffer_image_mem_reqs,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    depth_buffer_image.bindMemory(depth_buffer_memory);
+    depth_buffer_image.bindMemory(depth_buffer_memory, 0);
     GhulbusVulkan::ImageView depth_buffer_image_view = depth_buffer_image.createImageViewDepthBuffer();
 
 

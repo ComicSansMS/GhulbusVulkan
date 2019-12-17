@@ -25,7 +25,7 @@ Image2d::Image2d(GraphicsInstance& instance, uint32_t width, uint32_t height, Vk
     m_deviceMemory(instance.getDeviceMemoryAllocator().allocateMemoryForImage(m_image, memory_usage)),
     m_instance(&instance), m_tiling(tiling), m_imageUsage(image_usage), m_memoryUsage(memory_usage)
 {
-    m_image.bindMemory(*m_deviceMemory);
+    m_image.bindMemory(*m_deviceMemory, m_deviceMemory->getOffset());
 }
 
 Image2d::~Image2d()
