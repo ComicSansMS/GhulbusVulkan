@@ -315,24 +315,17 @@ int main()
     auto& transfer_queue = graphics_instance.getTransferQueue();
     uint32_t transfer_queue_family = graphics_instance.getTransferQueueFamilyIndex();
 
-    GhulbusVulkan::Buffer index_staging_buffer = device.createBuffer(index_data.size() * sizeof(uint16_t),
-                                                                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-    auto const index_staging_buffer_mem_reqs = index_staging_buffer.getMemoryRequirements();
-    GhulbusVulkan::DeviceMemory index_staging_memory = device.allocateMemory(index_staging_buffer_mem_reqs,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    index_staging_memory.bindBuffer(index_staging_buffer);
+    GhulbusGraphics::MemoryBuffer index_staging_buffer(graphics_instance, index_data.size() * sizeof(uint16_t),
+                                                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                                       GhulbusGraphics::MemoryUsage::CpuOnly);
 
-    GhulbusVulkan::Buffer index_buffer = device.createBuffer(index_data.size() * sizeof(uint16_t),
-        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    auto const index_buffer_mem_reqs = index_buffer.getMemoryRequirements();
-    GhulbusVulkan::DeviceMemory index_memory =
-        device.allocateMemory(index_buffer_mem_reqs,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    index_memory.bindBuffer(index_buffer);
+    GhulbusGraphics::MemoryBuffer index_buffer(graphics_instance, index_data.size() * sizeof(uint16_t),
+                                               VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                               GhulbusGraphics::MemoryUsage::GpuOnly);
 
     // copy index buffer
     {
-        auto mapped_memory = index_staging_memory.map();
+        auto mapped_memory = index_staging_buffer.map();
         std::memcpy(mapped_memory, index_data.data(), index_data.size() * sizeof(uint16_t));
     }
     {
@@ -344,8 +337,8 @@ int main()
         buffer_copy.dstOffset = 0;
         buffer_copy.size = index_data.size() * sizeof(uint16_t);
 
-        vkCmdCopyBuffer(transfer_command_buffer.getVkCommandBuffer(), index_staging_buffer.getVkBuffer(),
-                        index_buffer.getVkBuffer(), 1, &buffer_copy);
+        vkCmdCopyBuffer(transfer_command_buffer.getVkCommandBuffer(), index_staging_buffer.getBuffer().getVkBuffer(),
+                        index_buffer.getBuffer().getVkBuffer(), 1, &buffer_copy);
 
         VkBufferMemoryBarrier barrier;
         barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
@@ -354,7 +347,7 @@ int main()
         barrier.dstAccessMask = VK_ACCESS_INDEX_READ_BIT;
         barrier.srcQueueFamilyIndex = transfer_queue_family;
         barrier.dstQueueFamilyIndex = queue_family;
-        barrier.buffer = index_buffer.getVkBuffer();
+        barrier.buffer = index_buffer.getBuffer().getVkBuffer();
         barrier.offset = 0;
         barrier.size = VK_WHOLE_SIZE;
         vkCmdPipelineBarrier(transfer_command_buffer.getVkCommandBuffer(),
@@ -368,23 +361,18 @@ int main()
     transfer_queue.submit(transfer_command_buffers, fence);
 
     // ubo
-    std::vector<GhulbusVulkan::Buffer> ubo_buffers;
-    std::vector<GhulbusVulkan::DeviceMemory> ubo_memories;
+    std::vector<GhulbusGraphics::MemoryBuffer> ubo_buffers;
     uint32_t const swapchain_n_images = main_window.getNumberOfImagesInSwapchain();
     ubo_buffers.reserve(swapchain_n_images);
-    ubo_memories.reserve(swapchain_n_images);
     for (uint32_t i = 0; i < swapchain_n_images; ++i)
     {
-        ubo_buffers.push_back(device.createBuffer(sizeof(UBOMVP), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT));
-        auto const ubo_buffer_mem_reqs = ubo_buffers.back().getMemoryRequirements();
-        ubo_memories.push_back(device.allocateMemory(ubo_buffer_mem_reqs,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
-        ubo_memories.back().bindBuffer(ubo_buffers.back());
+        ubo_buffers.emplace_back(graphics_instance, sizeof(UBOMVP), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                 GhulbusGraphics::MemoryUsage::CpuOnly);
     }
 
     auto timestamp = std::chrono::steady_clock::now();
     UBOMVP ubo_data;
-    auto update_uniform_buffer = [&timestamp, &ubo_data, &ubo_memories, WINDOW_WIDTH, WINDOW_HEIGHT](uint32_t index) {
+    auto update_uniform_buffer = [&timestamp, &ubo_data, &ubo_buffers, WINDOW_WIDTH, WINDOW_HEIGHT](uint32_t index) {
         auto const t = std::chrono::steady_clock::now();
         float const time = std::chrono::duration<float>(t - timestamp).count();
         ubo_data.model = GhulbusMath::make_rotation((GhulbusMath::traits::Pi<float>::value / 2.f) * time,
@@ -404,7 +392,7 @@ int main()
         ubo_data.view = GhulbusMath::transpose(ubo_data.view);
         ubo_data.projection = GhulbusMath::transpose(ubo_data.projection);
         {
-            auto mapped_mem = ubo_memories[index].map();
+            auto mapped_mem = ubo_buffers[index].map();
             std::memcpy(mapped_mem, &ubo_data, sizeof(UBOMVP));
         }
     };
@@ -424,7 +412,6 @@ int main()
 
     GhulbusVulkan::ImageView texture_image_view = texture.getImage().createImageView();
     GhulbusVulkan::Sampler texture_sampler = device.createSampler();
-
 
     // depth buffer attachment
     auto const depth_buffer_opt_format = physical_device.findDepthBufferFormat();
@@ -523,7 +510,7 @@ int main()
         ubo_descriptor_pool.allocateDescriptorSets(swapchain_n_images, ubo_layout);
     for (uint32_t i = 0; i < swapchain_n_images; ++i) {
         VkDescriptorBufferInfo buffer_info;
-        buffer_info.buffer = ubo_buffers[i].getVkBuffer();
+        buffer_info.buffer = ubo_buffers[i].getBuffer().getVkBuffer();
         buffer_info.offset = 0;
         buffer_info.range = sizeof(UBOMVP);
 
@@ -630,7 +617,7 @@ int main()
             VkBuffer vertexBuffers[] = { vertex_buffer.getBuffer().getVkBuffer() };
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(local_command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(local_command_buffer.getVkCommandBuffer(), index_buffer.getVkBuffer(),
+            vkCmdBindIndexBuffer(local_command_buffer.getVkCommandBuffer(), index_buffer.getBuffer().getVkBuffer(),
                                  0, VK_INDEX_TYPE_UINT16);
             vkCmdDrawIndexed(local_command_buffer.getVkCommandBuffer(), static_cast<uint32_t>(index_data.size()),
                              1, 0, 0, 0);
