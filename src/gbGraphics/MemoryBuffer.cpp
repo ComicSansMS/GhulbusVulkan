@@ -35,8 +35,6 @@ MemoryBuffer::~MemoryBuffer()
     GhulbusVulkan::Buffer destroyer(std::move(m_buffer));
 }
 
-//GhulbusVulkan::SubmitStaging setDataAsynchronously(std::byte const* data);
-
 bool MemoryBuffer::isMappable() const
 {
     return (m_memoryUsage == MemoryUsage::CpuOnly) ||
@@ -54,6 +52,37 @@ GhulbusVulkan::MappedMemory MemoryBuffer::map(VkDeviceSize offset, VkDeviceSize 
 {
     GHULBUS_PRECONDITION(isMappable());
     return m_deviceMemory.map(offset, size);
+}
+
+GhulbusVulkan::SubmitStaging MemoryBuffer::setDataAsynchronously(std::byte const* data,
+                                                                 std::optional<uint32_t> target_queue)
+{
+    GhulbusGraphics::MemoryBuffer staging_buffer(*m_instance, m_size,
+                                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryUsage::CpuOnly);
+    {
+        auto mapped_mem = staging_buffer.map();
+        std::memcpy(mapped_mem, data, m_size);
+    }
+    auto command_buffers = m_instance->getCommandPoolRegistry().allocateCommandBuffersTransfer_Transient(1);
+    auto command_buffer = command_buffers.getCommandBuffer(0);
+
+    command_buffer.begin();
+    VkBufferCopy buffer_copy;
+    buffer_copy.srcOffset = 0;
+    buffer_copy.dstOffset = 0;
+    buffer_copy.size = m_size;
+    vkCmdCopyBuffer(command_buffer.getVkCommandBuffer(), staging_buffer.getBuffer().getVkBuffer(),
+                    m_buffer.getVkBuffer(), 1, &buffer_copy);
+    if (target_queue) {
+        m_buffer.transitionRelease(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                   VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, *target_queue);
+    }
+    command_buffer.end();
+
+    GhulbusVulkan::SubmitStaging ret;
+    ret.addCommandBuffers(command_buffers);
+    ret.adoptResources(std::move(command_buffers), std::move(staging_buffer));
+    return ret;
 }
 
 VkDeviceSize MemoryBuffer::getSize() const

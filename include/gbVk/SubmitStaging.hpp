@@ -20,7 +20,7 @@ class CommandBuffer;
 class CommandBuffers;
 class Semaphore;
 
-class SubmitStaging {
+class [[nodiscard]] SubmitStaging {
 public:
     using Callback = Ghulbus::AnyInvocable<void()>;
 private:

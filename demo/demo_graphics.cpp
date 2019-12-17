@@ -273,32 +273,21 @@ int main()
 
     GhulbusGraphics::MemoryBuffer vertex_buffer(graphics_instance, vertex_data.size() * sizeof(Vertex),
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, GhulbusGraphics::MemoryUsage::GpuOnly);
+    graphics_instance.getTransferQueue().stageSubmission(
+        vertex_buffer.setDataAsynchronously(reinterpret_cast<std::byte const*>(vertex_data.data()),
+                                            graphics_instance.getGraphicsQueueFamilyIndex()));
 
-    auto& queue = graphics_instance.getGraphicsQueue();
-    uint32_t queue_family = graphics_instance.getGraphicsQueueFamilyIndex();
-    auto vertex_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersTransfer_Transient(1);
-    auto vertex_command_buffer = vertex_command_buffers.getCommandBuffer(0);
-    // copy vertex buffer
-    {
-        auto mapped_memory = staging_buffer.map();
-        std::memcpy(mapped_memory, vertex_data.data(), vertex_data.size() * sizeof(Vertex));
-    }
-    {
-        vertex_command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-        VkBufferCopy buffer_copy;
-        buffer_copy.srcOffset = 0;
-        buffer_copy.dstOffset = 0;
-        buffer_copy.size = vertex_data.size() * sizeof(Vertex);
+    GhulbusGraphics::MemoryBuffer index_buffer(graphics_instance, index_data.size() * sizeof(uint16_t),
+                                               VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                               GhulbusGraphics::MemoryUsage::GpuOnly);
+    graphics_instance.getTransferQueue().stageSubmission(
+        index_buffer.setDataAsynchronously(reinterpret_cast<std::byte const*>(index_data.data()),
+                                           graphics_instance.getGraphicsQueueFamilyIndex()));
 
-        vkCmdCopyBuffer(vertex_command_buffer.getVkCommandBuffer(), staging_buffer.getBuffer().getVkBuffer(),
-                        vertex_buffer.getBuffer().getVkBuffer(), 1, &buffer_copy);
-
-        vertex_buffer.getBuffer().transitionRelease(vertex_command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-                                                    queue_family);
-        vertex_command_buffer.end();
-    }
-    graphics_instance.getTransferQueue().submit(vertex_command_buffers);
+    auto fence = device.createFence();
+    graphics_instance.getTransferQueue().submitAllStaged(fence);
+    graphics_instance.getTransferQueue().waitIdle();
+    graphics_instance.getTransferQueue().clearAllStaged();
 
     auto sync_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
     auto sync_command_buffer = sync_command_buffers.getCommandBuffer(0);
@@ -307,58 +296,12 @@ int main()
         vertex_buffer.getBuffer().transitionAcquire(sync_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                                     VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
                                                     graphics_instance.getTransferQueueFamilyIndex());
+        index_buffer.getBuffer().transitionAcquire(sync_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                                   VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_INDEX_READ_BIT,
+                                                   graphics_instance.getTransferQueueFamilyIndex());
         sync_command_buffer.end();
     }
     graphics_instance.getGraphicsQueue().submit(sync_command_buffers);
-
-    auto transfer_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersTransfer(1);
-    auto& transfer_queue = graphics_instance.getTransferQueue();
-    uint32_t transfer_queue_family = graphics_instance.getTransferQueueFamilyIndex();
-
-    GhulbusGraphics::MemoryBuffer index_staging_buffer(graphics_instance, index_data.size() * sizeof(uint16_t),
-                                                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                                       GhulbusGraphics::MemoryUsage::CpuOnly);
-
-    GhulbusGraphics::MemoryBuffer index_buffer(graphics_instance, index_data.size() * sizeof(uint16_t),
-                                               VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                               GhulbusGraphics::MemoryUsage::GpuOnly);
-
-    // copy index buffer
-    {
-        auto mapped_memory = index_staging_buffer.map();
-        std::memcpy(mapped_memory, index_data.data(), index_data.size() * sizeof(uint16_t));
-    }
-    {
-        auto transfer_command_buffer = transfer_command_buffers.getCommandBuffer(0);
-
-        transfer_command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-        VkBufferCopy buffer_copy;
-        buffer_copy.srcOffset = 0;
-        buffer_copy.dstOffset = 0;
-        buffer_copy.size = index_data.size() * sizeof(uint16_t);
-
-        vkCmdCopyBuffer(transfer_command_buffer.getVkCommandBuffer(), index_staging_buffer.getBuffer().getVkBuffer(),
-                        index_buffer.getBuffer().getVkBuffer(), 1, &buffer_copy);
-
-        VkBufferMemoryBarrier barrier;
-        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-        barrier.pNext = nullptr;
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_INDEX_READ_BIT;
-        barrier.srcQueueFamilyIndex = transfer_queue_family;
-        barrier.dstQueueFamilyIndex = queue_family;
-        barrier.buffer = index_buffer.getBuffer().getVkBuffer();
-        barrier.offset = 0;
-        barrier.size = VK_WHOLE_SIZE;
-        vkCmdPipelineBarrier(transfer_command_buffer.getVkCommandBuffer(),
-                             VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-                             VK_DEPENDENCY_BY_REGION_BIT,
-                             0, nullptr, 1, &barrier, 0, nullptr);
-
-        transfer_command_buffer.end();
-    }
-    auto fence = device.createFence();
-    transfer_queue.submit(transfer_command_buffers, fence);
 
     // ubo
     std::vector<GhulbusGraphics::MemoryBuffer> ubo_buffers;
@@ -424,7 +367,6 @@ int main()
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     depth_buffer_memory.bindImage(depth_buffer_image);
     GhulbusVulkan::ImageView depth_buffer_image_view = depth_buffer_image.createImageViewDepthBuffer();
-
 
     auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple_compute.spv");
     auto version = spirv_code.getSpirvVersion();
@@ -652,9 +594,9 @@ int main()
         VkSemaphore signal_semaphores[] = { semaphore_render_finished.getVkSemaphore() };
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = signal_semaphores;
-        VkResult const res = vkQueueSubmit(queue.getVkQueue(), 1, &submit_info, VK_NULL_HANDLE);
+        VkResult const res = vkQueueSubmit(graphics_instance.getGraphicsQueue().getVkQueue(), 1, &submit_info, VK_NULL_HANDLE);
         if(res != VK_SUCCESS) { GHULBUS_LOG(Error, "Error in vkQueueSubmit: " << res); return 1; }
         main_window.present(semaphore_render_finished);
-        queue.waitIdle();
+        graphics_instance.getGraphicsQueue().waitIdle();
     }
 }

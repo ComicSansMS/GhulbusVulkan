@@ -61,7 +61,7 @@ public:
                                                 VkMemoryPropertyFlags required_flags) = 0;
 };
 
-class DeviceMemoryAllocator::DeviceMemory {
+class [[nodiscard]] DeviceMemoryAllocator::DeviceMemory {
 public:
     class MappedMemory;
 private:
@@ -91,7 +91,7 @@ public:
     MappedMemory map(VkDeviceSize offset, VkDeviceSize size);
 };
 
-class DeviceMemoryAllocator::DeviceMemory::MappedMemory {
+class [[nodiscard]] DeviceMemoryAllocator::DeviceMemory::MappedMemory {
 private:
     void* m_mappedMemory;
     HandleConcept* m_handle;

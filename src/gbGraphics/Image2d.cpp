@@ -64,7 +64,6 @@ GhulbusVulkan::SubmitStaging Image2d::setDataAsynchronously(std::byte const* dat
     auto const texture_width = m_image.getWidth();
     auto const texture_height = m_image.getHeight();
     VkDeviceSize const texture_size = texture_width * texture_height * 4;
-    GhulbusVulkan::Device& device = m_instance->getVulkanDevice();
 
     GhulbusGraphics::MemoryBuffer staging_buffer(*m_instance, texture_size,
                                                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT, MemoryUsage::CpuOnly);
