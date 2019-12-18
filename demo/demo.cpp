@@ -46,7 +46,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include <external/stb_image.h>
+#include <stb_image.h>
 
 #include <algorithm>
 #include <chrono>
