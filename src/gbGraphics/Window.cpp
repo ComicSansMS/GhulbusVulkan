@@ -102,12 +102,12 @@ bool Window::isDone()
     return glfwWindowShouldClose(m_glfw->window);
 }
 
-int Window::getWidth() const
+uint32_t Window::getWidth() const
 {
     return m_width;
 }
 
-int Window::getHeight() const
+uint32_t Window::getHeight() const
 {
     return m_height;
 }

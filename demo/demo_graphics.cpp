@@ -12,6 +12,7 @@
 #include <gbGraphics/CommandPoolRegistry.hpp>
 #include <gbGraphics/Graphics.hpp>
 #include <gbGraphics/Image2d.hpp>
+#include <gbGraphics/ImageLoader.hpp>
 #include <gbGraphics/MemoryBuffer.hpp>
 #include <gbGraphics/Mesh.hpp>
 #include <gbGraphics/ObjParser.hpp>
@@ -54,8 +55,6 @@
 
 #include <gbBase/PerfLog.hpp>
 
-#include <external/stb_image.h>
-
 #include <algorithm>
 #include <chrono>
 #include <cstring>
@@ -79,27 +78,28 @@ void drawToBackbuffer(GhulbusGraphics::GraphicsInstance& graphics_instance, Ghul
     //source_image.getImage().transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
     //                                   VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
     {
-        struct ImageDim { int x, y, comp; } dim;
         auto mapped = source_image.map();
-        auto img_data = stbi_load("textures/statue.jpg", &dim.x, &dim.y, &dim.comp, 0);
-        for (int iy = 0; iy < main_window.getHeight(); ++iy) {
-            for (int ix = 0; ix < main_window.getWidth(); ++ix) {
-                int const i = iy * main_window.getWidth() + ix;
-                if (!img_data || ix >= dim.x || iy >= dim.y || (dim.comp != 3 && dim.comp != 4)) {
+        GhulbusGraphics::ImageLoader img_loader("textures/statue.jpg");
+        auto const dim_x = img_loader.getWidth();
+        auto const dim_y = img_loader.getHeight();
+        auto img_data = img_loader.getData();
+        for (uint32_t iy = 0; iy < main_window.getHeight(); ++iy) {
+            for (uint32_t ix = 0; ix < main_window.getWidth(); ++ix) {
+                uint32_t const i = iy * main_window.getWidth() + ix;
+                if (!img_data || ix >= dim_x || iy >= dim_y) {
                     mapped[i * 4] = std::byte(255);           //R
                     mapped[i * 4 + 1] = std::byte(0);         //G
                     mapped[i * 4 + 2] = std::byte(0);         //B
                     mapped[i * 4 + 3] = std::byte(255);       //A
                 } else {
-                    auto const pixel_index = (iy * dim.x + ix) * dim.comp;
-                    mapped[i * 4] = std::byte(img_data[pixel_index]);                                       //R
-                    mapped[i * 4 + 1] = std::byte(img_data[pixel_index + 1]);                               //G
-                    mapped[i * 4 + 2] = std::byte(img_data[pixel_index + 2]);                               //B
-                    mapped[i * 4 + 3] = std::byte((dim.comp == 4) ? img_data[pixel_index + 3] : 255);       //A
+                    auto const pixel_index = (iy * dim_x + ix) * 4;
+                    mapped[i * 4] = img_data[pixel_index];                  //R
+                    mapped[i * 4 + 1] = img_data[pixel_index + 1];          //G
+                    mapped[i * 4 + 2] = img_data[pixel_index + 2];          //B
+                    mapped[i * 4 + 3] = img_data[pixel_index + 3];          //A
                 }
             }
         }
-        stbi_image_free(img_data);
     }
 
     // copy
@@ -163,11 +163,8 @@ void fullBarrier(GhulbusVulkan::CommandBuffer& command_buffer)
         0, nullptr, 0, nullptr);
 }
 
-struct Vertex {
-    GhulbusMath::Vector3f position;
-    GhulbusMath::Vector3f color;
-    GhulbusMath::Vector2f texCoords;
-};
+using Vertex = GhulbusGraphics::Mesh::VertexData;
+using Index = GhulbusGraphics::Mesh::IndexData;
 
 struct UBOMVP {
     GhulbusMath::Matrix4<float> model;
@@ -190,7 +187,7 @@ inline std::vector<Vertex> generateVertexData()
     };
 }
 
-inline std::vector<uint16_t> generateIndexData() {
+inline std::vector<Index> generateIndexData() {
     return { 0, 1, 2, 2, 3, 0,
              4, 5, 6, 6, 7, 4 };
 }
@@ -239,7 +236,7 @@ int main()
     perflog.tick(Ghulbus::LogLevel::Debug, "Initial present");
 
     std::vector<Vertex> const vertex_data = generateVertexData();
-    std::vector<uint16_t> const index_data = generateIndexData();
+    std::vector<Index> const index_data = generateIndexData();
     VkVertexInputBindingDescription vertex_binding;
     vertex_binding.binding = 0;
     vertex_binding.stride = sizeof(Vertex);
@@ -254,29 +251,26 @@ int main()
     vertex_attributes[1].location = 1;
     vertex_attributes[1].binding = vertex_binding.binding;
     vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes[1].offset = offsetof(Vertex, color);
+    vertex_attributes[1].offset = offsetof(Vertex, normal);
 
     vertex_attributes[2].location = 2;
     vertex_attributes[2].binding = vertex_binding.binding;
     vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attributes[2].offset = offsetof(Vertex, texCoords);
+    vertex_attributes[2].offset = offsetof(Vertex, texCoord);
 
-    GhulbusGraphics::MemoryBuffer staging_buffer(graphics_instance, vertex_data.size() * sizeof(Vertex),
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, GhulbusGraphics::MemoryUsage::CpuOnly);
-
-    GhulbusGraphics::MemoryBuffer vertex_buffer(graphics_instance, vertex_data.size() * sizeof(Vertex),
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, GhulbusGraphics::MemoryUsage::GpuOnly);
-    graphics_instance.getTransferQueue().stageSubmission(
-        vertex_buffer.setDataAsynchronously(reinterpret_cast<std::byte const*>(vertex_data.data()),
-                                            graphics_instance.getGraphicsQueueFamilyIndex()));
-
-    GhulbusGraphics::MemoryBuffer index_buffer(graphics_instance, index_data.size() * sizeof(uint16_t),
-                                               VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                               GhulbusGraphics::MemoryUsage::GpuOnly);
-    graphics_instance.getTransferQueue().stageSubmission(
-        index_buffer.setDataAsynchronously(reinterpret_cast<std::byte const*>(index_data.data()),
-                                           graphics_instance.getGraphicsQueueFamilyIndex()));
-
+    //*
+    GhulbusGraphics::ImageLoader img_loader("textures/statue.jpg");
+    GhulbusGraphics::Mesh mesh(graphics_instance, vertex_data.data(), vertex_data.size(),
+                               index_data.data(), index_data.size(), img_loader);
+    /*/
+    GhulbusGraphics::ObjParser obj_parser;
+    obj_parser.readFile("chalet.obj");
+    GhulbusGraphics::ImageLoader img_loader("chalet.jpg");
+    GhulbusGraphics::Mesh mesh(graphics_instance, obj_parser, img_loader);
+    //*/
+    auto& vertex_buffer = mesh.getVertexBuffer();
+    auto& index_buffer = mesh.getIndexBuffer();
+    auto& texture = mesh.getTexture();
 
     // ubo
     std::vector<GhulbusGraphics::MemoryBuffer> ubo_buffers;
@@ -314,17 +308,6 @@ int main()
             std::memcpy(mapped_mem, &ubo_data, sizeof(UBOMVP));
         }
     };
-
-
-    // texture
-    int texture_dimensions_width, texture_dimensions_height, texture_dimensions_n_channels;
-    stbi_uc* texture_data = stbi_load("textures/statue.jpg", &texture_dimensions_width, &texture_dimensions_height,
-        &texture_dimensions_n_channels, STBI_rgb_alpha);
-    if (!texture_data) { GHULBUS_LOG(Error, "Error loading texture file."); return 1; }
-    GhulbusGraphics::Image2d texture(graphics_instance, texture_dimensions_width, texture_dimensions_height);
-    graphics_instance.getTransferQueue().stageSubmission(
-        texture.setDataAsynchronously(reinterpret_cast<std::byte const*>(texture_data),
-                                      graphics_instance.getGraphicsQueueFamilyIndex()));
 
 
     auto transfer_fence = device.createFence();
@@ -524,8 +507,10 @@ int main()
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(local_command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
         vkCmdBindIndexBuffer(local_command_buffer.getVkCommandBuffer(), index_buffer.getBuffer().getVkBuffer(),
-                             0, VK_INDEX_TYPE_UINT16);
-        vkCmdDrawIndexed(local_command_buffer.getVkCommandBuffer(), static_cast<uint32_t>(index_data.size()),
+                             0, VK_INDEX_TYPE_UINT32);
+        auto const nindices = mesh.getNumberOfIndices();
+        auto const nvertices = mesh.getNumberOfVertices();
+        vkCmdDrawIndexed(local_command_buffer.getVkCommandBuffer(), mesh.getNumberOfIndices(),
                          1, 0, 0, 0);
 
         vkCmdEndRenderPass(local_command_buffer.getVkCommandBuffer());

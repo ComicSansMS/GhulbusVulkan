@@ -100,6 +100,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 find_package(VulkanMemoryAllocator REQUIRED)
+find_package(stb REQUIRED)
 
 set(GHULBUS_BASE_ROOT "" CACHE PATH "GhulbusBase installation root directory.")
 if(GHULBUS_BASE_ROOT)
@@ -279,6 +280,7 @@ set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/Graphics.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/GraphicsInstance.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Image2d.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/ImageLoader.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/MemoryBuffer.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Mesh.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/ObjParser.cpp
@@ -292,6 +294,7 @@ set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Graphics.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/GraphicsInstance.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Image2d.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/ImageLoader.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/MemoryBuffer.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Mesh.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/ObjParser.hpp
@@ -325,7 +328,7 @@ add_library(gbGraphics
 )
 target_include_directories(gbGraphics PUBLIC $<BUILD_INTERFACE:${GB_GRAPHICS_INCLUDE_DIR}>)
 target_link_libraries(gbGraphics PUBLIC Ghulbus::gbBase Ghulbus::gbMath gbVk glfw)
-target_link_libraries(gbGraphics PRIVATE VulkanMemoryAllocator::VulkanMemoryAllocator)
+target_link_libraries(gbGraphics PRIVATE VulkanMemoryAllocator::VulkanMemoryAllocator stb::stb)
 
 if(NOT GB_GENERATE_COVERAGE_INFO)
     target_compile_definitions(gbGraphics PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
@@ -457,7 +460,7 @@ if(GB_BUILD_TESTS)
 endif()
 
 add_executable(demo ${PROJECT_SOURCE_DIR}/demo/demo.cpp ${PROJECT_SOURCE_DIR}/demo/external/stb_image_impl.cpp)
-target_link_libraries(demo PUBLIC gbVk glfw Ghulbus::gbMath)
+target_link_libraries(demo PUBLIC gbVk glfw Ghulbus::gbMath stb::stb)
 target_include_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/demo)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT demo)
 
@@ -472,7 +475,7 @@ add_shader(demo ${PROJECT_BINARY_DIR}/shaders/frag_textured.spv ${PROJECT_SOURCE
 
 file(COPY ${PROJECT_SOURCE_DIR}/demo/textures/statue.jpg DESTINATION ${PROJECT_BINARY_DIR}/textures)
 
-add_executable(demo_graphics ${PROJECT_SOURCE_DIR}/demo/demo_graphics.cpp ${PROJECT_SOURCE_DIR}/demo/external/stb_image_impl.cpp)
+add_executable(demo_graphics ${PROJECT_SOURCE_DIR}/demo/demo_graphics.cpp)
 target_link_libraries(demo_graphics PUBLIC gbGraphics)
 target_include_directories(demo_graphics PUBLIC ${PROJECT_SOURCE_DIR}/demo)
 
