@@ -186,6 +186,11 @@ uint32_t Image::getDepth() const
     return m_extent.depth;
 }
 
+VkExtent3D Image::getExtent() const
+{
+    return m_extent;
+}
+
 VkFormat Image::getFormat() const
 {
     return m_format;

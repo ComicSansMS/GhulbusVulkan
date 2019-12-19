@@ -18,10 +18,16 @@ class CommandPool;
 class Device;
 class DeviceBuilder;
 class DeviceMemoryAllocator;
+class Framebuffer;
 class Image;
+class ImageView;
 class Instance;
 class PhysicalDevice;
+class Pipeline;
+class PipelineLayout;
 class Queue;
+class RenderPass;
 class [[nodiscard]] SubmitStaging;
+class Swapchain;
 }
 #endif

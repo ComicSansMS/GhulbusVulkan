@@ -72,6 +72,8 @@ public:
 
     uint32_t getHeight() const;
 
+    VkFormat getFormat() const;
+
     std::vector<ImageView> createImageViews();
 
     std::vector<VkImage> getVkImages();

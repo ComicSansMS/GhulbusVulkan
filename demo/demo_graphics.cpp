@@ -16,6 +16,7 @@
 #include <gbGraphics/MemoryBuffer.hpp>
 #include <gbGraphics/Mesh.hpp>
 #include <gbGraphics/ObjParser.hpp>
+#include <gbGraphics/Renderer.hpp>
 #include <gbGraphics/Window.hpp>
 
 #include <gbVk/Buffer.hpp>
@@ -219,10 +220,6 @@ int main()
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Window creation");
 
-    auto& swapchain_image = main_window.getAcquiredImage();
-
-    perflog.tick(Ghulbus::LogLevel::Debug, "Swapchain setup");
-
     drawToBackbuffer(graphics_instance, main_window);
 
     // presentation
@@ -337,21 +334,8 @@ int main()
     graphics_instance.getGraphicsQueue().submitAllStaged(graphics_sync_fence);
 
 
-    GhulbusVulkan::ImageView texture_image_view = texture.getImage().createImageView();
+    GhulbusVulkan::ImageView texture_image_view = texture.createImageView();
     GhulbusVulkan::Sampler texture_sampler = device.createSampler();
-
-    // depth buffer attachment
-    auto const depth_buffer_opt_format = physical_device.findDepthBufferFormat();
-    if (!depth_buffer_opt_format) { GHULBUS_LOG(Error, "No supported depth buffer format found."); return 1; }
-    VkFormat const depth_buffer_format = *depth_buffer_opt_format;
-    GhulbusVulkan::Image depth_buffer_image =
-        device.createImageDepthBuffer(WINDOW_WIDTH, WINDOW_HEIGHT, depth_buffer_format);
-    auto const depth_buffer_image_mem_reqs = depth_buffer_image.getMemoryRequirements();
-    GhulbusVulkan::DeviceMemory depth_buffer_memory = device.allocateMemory(depth_buffer_image_mem_reqs,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    depth_buffer_memory.bindImage(depth_buffer_image);
-    GhulbusVulkan::ImageView depth_buffer_image_view = depth_buffer_image.createImageViewDepthBuffer();
-
 
     auto vert_textured_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_textured.spv");
     auto vert_textured_shader_module = device.createShaderModule(vert_textured_spirv_code);
@@ -378,15 +362,6 @@ int main()
     frag_shader_stage_ci.pSpecializationInfo = nullptr;
 
     std::vector<VkPipelineShaderStageCreateInfo> shader_stage_cis{ vert_shader_stage_ci, frag_shader_stage_ci };
-
-    // render pass
-    GhulbusVulkan::RenderPass render_pass = [&device, &swapchain_image, &depth_buffer_image]() {
-            auto builder = device.createRenderPassBuilder();
-            builder.addSubpassGraphics();
-            builder.addColorAttachment(swapchain_image->getFormat());
-            builder.addDepthStencilAttachment(depth_buffer_image.getFormat());
-            return builder.create();
-        }();
 
     // ubo
     GhulbusVulkan::DescriptorSetLayout ubo_layout = [&device]() {
@@ -452,8 +427,10 @@ int main()
         return builder.create();
     }();
 
+    GhulbusGraphics::Renderer renderer(graphics_instance, main_window.getSwapchain());
+
     GhulbusVulkan::Pipeline pipeline = [&device, &main_window, &pipeline_layout,
-                                        &shader_stage_cis, &render_pass,
+                                        &shader_stage_cis, &renderer,
                                         &vertex_binding, &vertex_attributes]() {
         auto builder = device.createGraphicsPipelineBuilder(main_window.getWidth(),
                                                             main_window.getHeight());
@@ -461,12 +438,8 @@ int main()
                                   static_cast<uint32_t>(vertex_attributes.size()));
         return builder.create(pipeline_layout, shader_stage_cis.data(),
                               static_cast<std::uint32_t>(shader_stage_cis.size()),
-                              render_pass.getVkRenderPass());
+                              renderer.getRenderPass().getVkRenderPass());
     }();
-
-    GhulbusVulkan::Swapchain& swapchain = main_window.getSwapchain();
-    std::vector<GhulbusVulkan::Framebuffer> framebuffers =
-        device.createFramebuffers(swapchain, render_pass, depth_buffer_image_view);
 
     GhulbusVulkan::CommandBuffers triangle_draw_command_buffers =
         graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics(swapchain_n_images);
@@ -478,8 +451,8 @@ int main()
         VkRenderPassBeginInfo render_pass_info;
         render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         render_pass_info.pNext = nullptr;
-        render_pass_info.renderPass = render_pass.getVkRenderPass();
-        render_pass_info.framebuffer = framebuffers[i].getVkFramebuffer();
+        render_pass_info.renderPass = renderer.getRenderPass().getVkRenderPass();
+        render_pass_info.framebuffer = renderer.getFramebufferByIndex(i).getVkFramebuffer();
         render_pass_info.renderArea.offset.x = 0;
         render_pass_info.renderArea.offset.y = 0;
         render_pass_info.renderArea.extent.width = main_window.getWidth();

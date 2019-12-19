@@ -28,9 +28,9 @@ private:
     VkDevice m_device;
     VkExtent3D m_extent;
     VkFormat m_format;
-    VkAccessFlags m_currentAccessMask;
-    VkImageLayout m_currentLayout;
-    uint32_t m_currentQueue;
+    VkAccessFlags m_currentAccessMask;      ///@todo remove
+    VkImageLayout m_currentLayout;          ///@todo remove
+    uint32_t m_currentQueue;                ///@todo remove
     bool m_hasOwnership;
 public:
     Image(VkDevice logical_device, VkImage image, VkExtent3D const& extent, VkFormat format);
@@ -69,6 +69,7 @@ public:
     uint32_t getWidth() const;
     uint32_t getHeight() const;
     uint32_t getDepth() const;
+    VkExtent3D getExtent() const;
     VkFormat getFormat() const;
     VkAccessFlags getCurrentAccessMask() const;
 

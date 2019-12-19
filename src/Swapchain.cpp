@@ -130,6 +130,12 @@ uint32_t Swapchain::getHeight() const
     return m_images.front().getHeight();
 }
 
+VkFormat Swapchain::getFormat() const
+{
+    GHULBUS_PRECONDITION(!m_images.empty());
+    return m_images.front().getFormat();
+}
+
 std::vector<ImageView> Swapchain::createImageViews()
 {
     std::vector<ImageView> ret;

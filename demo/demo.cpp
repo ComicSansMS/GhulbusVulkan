@@ -266,7 +266,8 @@ int main()
     command_buffer.begin();
 
     auto source_image = device.createImage(VkExtent3D{ WINDOW_WIDTH, WINDOW_HEIGHT, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
-        1, 1, VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+                                           1, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_LINEAR,
+                                           VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
     auto mem_reqs = source_image.getMemoryRequirements();
     auto source_image_memory = device.allocateMemory(mem_reqs, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     source_image_memory.bindImage(source_image);

@@ -277,6 +277,7 @@ set(GB_GRAPHICS_TEST_DIR ${PROJECT_SOURCE_DIR}/test/gbGraphics)
 
 set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/CommandPoolRegistry.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/GenericImage.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Graphics.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/GraphicsInstance.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Image2d.cpp
@@ -284,6 +285,7 @@ set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/MemoryBuffer.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Mesh.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/ObjParser.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/Renderer.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Window.cpp
 )
 
@@ -291,6 +293,7 @@ set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/CommandPoolRegistry.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/config.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Exceptions.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/GenericImage.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Graphics.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/GraphicsInstance.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Image2d.hpp
@@ -298,6 +301,7 @@ set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/MemoryBuffer.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Mesh.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/ObjParser.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Renderer.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Window.hpp
 )
 

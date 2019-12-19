@@ -201,7 +201,7 @@ Image Device::createImage2D(uint32_t width, uint32_t height, VkFormat format)
     extent.width = width;
     extent.height = height;
     extent.depth = 1;
-    return createImage(extent, format, 1, 1, VK_IMAGE_TILING_OPTIMAL,
+    return createImage(extent, format, 1, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL,
                        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 }
 
@@ -211,11 +211,12 @@ Image Device::createImageDepthBuffer(uint32_t width, uint32_t height, VkFormat f
     extent.width = width;
     extent.height = height;
     extent.depth = 1;
-    return createImage(extent, format, 1, 1, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    return createImage(extent, format, 1, 1, VK_SAMPLE_COUNT_1_BIT,
+                       VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 Image Device::createImage(VkExtent3D const& extent, VkFormat format, uint32_t mip_levels, uint32_t array_layers,
-                          VkImageTiling tiling, VkImageUsageFlags usage_flags)
+                          VkSampleCountFlagBits samples, VkImageTiling tiling, VkImageUsageFlags usage_flags)
 {
     VkImageCreateInfo create_info;
     create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -227,11 +228,11 @@ Image Device::createImage(VkExtent3D const& extent, VkFormat format, uint32_t mi
     create_info.extent = extent;
     create_info.mipLevels = mip_levels;
     create_info.arrayLayers = array_layers;
-    create_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    create_info.samples = samples;
     create_info.tiling = tiling;
     create_info.usage = usage_flags;
     create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    create_info.queueFamilyIndexCount = 0;
+    create_info.queueFamilyIndexCount = 0;                  // only relevant for SHARING_MODE_CONCURRENT
     create_info.pQueueFamilyIndices = nullptr;
     create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     VkImage image;
