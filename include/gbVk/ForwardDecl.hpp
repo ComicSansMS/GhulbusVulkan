@@ -27,6 +27,8 @@ class Pipeline;
 class PipelineLayout;
 class Queue;
 class RenderPass;
+class ShaderModule;
+class SpirvCode;
 class [[nodiscard]] SubmitStaging;
 class Swapchain;
 }

@@ -20,7 +20,7 @@
 #include <gbVk/Sampler.hpp>
 #include <gbVk/Semaphore.hpp>
 #include <gbVk/ShaderModule.hpp>
-#include <gbVk/Spirv.hpp>
+#include <gbVk/SpirvCode.hpp>
 #include <gbVk/Swapchain.hpp>
 
 #include <gbBase/Assert.hpp>
@@ -313,7 +313,7 @@ Queue Device::getQueue(uint32_t queue_family, uint32_t queue_index)
     return Queue(queue);
 }
 
-ShaderModule Device::createShaderModule(Spirv::Code const& code)
+ShaderModule Device::createShaderModule(SpirvCode const& code)
 {
     VkShaderModuleCreateInfo create_info;
     create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

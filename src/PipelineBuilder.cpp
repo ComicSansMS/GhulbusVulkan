@@ -207,7 +207,7 @@ void PipelineBuilder::addVertexBindings(VkVertexInputBindingDescription* binding
     stage.vertex_attributes.insert(stage.vertex_attributes.end(), attributes_data, attributes_data + n_attributes);
 }
 
-Pipeline PipelineBuilder::create(PipelineLayout& layout, VkPipelineShaderStageCreateInfo* shader_stages,
+Pipeline PipelineBuilder::create(PipelineLayout& layout, VkPipelineShaderStageCreateInfo const* shader_stages,
                                  uint32_t shader_stages_size, VkRenderPass render_pass)
 {
     if (stage.vertex_input) {

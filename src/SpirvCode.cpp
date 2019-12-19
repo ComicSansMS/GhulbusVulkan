@@ -1,4 +1,4 @@
-#include <gbVk/Spirv.hpp>
+#include <gbVk/SpirvCode.hpp>
 
 #include <gbVk/Exceptions.hpp>
 
@@ -11,18 +11,17 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
-namespace Spirv {
-size_t Code::getSize() const
+size_t SpirvCode::getSize() const
 {
     return m_size;
 }
 
-uint32_t const* Code::getCode() const
+uint32_t const* SpirvCode::getCode() const
 {
     return m_data.get();
 }
 
-Code::SpirvVersion Code::getSpirvVersion() const
+SpirvCode::SpirvVersion SpirvCode::getSpirvVersion() const
 {
     SpirvVersion ret;
     ret.major = ((m_data[1] >> 16) & 0xff);
@@ -30,12 +29,12 @@ Code::SpirvVersion Code::getSpirvVersion() const
     return ret;
 }
 
-uint32_t Code::getBound() const
+uint32_t SpirvCode::getBound() const
 {
     return m_data[3];
 }
 
-Code load(std::filesystem::path const& spirv_file)
+SpirvCode SpirvCode::load(std::filesystem::path const& spirv_file)
 {
     std::ifstream fin(spirv_file, std::ios_base::binary);
     if(!fin) {
@@ -45,7 +44,7 @@ Code load(std::filesystem::path const& spirv_file)
     return load(fin);
 }
 
-Code load(std::istream& is)
+SpirvCode SpirvCode::load(std::istream& is)
 {
     GHULBUS_PRECONDITION(is);
     auto start_pos = is.tellg();
@@ -65,10 +64,10 @@ Code load(std::istream& is)
     return load(buffer.data(), static_cast<uint32_t>(buffer_size));
 }
 
-Code load(std::byte const* data, uint32_t data_size)
+SpirvCode SpirvCode::load(std::byte const* data, uint32_t data_size)
 {
     GHULBUS_PRECONDITION(data_size % sizeof(uint32_t) == 0);
-    Code ret;
+    SpirvCode ret;
     uint32_t const spirv_magic_number = 0x07230203;
     uint32_t const spirv_magic_number_swapped = 0x03022307;
     uint32_t check_magic_number;
@@ -102,7 +101,5 @@ Code load(std::byte const* data, uint32_t data_size)
     }
 
     return ret;
-}
-
 }
 }

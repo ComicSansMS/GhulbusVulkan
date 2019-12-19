@@ -16,6 +16,7 @@
 #include <gbGraphics/MemoryBuffer.hpp>
 #include <gbGraphics/Mesh.hpp>
 #include <gbGraphics/ObjParser.hpp>
+#include <gbGraphics/Program.hpp>
 #include <gbGraphics/Renderer.hpp>
 #include <gbGraphics/Window.hpp>
 
@@ -49,7 +50,7 @@
 #include <gbVk/Sampler.hpp>
 #include <gbVk/Semaphore.hpp>
 #include <gbVk/ShaderModule.hpp>
-#include <gbVk/Spirv.hpp>
+#include <gbVk/SpirvCode.hpp>
 #include <gbVk/StringConverters.hpp>
 #include <gbVk/SubmitStaging.hpp>
 #include <gbVk/Swapchain.hpp>
@@ -337,31 +338,9 @@ int main()
     GhulbusVulkan::ImageView texture_image_view = texture.createImageView();
     GhulbusVulkan::Sampler texture_sampler = device.createSampler();
 
-    auto vert_textured_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_textured.spv");
-    auto vert_textured_shader_module = device.createShaderModule(vert_textured_spirv_code);
-
-    VkPipelineShaderStageCreateInfo vert_shader_stage_ci;
-    vert_shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vert_shader_stage_ci.pNext = nullptr;
-    vert_shader_stage_ci.flags = 0;
-    vert_shader_stage_ci.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vert_shader_stage_ci.module = vert_textured_shader_module.getVkShaderModule();
-    vert_shader_stage_ci.pName = "main";
-    vert_shader_stage_ci.pSpecializationInfo = nullptr;
-
-    auto frag_textured_spirv_code = GhulbusVulkan::Spirv::load("shaders/frag_textured.spv");
-    auto frag_textured_shader_module = device.createShaderModule(frag_textured_spirv_code);
-
-    VkPipelineShaderStageCreateInfo frag_shader_stage_ci;
-    frag_shader_stage_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    frag_shader_stage_ci.pNext = nullptr;
-    frag_shader_stage_ci.flags = 0;
-    frag_shader_stage_ci.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    frag_shader_stage_ci.module = frag_textured_shader_module.getVkShaderModule();
-    frag_shader_stage_ci.pName = "main";
-    frag_shader_stage_ci.pSpecializationInfo = nullptr;
-
-    std::vector<VkPipelineShaderStageCreateInfo> shader_stage_cis{ vert_shader_stage_ci, frag_shader_stage_ci };
+    auto vert_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/vert_textured.spv");
+    auto frag_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/frag_textured.spv");
+    GhulbusGraphics::Program shader_program(graphics_instance, vert_textured_spirv_code, frag_textured_spirv_code);
 
     // ubo
     GhulbusVulkan::DescriptorSetLayout ubo_layout = [&device]() {
@@ -430,14 +409,14 @@ int main()
     GhulbusGraphics::Renderer renderer(graphics_instance, main_window.getSwapchain());
 
     GhulbusVulkan::Pipeline pipeline = [&device, &main_window, &pipeline_layout,
-                                        &shader_stage_cis, &renderer,
+                                        &shader_program, &renderer,
                                         &vertex_binding, &vertex_attributes]() {
         auto builder = device.createGraphicsPipelineBuilder(main_window.getWidth(),
                                                             main_window.getHeight());
         builder.addVertexBindings(&vertex_binding, 1, vertex_attributes.data(),
                                   static_cast<uint32_t>(vertex_attributes.size()));
-        return builder.create(pipeline_layout, shader_stage_cis.data(),
-                              static_cast<std::uint32_t>(shader_stage_cis.size()),
+        return builder.create(pipeline_layout, shader_program.getShaderStageCreateInfos(),
+                              shader_program.getNumberOfShaderStages(),
                               renderer.getRenderPass().getVkRenderPass());
     }();
 

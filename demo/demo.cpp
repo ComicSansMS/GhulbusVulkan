@@ -38,7 +38,7 @@
 #include <gbVk/Sampler.hpp>
 #include <gbVk/Semaphore.hpp>
 #include <gbVk/ShaderModule.hpp>
-#include <gbVk/Spirv.hpp>
+#include <gbVk/SpirvCode.hpp>
 #include <gbVk/StringConverters.hpp>
 #include <gbVk/Swapchain.hpp>
 
@@ -571,23 +571,23 @@ int main()
     GhulbusVulkan::ImageView depth_buffer_image_view = depth_buffer_image.createImageViewDepthBuffer();
 
 
-    auto spirv_code = GhulbusVulkan::Spirv::load("shaders/simple_compute.spv");
+    auto spirv_code = GhulbusVulkan::SpirvCode::load("shaders/simple_compute.spv");
     auto version = spirv_code.getSpirvVersion();
     auto bound = spirv_code.getBound();
     GHULBUS_UNUSED_VARIABLE(version);
     GHULBUS_UNUSED_VARIABLE(bound);
     auto shader_module = device.createShaderModule(spirv_code);
 
-    auto vert_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_hardcoded.spv");
+    auto vert_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/vert_hardcoded.spv");
     auto vert_hardcoded_shader_module = device.createShaderModule(vert_spirv_code);
 
-    auto vert_direct_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_direct.spv");
+    auto vert_direct_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/vert_direct.spv");
     auto vert_direct_shader_module = device.createShaderModule(vert_direct_spirv_code);
 
-    auto vert_mvp_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_mvp.spv");
+    auto vert_mvp_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/vert_mvp.spv");
     auto vert_mvp_shader_module = device.createShaderModule(vert_mvp_spirv_code);
 
-    auto vert_textured_spirv_code = GhulbusVulkan::Spirv::load("shaders/vert_textured.spv");
+    auto vert_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/vert_textured.spv");
     auto vert_textured_shader_module = device.createShaderModule(vert_textured_spirv_code);
 
     VkPipelineShaderStageCreateInfo vert_shader_stage_ci;
@@ -607,10 +607,10 @@ int main()
     vert_shader_stage_ci.pName = "main";
     vert_shader_stage_ci.pSpecializationInfo = nullptr;
 
-    auto frag_spirv_code = GhulbusVulkan::Spirv::load("shaders/frag_hardcoded.spv");
+    auto frag_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/frag_hardcoded.spv");
     auto frag_shader_module = device.createShaderModule(frag_spirv_code);
 
-    auto frag_textured_spirv_code = GhulbusVulkan::Spirv::load("shaders/frag_textured.spv");
+    auto frag_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/frag_textured.spv");
     auto frag_textured_shader_module = device.createShaderModule(frag_textured_spirv_code);
 
     VkPipelineShaderStageCreateInfo frag_shader_stage_ci;

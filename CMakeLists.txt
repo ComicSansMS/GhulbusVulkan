@@ -99,6 +99,7 @@ find_package(glfw3 REQUIRED HINTS ${PROJECT_BINARY_DIR}/dependencies/glfw3/insta
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+# find_package(spirv-cross REQUIRED)
 find_package(VulkanMemoryAllocator REQUIRED)
 find_package(stb REQUIRED)
 
@@ -163,7 +164,7 @@ set(GB_VK_SOURCE_FILES
     ${GB_VK_SOURCE_DIR}/Sampler.cpp
     ${GB_VK_SOURCE_DIR}/Semaphore.cpp
     ${GB_VK_SOURCE_DIR}/ShaderModule.cpp
-    ${GB_VK_SOURCE_DIR}/Spirv.cpp
+    ${GB_VK_SOURCE_DIR}/SpirvCode.cpp
     ${GB_VK_SOURCE_DIR}/StringConverters.cpp
     ${GB_VK_SOURCE_DIR}/SubmitStaging.cpp
     ${GB_VK_SOURCE_DIR}/Swapchain.cpp
@@ -208,7 +209,7 @@ set(GB_VK_HEADER_FILES
     ${GB_VK_INCLUDE_DIR}/gbVk/Sampler.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Semaphore.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/ShaderModule.hpp
-    ${GB_VK_INCLUDE_DIR}/gbVk/Spirv.hpp
+    ${GB_VK_INCLUDE_DIR}/gbVk/SpirvCode.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/StringConverters.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/SubmitStaging.hpp
     ${GB_VK_INCLUDE_DIR}/gbVk/Swapchain.hpp
@@ -285,6 +286,7 @@ set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/MemoryBuffer.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Mesh.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/ObjParser.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/Program.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Renderer.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Window.cpp
 )
@@ -301,6 +303,7 @@ set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/MemoryBuffer.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Mesh.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/ObjParser.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Program.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Renderer.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Window.hpp
 )

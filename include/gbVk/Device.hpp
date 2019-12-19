@@ -35,11 +35,8 @@ class RenderPassBuilder;
 class Sampler;
 class Semaphore;
 class ShaderModule;
+class SpirvCode;
 class Swapchain;
-namespace Spirv
-{
-class Code;
-}
 
 class Device {
 private:
@@ -98,7 +95,7 @@ public:
 
     Queue getQueue(uint32_t queue_family, uint32_t queue_index);
 
-    ShaderModule createShaderModule(Spirv::Code const& code);
+    ShaderModule createShaderModule(SpirvCode const& code);
 
     std::vector<Framebuffer> createFramebuffers(Swapchain& swapchain, RenderPass& render_pass);
 
