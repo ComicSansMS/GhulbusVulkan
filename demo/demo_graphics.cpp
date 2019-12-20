@@ -310,6 +310,7 @@ int main()
 
     auto transfer_fence = device.createFence();
     graphics_instance.getTransferQueue().submitAllStaged(transfer_fence);
+    if(graphics_instance.getTransferQueueFamilyIndex() != graphics_instance.getGraphicsQueueFamilyIndex())
     {
         GhulbusVulkan::SubmitStaging graphics_transfer_sync;
         auto sync_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
