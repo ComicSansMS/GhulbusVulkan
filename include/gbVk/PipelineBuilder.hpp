@@ -67,6 +67,8 @@ public:
     void addVertexBindings(VkVertexInputBindingDescription* binding_data, uint32_t n_bindings,
                            VkVertexInputAttributeDescription* attributes_data, uint32_t n_attributes);
 
+    void adjustViewportDimensions(uint32_t viewport_width, uint32_t viewport_height);
+
     Pipeline create(PipelineLayout& layout, VkPipelineShaderStageCreateInfo const* shader_stages,
                     uint32_t shader_stages_size, VkRenderPass render_pass);
 };

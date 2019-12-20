@@ -207,6 +207,14 @@ void PipelineBuilder::addVertexBindings(VkVertexInputBindingDescription* binding
     stage.vertex_attributes.insert(stage.vertex_attributes.end(), attributes_data, attributes_data + n_attributes);
 }
 
+void PipelineBuilder::adjustViewportDimensions(uint32_t viewport_width, uint32_t viewport_height)
+{
+    stage.viewport->viewports.front().width = static_cast<float>(viewport_width);
+    stage.viewport->viewports.front().height = static_cast<float>(viewport_height);
+    stage.viewport->scissors.front().extent.width = viewport_width;
+    stage.viewport->scissors.front().extent.height = viewport_height;
+}
+
 Pipeline PipelineBuilder::create(PipelineLayout& layout, VkPipelineShaderStageCreateInfo const* shader_stages,
                                  uint32_t shader_stages_size, VkRenderPass render_pass)
 {

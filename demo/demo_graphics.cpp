@@ -401,25 +401,21 @@ int main()
 
 
     // pipeline
-    GhulbusVulkan::PipelineLayout pipeline_layout = [&device, &ubo_layout]() {
-        GhulbusVulkan::PipelineLayoutBuilder builder = device.createPipelineLayoutBuilder();
-        builder.addDescriptorSetLayout(ubo_layout);
-        return builder.create();
-    }();
+    GhulbusGraphics::Renderer renderer(graphics_instance, shader_program, main_window.getSwapchain());
+    {
+        GhulbusVulkan::PipelineLayout pipeline_layout = [&device, &ubo_layout]() {
+            GhulbusVulkan::PipelineLayoutBuilder builder = device.createPipelineLayoutBuilder();
+            builder.addDescriptorSetLayout(ubo_layout);
+            return builder.create();
+        }();
+        renderer.addPipelineBuilder(std::move(pipeline_layout));
+    }
+    GhulbusVulkan::PipelineLayout& pipeline_layout = renderer.getPipelineLayout(0);
+    renderer.getPipelineBuilder(0).addVertexBindings(&vertex_binding, 1, vertex_attributes.data(),
+                                                     static_cast<uint32_t>(vertex_attributes.size()));
+    renderer.recreateAllPipelines();
+    GhulbusVulkan::Pipeline& pipeline = renderer.getPipeline(0);
 
-    GhulbusGraphics::Renderer renderer(graphics_instance, main_window.getSwapchain());
-
-    GhulbusVulkan::Pipeline pipeline = [&device, &main_window, &pipeline_layout,
-                                        &shader_program, &renderer,
-                                        &vertex_binding, &vertex_attributes]() {
-        auto builder = device.createGraphicsPipelineBuilder(main_window.getWidth(),
-                                                            main_window.getHeight());
-        builder.addVertexBindings(&vertex_binding, 1, vertex_attributes.data(),
-                                  static_cast<uint32_t>(vertex_attributes.size()));
-        return builder.create(pipeline_layout, shader_program.getShaderStageCreateInfos(),
-                              shader_program.getNumberOfShaderStages(),
-                              renderer.getRenderPass().getVkRenderPass());
-    }();
 
     GhulbusVulkan::CommandBuffers triangle_draw_command_buffers =
         graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics(swapchain_n_images);

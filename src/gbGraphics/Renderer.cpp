@@ -4,13 +4,13 @@
 #include <gbGraphics/Exceptions.hpp>
 #include <gbGraphics/GraphicsInstance.hpp>
 #include <gbGraphics/Image2d.hpp>
+#include <gbGraphics/Program.hpp>
 
 #include <gbVk/CommandBuffers.hpp>
 #include <gbVk/Exceptions.hpp>
 #include <gbVk/Device.hpp>
 #include <gbVk/Image.hpp>
 #include <gbVk/PhysicalDevice.hpp>
-#include <gbVk/PipelineBuilder.hpp>
 #include <gbVk/RenderPassBuilder.hpp>
 #include <gbVk/Swapchain.hpp>
 
@@ -19,13 +19,13 @@
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
 
-Renderer::Renderer(GraphicsInstance& instance, GhulbusVulkan::Swapchain& swapchain)
-    :m_instance(&instance), m_target(nullptr),
-     m_rendererCommands(instance.getCommandPoolRegistry().allocateCommandBuffersGraphics(swapchain.getNumberOfImages())),
-     m_currentFrame(0), m_depthBuffer(createDepthBuffer(instance, swapchain.getWidth(), swapchain.getHeight())),
-     m_depthBufferImageView(createDepthBufferImageView(m_depthBuffer)),
-     m_renderPass(createRenderPass(instance, swapchain.getFormat(), m_depthBuffer.getFormat())),
-     m_framebuffers(createFramebuffers(instance, swapchain, m_renderPass, m_depthBufferImageView))
+Renderer::Renderer(GraphicsInstance& instance, Program& program, GhulbusVulkan::Swapchain& swapchain)
+    :m_instance(&instance), m_program(&program), m_swapchain(&swapchain), m_target(nullptr),
+    m_rendererCommands(instance.getCommandPoolRegistry().allocateCommandBuffersGraphics(swapchain.getNumberOfImages())),
+    m_currentFrame(0), m_depthBuffer(createDepthBuffer(instance, swapchain.getWidth(), swapchain.getHeight())),
+    m_depthBufferImageView(createDepthBufferImageView(m_depthBuffer)),
+    m_renderPass(createRenderPass(instance, swapchain.getFormat(), m_depthBuffer.getFormat())),
+    m_framebuffers(createFramebuffers(instance, swapchain, m_renderPass, m_depthBufferImageView))
 {}
 
 void Renderer::beginRender(Image2d& target_image)
@@ -37,6 +37,42 @@ void Renderer::beginRender(Image2d& target_image)
 void Renderer::endRender()
 {
     ++m_currentFrame;
+}
+
+uint32_t Renderer::addPipelineBuilder(GhulbusVulkan::PipelineLayout&& layout)
+{
+    m_pipelineBuilders.emplace_back(
+        m_instance->getVulkanDevice().createGraphicsPipelineBuilder(m_swapchain->getWidth(), m_swapchain->getHeight()),
+        std::move(layout));
+    return static_cast<uint32_t>(m_pipelineBuilders.size() - 1);
+}
+
+GhulbusVulkan::PipelineBuilder& Renderer::getPipelineBuilder(uint32_t index)
+{
+    GHULBUS_PRECONDITION((index >= 0) && (index < m_pipelineBuilders.size()));
+    return m_pipelineBuilders[index].builder;
+}
+
+GhulbusVulkan::PipelineLayout& Renderer::getPipelineLayout(uint32_t index)
+{
+    GHULBUS_PRECONDITION((index >= 0) && (index < m_pipelineBuilders.size()));
+    return m_pipelineBuilders[index].layout;
+}
+
+void Renderer::recreateAllPipelines()
+{
+    m_pipelines.clear();
+    for (auto& [builder, layout] : m_pipelineBuilders) {
+        m_pipelines.emplace_back(
+            builder.create(layout, m_program->getShaderStageCreateInfos(), m_program->getNumberOfShaderStages(),
+                           m_renderPass.getVkRenderPass()));
+    }
+}
+
+GhulbusVulkan::Pipeline& Renderer::getPipeline(uint32_t index)
+{
+    GHULBUS_PRECONDITION((index >= 0) && (index < m_pipelines.size()));
+    return m_pipelines[index];
 }
 
 GhulbusVulkan::RenderPass& Renderer::getRenderPass()
@@ -93,16 +129,4 @@ std::vector<GhulbusVulkan::Framebuffer> Renderer::createFramebuffers(GraphicsIns
 {
     return instance.getVulkanDevice().createFramebuffers(swapchain, render_pass, depth_image_view);
 }
-
-/*
-GhulbusVulkan::Pipeline createPipeline(GraphicsInstance& instance, uint32_t width, uint32_t height)
-{
-    GhulbusVulkan::PipelineBuilder builder = instance.getVulkanDevice().createGraphicsPipelineBuilder(width, height);
-    builder.addVertexBindings(&vertex_binding, 1, vertex_attributes.data(),
-                              static_cast<uint32_t>(vertex_attributes.size()));
-    return builder.create(pipeline_layout, shader_stage_cis.data(),
-                          static_cast<std::uint32_t>(shader_stage_cis.size()),
-                          render_pass.getVkRenderPass());
-}
-*/
 }
