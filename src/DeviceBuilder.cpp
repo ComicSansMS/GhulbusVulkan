@@ -21,6 +21,13 @@ void DeviceBuilder::addQueues(uint32_t queue_family, uint32_t n_queues_in_family
         it != queue_create_infos.end())
     {
         it->queueCount += n_queues_in_family;
+        // subsequent queues on same family decrease in priority.
+        // graphics queue > compute queue > transfer queue
+        // this has no effect if queues are on different unique families.
+        auto const current_queue_index = std::distance(queue_create_infos.begin(), it);
+        std::vector<float>& current_queue_priorities = queue_create_priorities[current_queue_index];
+        current_queue_priorities.push_back(current_queue_priorities.back() / 2.0f);
+        it->pQueuePriorities = current_queue_priorities.data();             // vector might have been invalidated
         return;
     }
     queue_create_infos.emplace_back();
