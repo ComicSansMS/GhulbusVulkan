@@ -35,19 +35,14 @@ public:
     };
     struct Layers {
         struct ActivateValidationLayers {};
-        bool KHRONOS_validation;
-        bool LUNARG_api_dump;
-        bool LUNARG_monitor;
         bool LUNARG_standard_validation;
         std::vector<char const*> additional_layers;
         Layers()
-            :KHRONOS_validation(false), LUNARG_api_dump(false), LUNARG_monitor(false),
-             LUNARG_standard_validation(false)
+            :LUNARG_standard_validation(false)
         {}
 
         Layers(ActivateValidationLayers)
-            :KHRONOS_validation(true), LUNARG_api_dump(false), LUNARG_monitor(false),
-             LUNARG_standard_validation(true)
+            :LUNARG_standard_validation(true)
         {}
 
         void addLayer(VkLayerProperties const& layer)
@@ -63,9 +58,6 @@ public:
         std::vector<char const*> getRequestedLayers() const
         {
             std::vector<char const*> requested_layers;
-            if(KHRONOS_validation) { requested_layers.push_back("VK_LAYER_KHRONOS_validation"); }
-            if(LUNARG_api_dump) { requested_layers.push_back("VK_LAYER_LUNARG_api_dump"); }
-            if(LUNARG_monitor) { requested_layers.push_back("VK_LAYER_LUNARG_monitor"); }
             if(LUNARG_standard_validation) { requested_layers.push_back("VK_LAYER_LUNARG_standard_validation"); }
             requested_layers.insert(end(requested_layers), begin(additional_layers), end(additional_layers));
             removeDuplicates(requested_layers);
@@ -110,6 +102,8 @@ public:
 #               endif
             }
             if (enable_debug_report_extension) { requested_extensions.push_back("VK_EXT_debug_report"); }
+            /// @todo support for VK_EXT_debug_utils
+            ///       https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VK_EXT_debug_utils
             requested_extensions.insert(end(requested_extensions),
                                         begin(additional_extensions), end(additional_extensions));
             removeDuplicates(requested_extensions);
