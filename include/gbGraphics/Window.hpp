@@ -18,6 +18,7 @@
 #include <gbVk/Swapchain.hpp>
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -27,6 +28,13 @@ namespace GHULBUS_GRAPHICS_NAMESPACE
 class GraphicsInstance;
 
 class Window {
+public:
+    enum class [[nodiscard]] PresentStatus {
+        Ok = 0,
+        InvalidBackbuffer,              ///< the backbuffer needs to be recreated
+        InvalidBackbufferLostFrame      ///< the backbuffer needs to be recreated *and* the last frame due for presentation was lost
+    };
+    using RecreateSwapchainCallback = std::function<void(GhulbusVulkan::Swapchain&)>;
 private:
     struct Backbuffer {
         GhulbusVulkan::Swapchain::AcquiredImage image;
@@ -44,6 +52,7 @@ private:
     GhulbusVulkan::SubmitStaging m_windowSubmits;
     GhulbusVulkan::Queue* m_presentQueue;
     GhulbusVulkan::Fence m_presentFence;
+    std::vector<RecreateSwapchainCallback> m_recreateCallbacks;
 public:
     Window(GraphicsInstance& instance, int width, int height, char8_t const* window_title);
     ~Window();
@@ -53,9 +62,9 @@ public:
     uint32_t getWidth() const;
     uint32_t getHeight() const;
 
-    void present();
+    PresentStatus present();
 
-    void present(GhulbusVulkan::Semaphore& semaphore);
+    PresentStatus present(GhulbusVulkan::Semaphore& semaphore);
 
     uint32_t getNumberOfImagesInSwapchain() const;
 
@@ -67,6 +76,9 @@ public:
 
     ///@todo remove?
     GhulbusVulkan::Swapchain::AcquiredImage& getAcquiredImage();
+
+    void addRecreateSwapchainCallback(RecreateSwapchainCallback cb);
+    void recreateSwapchain();
 
 private:
     void prepareBackbuffer();

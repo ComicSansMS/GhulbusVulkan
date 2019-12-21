@@ -7,10 +7,12 @@
 #include <gbBase/Assert.hpp>
 #include <gbBase/Finally.hpp>
 #include <gbBase/UnusedVariable.hpp>
+#include <gbBase/Log.hpp>
 
 #include <gbVk/CommandBuffer.hpp>
 #include <gbVk/CommandBuffers.hpp>
 #include <gbVk/Device.hpp>
+#include <gbVk/Exceptions.hpp>
 #include <gbVk/Instance.hpp>
 #include <gbVk/SubmitStaging.hpp>
 #include <gbVk/Queue.hpp>
@@ -28,6 +30,7 @@ struct Window::GLFW_Pimpl {
     GLFWwindow* window;
     VkSurfaceKHR surface;
     GhulbusGraphics::GraphicsInstance* graphics_instance;
+    std::optional<VkExtent2D> resized_to;
 
     GLFW_Pimpl(GraphicsInstance& instance, uint32_t width, uint32_t height, char8_t const* window_title)
         :window(nullptr), surface(nullptr), graphics_instance(nullptr)
@@ -35,7 +38,7 @@ struct Window::GLFW_Pimpl {
         GHULBUS_PRECONDITION(width > 0);
         GHULBUS_PRECONDITION(height > 0);
 
-        glfwWindowHint(GLFW_RESIZABLE, 0);
+        glfwWindowHint(GLFW_RESIZABLE, 1);
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
         window = glfwCreateWindow(width, height, reinterpret_cast<char const*>(window_title), nullptr, nullptr);
@@ -71,6 +74,13 @@ struct Window::GLFW_Pimpl {
         thisptr->keyCallback(key, scancode, action, mods);
     }
 
+    static void static_resizeCallback(GLFWwindow* window, int width, int height)
+    {
+        GLFW_Pimpl* thisptr = reinterpret_cast<GLFW_Pimpl*>(glfwGetWindowUserPointer(window));
+        GHULBUS_ASSERT(thisptr->window == window);
+        thisptr->resizeCallback(width, height);
+    }
+
     void keyCallback(int key, int scancode, int action, int mods)
     {
         GHULBUS_UNUSED_VARIABLE(scancode);
@@ -79,6 +89,12 @@ struct Window::GLFW_Pimpl {
         if (key == GLFW_KEY_ESCAPE) {
             glfwSetWindowShouldClose(window, true);
         }
+    }
+
+    void resizeCallback(int width, int height)
+    {
+        GHULBUS_LOG(Trace, "Resize: " << width << "x" << height);
+        resized_to = VkExtent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
     }
 };
 
@@ -112,12 +128,12 @@ uint32_t Window::getHeight() const
     return m_height;
 }
 
-void Window::present()
+Window::PresentStatus Window::present()
 {
-    present(m_backBuffer->semaphore);
+    return present(m_backBuffer->semaphore);
 }
 
-void Window::present(GhulbusVulkan::Semaphore& semaphore)
+Window::PresentStatus Window::present(GhulbusVulkan::Semaphore& semaphore)
 {
     GHULBUS_PRECONDITION(m_backBuffer);
     m_backBuffer->fence.wait();
@@ -127,10 +143,21 @@ void Window::present(GhulbusVulkan::Semaphore& semaphore)
     m_windowSubmits = GhulbusVulkan::SubmitStaging{};
     m_presentFence.reset();
     m_presentQueue->submitAllStaged(m_presentFence);
-    m_swapchain.present(m_presentQueue->getVkQueue(), semaphore, std::move(m_backBuffer->image));
+    try {
+        m_swapchain.present(m_presentQueue->getVkQueue(), semaphore, std::move(m_backBuffer->image));
+    } catch(GhulbusVulkan::Exceptions::VulkanError const& e) {
+        VkResult const* const res = boost::get_error_info<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
+        if(!res || ((*res != VK_ERROR_OUT_OF_DATE_KHR) && (*res != VK_SUBOPTIMAL_KHR))) { throw; }
+        // we lost the back buffer; we'll have to recreate everything
+        m_backBuffer.reset();
+        return PresentStatus::InvalidBackbufferLostFrame;
+    }
 
     m_presentFence.wait();
+    if (m_glfw->resized_to) { m_backBuffer.reset(); return PresentStatus::InvalidBackbuffer; }
     prepareBackbuffer();
+    if(!m_backBuffer) { return PresentStatus::InvalidBackbuffer; }
+    return PresentStatus::Ok;
 }
 
 uint32_t Window::getNumberOfImagesInSwapchain() const
@@ -158,6 +185,23 @@ GhulbusVulkan::Swapchain::AcquiredImage& Window::getAcquiredImage()
     return m_backBuffer->image;
 }
 
+void Window::addRecreateSwapchainCallback(RecreateSwapchainCallback cb)
+{
+    GHULBUS_PRECONDITION(cb);
+    m_recreateCallbacks.push_back(cb);
+}
+
+void Window::recreateSwapchain()
+{
+    GhulbusGraphics::GraphicsInstance& instance = *m_glfw->graphics_instance;
+    GhulbusVulkan::Device& device = instance.getVulkanDevice();
+    device.waitIdle();
+    m_presentFence.reset();
+    m_swapchain.recreate(device);
+    prepareBackbuffer();
+    m_glfw->resized_to = std::nullopt;
+}
+
 void Window::prepareBackbuffer()
 {
     if (!m_backBuffer) {
@@ -167,7 +211,22 @@ void Window::prepareBackbuffer()
         m_backBuffer.emplace(Backbuffer{ std::move(image), std::move(f), std::move(s) });
     } else {
         m_backBuffer->fence.reset();
-        m_backBuffer->image = m_swapchain.acquireNextImage(m_backBuffer->fence, m_backBuffer->semaphore);
+        try {
+            m_backBuffer->image = m_swapchain.acquireNextImage(m_backBuffer->fence, m_backBuffer->semaphore);
+        } catch(GhulbusVulkan::Exceptions::VulkanError const& e) {
+            VkResult const* const res = boost::get_error_info<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
+            if(!res || ((*res != VK_ERROR_OUT_OF_DATE_KHR) && (*res != VK_SUBOPTIMAL_KHR))) { throw; }
+            if(*res == VK_SUBOPTIMAL_KHR) {
+                // layout is suboptimal for presentation, but we can still finish the frame.
+                // this will be fixed after present()
+                return;
+            } else {
+                // we lost the back buffer; we'll have to recreate everything
+                GHULBUS_ASSERT(*res == VK_ERROR_OUT_OF_DATE_KHR);
+                m_backBuffer.reset();
+                return;
+            }
+        }
     }
 }
 }

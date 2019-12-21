@@ -1,5 +1,6 @@
 #include <gbVk/Swapchain.hpp>
 
+#include <gbVk/Device.hpp>
 #include <gbVk/Exceptions.hpp>
 #include <gbVk/Fence.hpp>
 #include <gbVk/ImageView.hpp>
@@ -61,8 +62,9 @@ uint32_t Swapchain::AcquiredImage::getSwapchainIndex() const
     return m_swapchainIndex;
 }
 
-Swapchain::Swapchain(VkDevice logical_device, VkSwapchainKHR swapchain, VkExtent2D const& extent, VkFormat format)
-    :m_swapchain(swapchain), m_device(logical_device)
+Swapchain::Swapchain(VkDevice logical_device, VkSwapchainKHR swapchain, VkExtent2D const& extent, VkFormat format,
+                     VkSurfaceKHR surface, uint32_t queue_family)
+    :m_swapchain(swapchain), m_device(logical_device), m_surface(surface), m_queueFamily(queue_family)
 {
     uint32_t image_count;
     VkResult res = vkGetSwapchainImagesKHR(m_device, m_swapchain, &image_count, nullptr);
@@ -90,10 +92,13 @@ Swapchain::~Swapchain()
 }
 
 Swapchain::Swapchain(Swapchain&& rhs)
-    :m_swapchain(rhs.m_swapchain), m_device(rhs.m_device), m_images(std::move(rhs.m_images))
+    :m_swapchain(rhs.m_swapchain), m_device(rhs.m_device), m_images(std::move(rhs.m_images)),
+     m_surface(rhs.m_surface), m_queueFamily(rhs.m_queueFamily)
 {
     rhs.m_swapchain = nullptr;
     rhs.m_device = nullptr;
+    rhs.m_surface = nullptr;
+    rhs.m_queueFamily = VK_QUEUE_FAMILY_IGNORED;
 }
 
 Swapchain& Swapchain::operator=(Swapchain&& rhs)
@@ -103,7 +108,12 @@ Swapchain& Swapchain::operator=(Swapchain&& rhs)
         m_swapchain = rhs.m_swapchain;
         m_device = rhs.m_device;
         m_images = std::move(rhs.m_images);
+        m_surface = rhs.m_surface;
+        m_queueFamily = rhs.m_queueFamily;
         rhs.m_swapchain = nullptr;
+        rhs.m_device = nullptr;
+        rhs.m_surface = nullptr;
+        rhs.m_queueFamily = VK_QUEUE_FAMILY_IGNORED;
     }
     return *this;
 }
@@ -226,5 +236,11 @@ void Swapchain::present_impl(VkQueue queue, Semaphore* semaphore, AcquiredImage&
     present_info.pResults = nullptr;
     VkResult res = vkQueuePresentKHR(queue, &present_info);
     checkVulkanError(res, "Error in vkQueuePresentKHR.");
+}
+
+void Swapchain::recreate(GhulbusVulkan::Device& device)
+{
+    Swapchain new_swapchain = device.createSwapchain(m_surface, m_queueFamily, m_swapchain);
+    *this = std::move(new_swapchain);
 }
 }

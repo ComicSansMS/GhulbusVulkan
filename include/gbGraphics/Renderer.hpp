@@ -22,6 +22,7 @@
 #include <gbVk/Semaphore.hpp>
 
 #include <functional>
+#include <optional>
 #include <vector>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
@@ -43,16 +44,23 @@ private:
             :builder(std::move(b)), layout(std::move(l))
         {}
     };
+    struct RendererState {
+        GenericImage depthBuffer;
+        GhulbusVulkan::ImageView depthBufferImageView;
+        GhulbusVulkan::RenderPass renderPass;
+        std::vector<GhulbusVulkan::Framebuffer> framebuffers;
+
+        RendererState(GenericImage&& depth_buffer, GhulbusVulkan::ImageView&& depth_buffer_image_view,
+                      GhulbusVulkan::RenderPass&& render_pass, std::vector<GhulbusVulkan::Framebuffer> n_framebuffers);
+        RendererState(RendererState&&) = default;
+    };
 private:
     GraphicsInstance* m_instance;
     Program* m_program;
     GhulbusVulkan::Swapchain* m_swapchain;
     Image2d* m_target;
     GhulbusVulkan::CommandBuffers m_commandBuffers;
-    GenericImage m_depthBuffer;
-    GhulbusVulkan::ImageView m_depthBufferImageView;
-    GhulbusVulkan::RenderPass m_renderPass;
-    std::vector<GhulbusVulkan::Framebuffer> m_framebuffers;
+    std::optional<RendererState> m_state;
     std::vector<PipelineBuildingBlocks> m_pipelineBuilders;
     std::vector<GhulbusVulkan::Pipeline> m_pipelines;
     GhulbusVulkan::Semaphore m_renderFinishedSemaphore;
@@ -84,6 +92,7 @@ private:
                                    GhulbusVulkan::RenderPass& render_pass,
                                    GhulbusVulkan::ImageView& depth_image_view)
         -> std::vector<GhulbusVulkan::Framebuffer>;
+    static RendererState createRendererState(GraphicsInstance& instance, GhulbusVulkan::Swapchain& swapchain);
     uint32_t getCommandBufferIndex(uint32_t pipeline_index, uint32_t target_index) const;
 };
 }

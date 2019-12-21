@@ -23,12 +23,10 @@ namespace GHULBUS_GRAPHICS_NAMESPACE
 
 Renderer::Renderer(GraphicsInstance& instance, Program& program, GhulbusVulkan::Swapchain& swapchain)
     :m_instance(&instance), m_program(&program), m_swapchain(&swapchain), m_target(nullptr),
-    m_depthBuffer(createDepthBuffer(instance, swapchain.getWidth(), swapchain.getHeight())),
-    m_depthBufferImageView(createDepthBufferImageView(m_depthBuffer)),
-    m_renderPass(createRenderPass(instance, swapchain.getFormat(), m_depthBuffer.getFormat())),
-    m_framebuffers(createFramebuffers(instance, swapchain, m_renderPass, m_depthBufferImageView)),
-    m_renderFinishedSemaphore(instance.getVulkanDevice().createSemaphore())
-{}
+     m_state(createRendererState(instance, swapchain)),
+     m_renderFinishedSemaphore(instance.getVulkanDevice().createSemaphore())
+{
+}
 
 uint32_t Renderer::addPipelineBuilder(GhulbusVulkan::PipelineLayout&& layout)
 {
@@ -54,17 +52,18 @@ GhulbusVulkan::PipelineLayout& Renderer::getPipelineLayout(uint32_t index)
 
 void Renderer::recreateAllPipelines()
 {
+    GHULBUS_PRECONDITION(m_state);
     m_pipelines.clear();
     for (auto& [builder, layout] : m_pipelineBuilders) {
         m_pipelines.emplace_back(
             builder.create(layout, m_program->getShaderStageCreateInfos(), m_program->getNumberOfShaderStages(),
-                           m_renderPass.getVkRenderPass()));
+                           m_state->renderPass.getVkRenderPass()));
     }
     uint32_t const n_pipelines = static_cast<uint32_t>(m_pipelineBuilders.size());
     uint32_t const n_targets = m_swapchain->getNumberOfImages();
     m_commandBuffers = m_instance->getCommandPoolRegistry().allocateCommandBuffersGraphics(n_targets * n_pipelines);
     GHULBUS_ASSERT(m_pipelineBuilders.size() == m_drawRecordings.size());
-    GHULBUS_ASSERT(m_framebuffers.size() == n_targets);
+    GHULBUS_ASSERT(m_state->framebuffers.size() == n_targets);
     for (uint32_t pipeline_index = 0; pipeline_index < n_pipelines; ++pipeline_index) {
         for(uint32_t target_index = 0; target_index < n_targets; ++target_index) {
             GhulbusVulkan::CommandBuffer& command_buffer =
@@ -75,8 +74,8 @@ void Renderer::recreateAllPipelines()
             VkRenderPassBeginInfo render_pass_info;
             render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             render_pass_info.pNext = nullptr;
-            render_pass_info.renderPass = m_renderPass.getVkRenderPass();
-            render_pass_info.framebuffer = m_framebuffers[target_index].getVkFramebuffer();
+            render_pass_info.renderPass = m_state->renderPass.getVkRenderPass();
+            render_pass_info.framebuffer = m_state->framebuffers[target_index].getVkFramebuffer();
             render_pass_info.renderArea.offset.x = 0;
             render_pass_info.renderArea.offset.y = 0;
             render_pass_info.renderArea.extent.width = m_swapchain->getWidth();
@@ -119,7 +118,14 @@ void Renderer::render(uint32_t pipeline_index, Window& target_window)
     loop_stage.addSignalingSemaphore(m_renderFinishedSemaphore);
     m_instance->getGraphicsQueue().stageSubmission(std::move(loop_stage));
 
-    target_window.present(m_renderFinishedSemaphore);
+    Window::PresentStatus const present_status = target_window.present(m_renderFinishedSemaphore);
+
+    if(present_status != Window::PresentStatus::Ok) {
+        target_window.recreateSwapchain();
+        m_state.reset();
+        m_state.emplace(createRendererState(*m_instance, *m_swapchain));
+        recreateAllPipelines();
+    }
     m_instance->getGraphicsQueue().clearAllStaged();
 }
 
@@ -139,13 +145,15 @@ uint32_t Renderer::recordDrawCommands(uint32_t pipeline_index, DrawRecordingCall
 
 GhulbusVulkan::RenderPass& Renderer::getRenderPass()
 {
-    return m_renderPass;
+    GHULBUS_PRECONDITION(m_state);
+    return m_state->renderPass;
 }
 
 GhulbusVulkan::Framebuffer& Renderer::getFramebufferByIndex(uint32_t idx)
 {
-    GHULBUS_PRECONDITION((idx >= 0) && (idx < m_framebuffers.size()));
-    return m_framebuffers[idx];
+    GHULBUS_PRECONDITION((idx >= 0) && (idx < m_state->framebuffers.size()));
+    GHULBUS_PRECONDITION(m_state);
+    return m_state->framebuffers[idx];
 }
 
 GenericImage Renderer::createDepthBuffer(GraphicsInstance& instance, uint32_t width, uint32_t height)
@@ -196,5 +204,26 @@ uint32_t Renderer::getCommandBufferIndex(uint32_t pipeline_index, uint32_t targe
 {
     uint32_t const n_targets = m_swapchain->getNumberOfImages();
     return (pipeline_index * n_targets) + target_index;
+}
+
+Renderer::RendererState::RendererState(GenericImage&& depth_buffer, GhulbusVulkan::ImageView&& depth_buffer_image_view,
+                                       GhulbusVulkan::RenderPass&& render_pass,
+                                       std::vector<GhulbusVulkan::Framebuffer> n_framebuffers)
+    :depthBuffer(std::move(depth_buffer)), depthBufferImageView(std::move(depth_buffer_image_view)),
+     renderPass(std::move(render_pass)), framebuffers(std::move(n_framebuffers))
+{}
+
+Renderer::RendererState Renderer::createRendererState(GraphicsInstance& instance,
+                                                      GhulbusVulkan::Swapchain& swapchain)
+{
+    GhulbusGraphics::GenericImage depth_buffer =
+        createDepthBuffer(instance, swapchain.getWidth(), swapchain.getHeight());
+    GhulbusVulkan::ImageView image_view = createDepthBufferImageView(depth_buffer);
+    GhulbusVulkan::RenderPass render_pass =
+        createRenderPass(instance, swapchain.getFormat(), depth_buffer.getFormat());
+    std::vector<GhulbusVulkan::Framebuffer> framebuffers =
+        createFramebuffers(instance, swapchain, render_pass, image_view);
+    return RendererState(std::move(depth_buffer), std::move(image_view),
+                         std::move(render_pass), std::move(framebuffers));
 }
 }

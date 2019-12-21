@@ -59,6 +59,7 @@ public:
     PhysicalDevice getPhysicalDevice();
 
     Swapchain createSwapchain(VkSurfaceKHR surface, uint32_t queue_family);
+    Swapchain createSwapchain(VkSurfaceKHR surface, uint32_t queue_family, VkSwapchainKHR old_swapchain);
 
     Fence createFence();
 

@@ -224,7 +224,10 @@ int main()
     drawToBackbuffer(graphics_instance, main_window);
 
     // presentation
-    main_window.present();
+    if(main_window.present() != GhulbusGraphics::Window::PresentStatus::Ok) {
+        GHULBUS_LOG(Error, "Error during initial present.");
+        return 1;
+    }
 
     graphics_instance.getGraphicsQueue().clearAllStaged();
 
@@ -434,8 +437,6 @@ int main()
     renderer.recreateAllPipelines();
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Main setup");
-
-    GhulbusVulkan::Semaphore semaphore_render_finished = device.createSemaphore();
 
     transfer_fence.wait();
     graphics_instance.getTransferQueue().clearAllStaged();

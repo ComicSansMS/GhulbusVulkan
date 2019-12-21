@@ -19,6 +19,7 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+class Device;
 class Fence;
 class ImageView;
 class Semaphore;
@@ -53,8 +54,11 @@ private:
     VkSwapchainKHR m_swapchain;
     VkDevice m_device;
     std::vector<Image> m_images;
+    VkSurfaceKHR m_surface;
+    uint32_t m_queueFamily;
 public:
-    Swapchain(VkDevice logical_device, VkSwapchainKHR swapchain, VkExtent2D const& extent, VkFormat format);
+    Swapchain(VkDevice logical_device, VkSwapchainKHR swapchain, VkExtent2D const& extent, VkFormat format,
+              VkSurfaceKHR surface, uint32_t queue_family);
 
     ~Swapchain();
 
@@ -93,6 +97,8 @@ public:
     void present(VkQueue queue, AcquiredImage&& image);
 
     void present(VkQueue queue, Semaphore& semaphore, AcquiredImage&& image);
+
+    void recreate(GhulbusVulkan::Device& device);
 
 private:
     AcquiredImage acquireNextImage_impl(Fence* fence, Semaphore* semaphore, std::chrono::nanoseconds* timeout);

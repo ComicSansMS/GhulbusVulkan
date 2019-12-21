@@ -61,6 +61,11 @@ PhysicalDevice Device::getPhysicalDevice()
 
 Swapchain Device::createSwapchain(VkSurfaceKHR surface, uint32_t queue_family)
 {
+    return createSwapchain(surface, queue_family, nullptr);
+}
+
+Swapchain Device::createSwapchain(VkSurfaceKHR surface, uint32_t queue_family, VkSwapchainKHR old_swapchain)
+{
     VkBool32 is_supported;
     VkResult res = vkGetPhysicalDeviceSurfaceSupportKHR(m_physicalDevice, queue_family, surface, &is_supported);
     checkVulkanError(res, "Error in vkGetPhysicalDeviceSurfaceSupportKHR.");
@@ -118,13 +123,13 @@ Swapchain Device::createSwapchain(VkSurfaceKHR surface, uint32_t queue_family)
     create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     create_info.presentMode = VK_PRESENT_MODE_FIFO_KHR;
     create_info.clipped = VK_FALSE;
-    create_info.oldSwapchain = nullptr;
+    create_info.oldSwapchain = old_swapchain;
 
     VkSwapchainKHR swapchain;
     res = vkCreateSwapchainKHR(m_device, &create_info, nullptr, &swapchain);
     checkVulkanError(res, "Error in vkCreateSwapchainKHR.");
 
-    return Swapchain(m_device, swapchain, create_info.imageExtent, create_info.imageFormat);
+    return Swapchain(m_device, swapchain, create_info.imageExtent, create_info.imageFormat, surface, queue_family);
 }
 
 Fence Device::createFence()
