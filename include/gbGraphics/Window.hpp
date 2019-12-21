@@ -46,7 +46,7 @@ private:
     int m_height;
     struct GLFW_Pimpl;
     std::unique_ptr<GLFW_Pimpl> m_glfw;
-    std::optional<Backbuffer> m_backBuffer;         // this must be destroyed after m_swapchain to avoid races on the semaphore in Backbuffer
+    std::optional<Backbuffer> m_backBuffer;         // this must be destroyed *after* m_swapchain to avoid races on the semaphore in Backbuffer
     GhulbusVulkan::Swapchain m_swapchain;
     GhulbusVulkan::CommandBuffers m_presentCommandBuffers;
     GhulbusVulkan::SubmitStaging m_windowSubmits;

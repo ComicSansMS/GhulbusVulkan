@@ -7,7 +7,6 @@
 #include <gbBase/Assert.hpp>
 #include <gbBase/Finally.hpp>
 #include <gbBase/UnusedVariable.hpp>
-#include <gbBase/Log.hpp>
 
 #include <gbVk/CommandBuffer.hpp>
 #include <gbVk/CommandBuffers.hpp>
@@ -55,6 +54,7 @@ struct Window::GLFW_Pimpl {
 
         glfwSetWindowUserPointer(window, this);
         glfwSetKeyCallback(window, GLFW_Pimpl::static_keyCallback);
+        glfwSetFramebufferSizeCallback(window, GLFW_Pimpl::static_resizeCallback);
     }
 
     ~GLFW_Pimpl()
@@ -93,7 +93,6 @@ struct Window::GLFW_Pimpl {
 
     void resizeCallback(int width, int height)
     {
-        GHULBUS_LOG(Trace, "Resize: " << width << "x" << height);
         resized_to = VkExtent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
     }
 };
@@ -200,6 +199,7 @@ void Window::recreateSwapchain()
     m_swapchain.recreate(device);
     prepareBackbuffer();
     m_glfw->resized_to = std::nullopt;
+    for(auto const& cb : m_recreateCallbacks) { cb(m_swapchain); }
 }
 
 void Window::prepareBackbuffer()

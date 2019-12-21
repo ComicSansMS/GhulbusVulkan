@@ -285,7 +285,17 @@ int main()
 
     auto timestamp = std::chrono::steady_clock::now();
     UBOMVP ubo_data;
-    auto update_uniform_buffer = [&timestamp, &ubo_data, &ubo_buffers, WINDOW_WIDTH, WINDOW_HEIGHT](uint32_t index) {
+    struct ViewportDimensions {
+        float width;
+        float height;
+    } viewport_dimensions;
+    viewport_dimensions.width = static_cast<float>(main_window.getWidth());
+    viewport_dimensions.height = static_cast<float>(main_window.getHeight());
+    main_window.addRecreateSwapchainCallback([&viewport_dimensions](GhulbusVulkan::Swapchain& swapchain) {
+        viewport_dimensions.width = static_cast<float>(swapchain.getWidth());
+        viewport_dimensions.height = static_cast<float>(swapchain.getHeight());
+    });
+    auto update_uniform_buffer = [&timestamp, &ubo_data, &ubo_buffers, &viewport_dimensions](uint32_t index) {
         auto const t = std::chrono::steady_clock::now();
         float const time = std::chrono::duration<float>(t - timestamp).count();
         ubo_data.model = GhulbusMath::make_rotation((GhulbusMath::traits::Pi<float>::value / 2.f) * time,
@@ -295,7 +305,7 @@ int main()
             GhulbusMath::Vector3f(0.0f, 0.0f, 1.0f)).m;
         ubo_data.projection = GhulbusMath::make_perspective_projection_fov(
             (GhulbusMath::traits::Pi<float>::value / 4.f),
-            static_cast<float>(WINDOW_WIDTH) / static_cast<float>(WINDOW_HEIGHT), 0.1f, 10.f).m;
+            viewport_dimensions.width / viewport_dimensions.height, 0.1f, 10.f).m;
 
         // correct for vulkan screen coordinate origin being upper left, instead of lower left
         ubo_data.projection.m22 *= -1.f;
