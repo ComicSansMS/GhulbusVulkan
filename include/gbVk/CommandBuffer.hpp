@@ -27,7 +27,7 @@ private:
     uint32_t m_queueFamilyIndex;
 public:
     explicit CommandBuffer(VkCommandBuffer command_buffer, uint32_t queue_family_index);
-    ~CommandBuffer();
+    ~CommandBuffer() = default;
 
     CommandBuffer(CommandBuffer const&) = delete;
     CommandBuffer& operator=(CommandBuffer const&) = delete;

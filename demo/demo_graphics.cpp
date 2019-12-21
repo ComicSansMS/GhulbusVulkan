@@ -66,7 +66,7 @@
 void drawToBackbuffer(GhulbusGraphics::GraphicsInstance& graphics_instance, GhulbusGraphics::Window& main_window)
 {
     auto command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
-    auto command_buffer = command_buffers.getCommandBuffer(0);
+    auto& command_buffer = command_buffers.getCommandBuffer(0);
 
     auto& swapchain_image = main_window.getAcquiredImage();
 
@@ -314,7 +314,7 @@ int main()
     {
         GhulbusVulkan::SubmitStaging graphics_transfer_sync;
         auto sync_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
-        auto sync_command_buffer = sync_command_buffers.getCommandBuffer(0);
+        auto& sync_command_buffer = sync_command_buffers.getCommandBuffer(0);
         sync_command_buffer.begin();
         vertex_buffer.getBuffer().transitionAcquire(sync_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                                     VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
@@ -413,58 +413,25 @@ int main()
     GhulbusVulkan::PipelineLayout& pipeline_layout = renderer.getPipelineLayout(0);
     renderer.getPipelineBuilder(0).addVertexBindings(&vertex_binding, 1, vertex_attributes.data(),
                                                      static_cast<uint32_t>(vertex_attributes.size()));
+
+    renderer.recordDrawCommands(0,
+        [&ubo_descriptor_sets, &pipeline_layout, &vertex_buffer, &index_buffer, &mesh]
+        (GhulbusVulkan::CommandBuffer& command_buffer, uint32_t i)
+        {
+            VkDescriptorSet desc_set_i = ubo_descriptor_sets.getDescriptorSet(i).getVkDescriptorSet();
+            vkCmdBindDescriptorSets(command_buffer.getVkCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                pipeline_layout.getVkPipelineLayout(), 0, 1, &desc_set_i, 0, nullptr);
+
+            VkBuffer vertexBuffers[] = { vertex_buffer.getBuffer().getVkBuffer() };
+            VkDeviceSize offsets[] = { 0 };
+            vkCmdBindVertexBuffers(command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(command_buffer.getVkCommandBuffer(), index_buffer.getBuffer().getVkBuffer(),
+                0, VK_INDEX_TYPE_UINT32);
+            auto const nindices = mesh.getNumberOfIndices();
+            auto const nvertices = mesh.getNumberOfVertices();
+            vkCmdDrawIndexed(command_buffer.getVkCommandBuffer(), mesh.getNumberOfIndices(), 1, 0, 0, 0);
+        });
     renderer.recreateAllPipelines();
-    GhulbusVulkan::Pipeline& pipeline = renderer.getPipeline(0);
-
-
-    GhulbusVulkan::CommandBuffers triangle_draw_command_buffers =
-        graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics(swapchain_n_images);
-
-    for(uint32_t i = 0; i < triangle_draw_command_buffers.size(); ++i) {
-        auto local_command_buffer = triangle_draw_command_buffers.getCommandBuffer(i);
-        local_command_buffer.begin(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
-
-        VkRenderPassBeginInfo render_pass_info;
-        render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        render_pass_info.pNext = nullptr;
-        render_pass_info.renderPass = renderer.getRenderPass().getVkRenderPass();
-        render_pass_info.framebuffer = renderer.getFramebufferByIndex(i).getVkFramebuffer();
-        render_pass_info.renderArea.offset.x = 0;
-        render_pass_info.renderArea.offset.y = 0;
-        render_pass_info.renderArea.extent.width = main_window.getWidth();
-        render_pass_info.renderArea.extent.height = main_window.getHeight();
-        std::array<VkClearValue, 2> clear_color;
-        clear_color[0].color.float32[0] = 0.5f;
-        clear_color[0].color.float32[1] = 0.f;
-        clear_color[0].color.float32[2] = 0.5f;
-        clear_color[0].color.float32[3] = 1.f;
-        clear_color[1].depthStencil.depth = 1.0f;
-        clear_color[1].depthStencil.stencil = 0;
-        render_pass_info.clearValueCount = static_cast<uint32_t>(clear_color.size());
-        render_pass_info.pClearValues = clear_color.data();
-
-        vkCmdBeginRenderPass(local_command_buffer.getVkCommandBuffer(),
-                             &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdBindPipeline(local_command_buffer.getVkCommandBuffer(),
-                          VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getVkPipeline());
-
-        VkDescriptorSet desc_set_i = ubo_descriptor_sets.getDescriptorSet(i).getVkDescriptorSet();
-        vkCmdBindDescriptorSets(local_command_buffer.getVkCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                pipeline_layout.getVkPipelineLayout(), 0, 1, &desc_set_i, 0, nullptr);
-
-        VkBuffer vertexBuffers[] = { vertex_buffer.getBuffer().getVkBuffer() };
-        VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(local_command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(local_command_buffer.getVkCommandBuffer(), index_buffer.getBuffer().getVkBuffer(),
-                             0, VK_INDEX_TYPE_UINT32);
-        auto const nindices = mesh.getNumberOfIndices();
-        auto const nvertices = mesh.getNumberOfVertices();
-        vkCmdDrawIndexed(local_command_buffer.getVkCommandBuffer(), mesh.getNumberOfIndices(),
-                         1, 0, 0, 0);
-
-        vkCmdEndRenderPass(local_command_buffer.getVkCommandBuffer());
-        local_command_buffer.end();
-    }
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Main setup");
 
@@ -481,16 +448,7 @@ int main()
 
         uint32_t frame_image_idx = main_window.getCurrentImageSwapchainIndex();
         update_uniform_buffer(frame_image_idx);
-        {
-            GhulbusVulkan::SubmitStaging loop_stage;
-            loop_stage.addWaitingSemaphore(main_window.getCurrentImageAcquireSemaphore(),
-                                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-            auto command_buffer = triangle_draw_command_buffers.getCommandBuffer(frame_image_idx);
-            loop_stage.addCommandBuffer(command_buffer);
-            loop_stage.addSignalingSemaphore(semaphore_render_finished);
-            graphics_instance.getGraphicsQueue().stageSubmission(std::move(loop_stage));
-        }
-        main_window.present(semaphore_render_finished);
-        graphics_instance.getGraphicsQueue().clearAllStaged();
+
+        renderer.render(0, main_window);
     }
 }

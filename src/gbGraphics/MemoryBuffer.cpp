@@ -64,7 +64,7 @@ GhulbusVulkan::SubmitStaging MemoryBuffer::setDataAsynchronously(std::byte const
         std::memcpy(mapped_mem, data, m_size);
     }
     auto command_buffers = m_instance->getCommandPoolRegistry().allocateCommandBuffersTransfer_Transient(1);
-    auto command_buffer = command_buffers.getCommandBuffer(0);
+    auto& command_buffer = command_buffers.getCommandBuffer(0);
 
     command_buffer.begin();
     VkBufferCopy buffer_copy;

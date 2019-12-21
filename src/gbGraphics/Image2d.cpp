@@ -78,7 +78,7 @@ GhulbusVulkan::SubmitStaging Image2d::setDataAsynchronously(std::byte const* dat
         std::memcpy(mapped_mem, data, texture_size);
     }
     auto command_buffers = instance.getCommandPoolRegistry().allocateCommandBuffersTransfer_Transient(1);
-    auto command_buffer = command_buffers.getCommandBuffer(0);
+    auto& command_buffer = command_buffers.getCommandBuffer(0);
 
     GhulbusVulkan::Image& image = m_genImage.getImage();
 

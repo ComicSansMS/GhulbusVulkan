@@ -19,7 +19,9 @@
 #include <gbVk/PipelineBuilder.hpp>
 #include <gbVk/PipelineLayout.hpp>
 #include <gbVk/RenderPass.hpp>
+#include <gbVk/Semaphore.hpp>
 
+#include <functional>
 #include <vector>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
@@ -27,8 +29,11 @@ namespace GHULBUS_GRAPHICS_NAMESPACE
 class GraphicsInstance;
 class Image2d;
 class Program;
+class Window;
 
 class Renderer {
+public:
+    using DrawRecordingCallback = std::function<void(GhulbusVulkan::CommandBuffer&, uint32_t)>;
 private:
     struct PipelineBuildingBlocks {
         GhulbusVulkan::PipelineBuilder builder;
@@ -43,25 +48,28 @@ private:
     Program* m_program;
     GhulbusVulkan::Swapchain* m_swapchain;
     Image2d* m_target;
-    GhulbusVulkan::CommandBuffers m_rendererCommands;
-    uint32_t m_currentFrame;
+    GhulbusVulkan::CommandBuffers m_commandBuffers;
     GenericImage m_depthBuffer;
     GhulbusVulkan::ImageView m_depthBufferImageView;
     GhulbusVulkan::RenderPass m_renderPass;
     std::vector<GhulbusVulkan::Framebuffer> m_framebuffers;
     std::vector<PipelineBuildingBlocks> m_pipelineBuilders;
     std::vector<GhulbusVulkan::Pipeline> m_pipelines;
+    GhulbusVulkan::Semaphore m_renderFinishedSemaphore;
+
+    std::vector<std::vector<DrawRecordingCallback>> m_drawRecordings;   ///< one vector per pipeline
 public:
     Renderer(GraphicsInstance& instance, Program& program, GhulbusVulkan::Swapchain& swapchain);
-
-    void beginRender(Image2d& target_image);
-    void endRender();
 
     uint32_t addPipelineBuilder(GhulbusVulkan::PipelineLayout&& layout);
     GhulbusVulkan::PipelineBuilder& getPipelineBuilder(uint32_t index);
     GhulbusVulkan::PipelineLayout& getPipelineLayout(uint32_t index);
     void recreateAllPipelines();
     GhulbusVulkan::Pipeline& getPipeline(uint32_t index);
+
+    uint32_t recordDrawCommands(uint32_t pipeline_index, DrawRecordingCallback const& recording_cb);
+
+    void render(uint32_t pipeline_index, Window& target_window);
 
     GhulbusVulkan::RenderPass& getRenderPass();
     GhulbusVulkan::Framebuffer& getFramebufferByIndex(uint32_t idx);
@@ -76,6 +84,7 @@ private:
                                    GhulbusVulkan::RenderPass& render_pass,
                                    GhulbusVulkan::ImageView& depth_image_view)
         -> std::vector<GhulbusVulkan::Framebuffer>;
+    uint32_t getCommandBufferIndex(uint32_t pipeline_index, uint32_t target_index) const;
 };
 }
 #endif

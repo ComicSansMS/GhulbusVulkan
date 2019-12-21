@@ -234,7 +234,7 @@ int main()
 
     auto command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queue_family);
     auto command_buffers = command_pool.allocateCommandBuffers(1);
-    auto command_buffer = command_buffers.getCommandBuffer(0);
+    auto& command_buffer = command_buffers.getCommandBuffer(0);
 
     auto transfer_command_pool = device.createCommandPool(VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, transfer_queue_family);
 
@@ -397,7 +397,7 @@ int main()
         std::memcpy(mapped_memory, vertex_data.data(), vertex_data.size() * sizeof(Vertex));
     }
     {
-        auto transfer_command_buffer = transfer_command_buffers.getCommandBuffer(0);
+        auto& transfer_command_buffer = transfer_command_buffers.getCommandBuffer(0);
 
         transfer_command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         VkBufferCopy buffer_copy;
@@ -447,7 +447,7 @@ int main()
         std::memcpy(mapped_memory, index_data.data(), index_data.size() * sizeof(uint16_t));
     }
     {
-        auto transfer_command_buffer = transfer_command_buffers.getCommandBuffer(1);
+        auto& transfer_command_buffer = transfer_command_buffers.getCommandBuffer(1);
 
         transfer_command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
         VkBufferCopy buffer_copy;
@@ -723,7 +723,7 @@ int main()
         command_pool.allocateCommandBuffers(swapchain_n_images);
 
     for(uint32_t i = 0; i < triangle_draw_command_buffers.size(); ++i) {
-        auto local_command_buffer = triangle_draw_command_buffers.getCommandBuffer(i);
+        auto& local_command_buffer = triangle_draw_command_buffers.getCommandBuffer(i);
         local_command_buffer.begin(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
 
         VkRenderPassBeginInfo render_pass_info;

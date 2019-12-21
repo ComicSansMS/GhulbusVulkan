@@ -10,9 +10,6 @@ CommandBuffer::CommandBuffer(VkCommandBuffer command_buffer, uint32_t queue_fami
     :m_commandBuffer(command_buffer), m_currentState(State::Initial), m_queueFamilyIndex(queue_family_index)
 {}
 
-CommandBuffer::~CommandBuffer()
-{}
-
 CommandBuffer::CommandBuffer(CommandBuffer&& rhs)
     :m_commandBuffer(rhs.m_commandBuffer), m_currentState(rhs.m_currentState),
      m_queueFamilyIndex(rhs.m_queueFamilyIndex)
