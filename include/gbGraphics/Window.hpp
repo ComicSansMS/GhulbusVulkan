@@ -70,6 +70,10 @@ public:
 
     PresentStatus present(GhulbusVulkan::Semaphore& semaphore);
 
+    void disableCursor(bool do_disable);
+    bool isCursorDisabled() const;
+    void setMouseMotionRaw(bool do_raw_input);
+
     uint32_t getNumberOfImagesInSwapchain() const;
 
     uint32_t getCurrentImageSwapchainIndex() const;

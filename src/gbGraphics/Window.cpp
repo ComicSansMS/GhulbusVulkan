@@ -62,7 +62,12 @@ struct Window::GLFW_Pimpl {
 
         glfwSetWindowUserPointer(window, this);
         glfwSetKeyCallback(window, GLFW_Pimpl::static_keyCallback);
-        glfwSetFramebufferSizeCallback(window, GLFW_Pimpl::static_resizeCallback);
+        glfwSetCharCallback(window, GLFW_Pimpl::static_textCallback);
+        glfwSetCursorPosCallback(window, GLFW_Pimpl::static_mouseMoveCallback);
+        glfwSetCursorEnterCallback(window, GLFW_Pimpl::static_mouseEnterCallback);
+        glfwSetMouseButtonCallback(window, GLFW_Pimpl::static_mouseClickCallback);
+        glfwSetScrollCallback(window, GLFW_Pimpl::static_mouseScrollCallback);
+        glfwSetFramebufferSizeCallback(window, GLFW_Pimpl::static_viewportResizeCallback);
     }
 
     ~GLFW_Pimpl()
@@ -82,11 +87,46 @@ struct Window::GLFW_Pimpl {
         thisptr->keyCallback(key, scancode, action, mods);
     }
 
-    static void static_resizeCallback(GLFWwindow* window, int width, int height)
+    static void static_textCallback(GLFWwindow* window, unsigned int codepoint)
     {
         GLFW_Pimpl* thisptr = reinterpret_cast<GLFW_Pimpl*>(glfwGetWindowUserPointer(window));
         GHULBUS_ASSERT(thisptr->window == window);
-        thisptr->resizeCallback(width, height);
+        thisptr->textCallback(codepoint);
+    }
+
+    static void static_mouseMoveCallback(GLFWwindow* window, double xpos, double ypos)
+    {
+        GLFW_Pimpl* thisptr = reinterpret_cast<GLFW_Pimpl*>(glfwGetWindowUserPointer(window));
+        GHULBUS_ASSERT(thisptr->window == window);
+        thisptr->mouseMoveCallback(xpos, ypos);
+    }
+
+    static void static_mouseEnterCallback(GLFWwindow* window, int did_enter)
+    {
+        GLFW_Pimpl* thisptr = reinterpret_cast<GLFW_Pimpl*>(glfwGetWindowUserPointer(window));
+        GHULBUS_ASSERT(thisptr->window == window);
+        thisptr->mouseEnterCallback(did_enter);
+    }
+
+    static void static_mouseClickCallback(GLFWwindow* window, int button, int action, int mods)
+    {
+        GLFW_Pimpl* thisptr = reinterpret_cast<GLFW_Pimpl*>(glfwGetWindowUserPointer(window));
+        GHULBUS_ASSERT(thisptr->window == window);
+        thisptr->mouseClickCallback(button, action, mods);
+    }
+
+    static void static_mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+    {
+        GLFW_Pimpl* thisptr = reinterpret_cast<GLFW_Pimpl*>(glfwGetWindowUserPointer(window));
+        GHULBUS_ASSERT(thisptr->window == window);
+        thisptr->mouseScrollCallback(xoffset, yoffset);
+    }
+
+    static void static_viewportResizeCallback(GLFWwindow* window, int width, int height)
+    {
+        GLFW_Pimpl* thisptr = reinterpret_cast<GLFW_Pimpl*>(glfwGetWindowUserPointer(window));
+        GHULBUS_ASSERT(thisptr->window == window);
+        thisptr->viewportResizeCallback(width, height);
     }
 
     void keyCallback(int key, int scancode, int action, int mods)
@@ -97,24 +137,49 @@ struct Window::GLFW_Pimpl {
         key_event.modifiers = static_cast<ModifierFlag>(mods);
         GHULBUS_UNUSED_VARIABLE(scancode);
         event_reactor.onKey(key_event);
-        /*
-        if(action == GLFW_PRESS) {
-            if (key == GLFW_KEY_ESCAPE) {
-                glfwSetWindowShouldClose(window, true);
-            } else if(key == GLFW_KEY_M) {
-                if(glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_NORMAL) {
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                    if (glfwRawMouseMotionSupported()) { glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE); }
-                } else {
-                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-                    if (glfwRawMouseMotionSupported()) { glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE); }
-                }
-            }
-        }
-        */
     }
 
-    void resizeCallback(int width, int height)
+    void textCallback(unsigned int codepoint)
+    {
+        Event::Text text_event;
+        text_event.codepoint = codepoint;
+        event_reactor.onText(text_event);
+    }
+
+    void mouseMoveCallback(double xpos, double ypos)
+    {
+        Event::MouseMove mouse_move_event;
+        mouse_move_event.position = GhulbusMath::Vector2d(xpos, ypos);
+        event_reactor.onMouseMove(mouse_move_event);
+    }
+
+    void mouseEnterCallback(int did_enter)
+    {
+        if(did_enter == GLFW_TRUE) {
+            event_reactor.onMouseEnter({});
+        } else {
+            GHULBUS_ASSERT(did_enter == GLFW_FALSE);
+            event_reactor.onMouseLeave({});
+        }
+    }
+
+    void mouseClickCallback(int button, int action, int mods)
+    {
+        Event::MouseClick mouse_click_event;
+        mouse_click_event.button = static_cast<MouseButton>(button);
+        mouse_click_event.action = static_cast<MouseButtonAction>(action);
+        mouse_click_event.modifiers = static_cast<ModifierFlag>(mods);
+        event_reactor.onMouseClick(mouse_click_event);
+    }
+
+    void mouseScrollCallback(double xoffset, double yoffset)
+    {
+        Event::MouseScroll mouse_scroll_event;
+        mouse_scroll_event.offset = GhulbusMath::Vector2d(xoffset, yoffset);
+        event_reactor.onMouseScroll(mouse_scroll_event);
+    }
+
+    void viewportResizeCallback(int width, int height)
     {
         Event::ViewportResize resize_event;
         resize_event.new_width = static_cast<uint32_t>(width);
@@ -127,8 +192,18 @@ struct Window::GLFW_Pimpl {
         return event_reactor.eventHandlers.keyEvent.addHandler(
             [this](Event::Key const& key_event) -> WindowEventReactor::Result
             {
-                if ((key_event.key == Key::Escape) && (key_event.action == KeyAction::Press)) {
-                    glfwSetWindowShouldClose(window, true);
+                if (key_event.action == KeyAction::Press) {
+                    if (key_event.key == Key::Escape) {
+                        glfwSetWindowShouldClose(window, true);
+                    } else if(key_event.key == Key::M) {
+                        if(!graphics_window->isCursorDisabled()) {
+                            graphics_window->disableCursor(true);
+                            graphics_window->setMouseMotionRaw(true);
+                        } else {
+                            graphics_window->disableCursor(false);
+                            graphics_window->setMouseMotionRaw(false);
+                        }
+                    }
                 }
                 return WindowEventReactor::Result::ContinueProcessing;
             });
@@ -218,6 +293,24 @@ Window::PresentStatus Window::present(GhulbusVulkan::Semaphore& semaphore)
     return PresentStatus::Ok;
 }
 
+void Window::disableCursor(bool do_disable)
+{
+    glfwSetInputMode(m_glfw->window, GLFW_CURSOR, (do_disable ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL));
+}
+
+bool Window::isCursorDisabled() const
+{
+    int const res = glfwGetInputMode(m_glfw->window, GLFW_CURSOR);
+    return (res == GLFW_CURSOR_DISABLED);
+}
+
+void Window::setMouseMotionRaw(bool do_raw_input)
+{
+    if (glfwRawMouseMotionSupported()) {
+        glfwSetInputMode(m_glfw->window, GLFW_RAW_MOUSE_MOTION, (do_raw_input ? GLFW_TRUE : GLFW_FALSE));
+    }
+}
+
 uint32_t Window::getNumberOfImagesInSwapchain() const
 {
     return m_swapchain.getNumberOfImages();
@@ -246,7 +339,7 @@ GhulbusVulkan::Swapchain::AcquiredImage& Window::getAcquiredImage()
 void Window::addRecreateSwapchainCallback(RecreateSwapchainCallback cb)
 {
     GHULBUS_PRECONDITION(cb);
-    m_recreateCallbacks.push_back(cb);
+    m_recreateCallbacks.emplace_back(std::move(cb));
 }
 
 void Window::recreateSwapchain()

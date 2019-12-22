@@ -179,7 +179,7 @@ struct Key {
 };
 
 struct Text {
-    char32_t character;
+    char32_t codepoint;
 };
 
 struct MouseMove {
