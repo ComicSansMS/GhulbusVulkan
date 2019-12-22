@@ -38,8 +38,8 @@ public:
     using KeyEventHandler               = Ghulbus::AnyInvocable<Result(Event::Key const&)>;
     using TextEventHandler              = Ghulbus::AnyInvocable<Result(Event::Text const&)>;
     using MouseMoveEventHandler         = Ghulbus::AnyInvocable<Result(Event::MouseMove const&)>;
-    using MouseLeaveEventHandler        = Ghulbus::AnyInvocable<Result(Event::MouseLeave const&)>;
     using MouseEnterEventHandler        = Ghulbus::AnyInvocable<Result(Event::MouseEnter const&)>;
+    using MouseLeaveEventHandler        = Ghulbus::AnyInvocable<Result(Event::MouseLeave const&)>;
     using MouseClickEventHandler        = Ghulbus::AnyInvocable<Result(Event::MouseClick const&)>;
     using MouseScrollEventHandler       = Ghulbus::AnyInvocable<Result(Event::MouseScroll const&)>;
     using ViewportResizeEventHandler    = Ghulbus::AnyInvocable<Result(Event::ViewportResize const&)>;
@@ -134,6 +134,15 @@ public:
             m_handlerIds.erase(it_id);
         }
     };
+
+    using KeyHandlerGuard       = HandlerContainer<KeyEventHandler>::Guard;
+    using TextHandlerGuard      = HandlerContainer<TextEventHandler>::Guard;
+    using MouseMoveGuard        = HandlerContainer<MouseMoveEventHandler>::Guard;
+    using MouseEnterGuard       = HandlerContainer<MouseEnterEventHandler>::Guard;
+    using MouseLeaveGuard       = HandlerContainer<MouseLeaveEventHandler>::Guard;
+    using MouseClickGuard       = HandlerContainer<MouseClickEventHandler>::Guard;
+    using MouseScrollGuard      = HandlerContainer<MouseScrollEventHandler>::Guard;
+    using ViewportResizeGuard   = HandlerContainer<ViewportResizeEventHandler>::Guard;
 
     struct Handlers {
         HandlerContainer<KeyEventHandler> keyEvent;

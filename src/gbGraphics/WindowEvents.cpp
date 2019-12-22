@@ -181,6 +181,15 @@ std::ostream& operator<<(std::ostream& os, KeyAction const& a)
     return os;
 }
 
+std::ostream& operator<<(std::ostream& os, KeyState const& s)
+{
+    switch (s) {
+    case KeyState::Pressed:     os << "Pressed";    break;
+    case KeyState::Released:    os << "Released";   break;
+    }
+    return os;
+}
+
 std::ostream& operator<<(std::ostream& os, MouseButton const& b)
 {
     switch (b) {

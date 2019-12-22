@@ -9,6 +9,8 @@
 
 #include <gbGraphics/config.hpp>
 
+#include <gbGraphics/WindowEvents.hpp>
+
 #include <gbVk/ForwardDecl.hpp>
 
 #include <gbVk/CommandBuffers.hpp>
@@ -16,6 +18,8 @@
 #include <gbVk/Semaphore.hpp>
 #include <gbVk/SubmitStaging.hpp>
 #include <gbVk/Swapchain.hpp>
+
+#include <gbMath/Vector2.hpp>
 
 #include <cstdint>
 #include <functional>
@@ -73,6 +77,8 @@ public:
     void disableCursor(bool do_disable);
     bool isCursorDisabled() const;
     void setMouseMotionRaw(bool do_raw_input);
+    GhulbusMath::Vector2d getMousePosition();
+    KeyState getKeyState(Key k);
 
     uint32_t getNumberOfImagesInSwapchain() const;
 

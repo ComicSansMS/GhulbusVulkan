@@ -162,6 +162,13 @@ enum class KeyAction {
 
 std::ostream& operator<<(std::ostream& os, KeyAction const& a);
 
+enum class KeyState {
+    Released    = 0,
+    Pressed     = 1
+};
+
+std::ostream& operator<<(std::ostream& os, KeyState const& s);
+
 enum class MouseButton {
     Left        = 0,
     Right       = 1,

@@ -33,8 +33,8 @@ struct Window::GLFW_Pimpl {
     WindowEventReactor event_reactor;
     Window* graphics_window;
     std::optional<VkExtent2D> resized_to;
-    WindowEventReactor::HandlerContainer<WindowEventReactor::KeyEventHandler>::Guard default_key_handler_guard;
-    WindowEventReactor::HandlerContainer<WindowEventReactor::ViewportResizeEventHandler>::Guard default_resize_handler_guard;
+    WindowEventReactor::KeyHandlerGuard default_key_handler_guard;
+    WindowEventReactor::ViewportResizeGuard default_resize_handler_guard;
 
     GLFW_Pimpl(GraphicsInstance& instance, Window& ngraphics_window, uint32_t width, uint32_t height, char8_t const* window_title)
         :window(nullptr), surface(nullptr), graphics_instance(nullptr), graphics_window(nullptr),
@@ -187,7 +187,7 @@ struct Window::GLFW_Pimpl {
         event_reactor.onViewportResize(resize_event);
     }
 
-    WindowEventReactor::HandlerContainer<WindowEventReactor::KeyEventHandler>::Guard installDefaultKeyHandler()
+    WindowEventReactor::KeyHandlerGuard installDefaultKeyHandler()
     {
         return event_reactor.eventHandlers.keyEvent.addHandler(
             [this](Event::Key const& key_event) -> WindowEventReactor::Result
@@ -209,7 +209,7 @@ struct Window::GLFW_Pimpl {
             });
     }
 
-    WindowEventReactor::HandlerContainer<WindowEventReactor::ViewportResizeEventHandler>::Guard installDefaultResizeHandler()
+    WindowEventReactor::ViewportResizeGuard installDefaultResizeHandler()
     {
         return event_reactor.eventHandlers.viewportResizeEvent.addHandler(
             [this](Event::ViewportResize const& resize_event) -> WindowEventReactor::Result
@@ -309,6 +309,18 @@ void Window::setMouseMotionRaw(bool do_raw_input)
     if (glfwRawMouseMotionSupported()) {
         glfwSetInputMode(m_glfw->window, GLFW_RAW_MOUSE_MOTION, (do_raw_input ? GLFW_TRUE : GLFW_FALSE));
     }
+}
+
+GhulbusMath::Vector2d Window::getMousePosition()
+{
+    GhulbusMath::Vector2d ret;
+    glfwGetCursorPos(m_glfw->window, &ret.x, &ret.y);
+    return ret;
+}
+
+KeyState Window::getKeyState(Key k)
+{
+    return static_cast<KeyState>(glfwGetKey(m_glfw->window, static_cast<int>(k)));
 }
 
 uint32_t Window::getNumberOfImagesInSwapchain() const
