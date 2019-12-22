@@ -287,8 +287,11 @@ set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/Mesh.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/ObjParser.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Program.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/Reactor.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Renderer.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Window.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/WindowEventReactor.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/WindowEvents.cpp
 )
 
 set(GB_GRAPHICS_HEADER_FILES
@@ -304,8 +307,11 @@ set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Mesh.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/ObjParser.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Program.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Reactor.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Renderer.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Window.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/WindowEventReactor.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/WindowEvents.hpp
 )
 
 set(GB_GRAPHICS_DETAIL_SOURCE_FILES

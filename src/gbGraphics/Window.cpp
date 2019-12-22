@@ -3,6 +3,7 @@
 #include <gbGraphics/CommandPoolRegistry.hpp>
 #include <gbGraphics/Exceptions.hpp>
 #include <gbGraphics/GraphicsInstance.hpp>
+#include <gbGraphics/WindowEventReactor.hpp>
 
 #include <gbBase/Assert.hpp>
 #include <gbBase/Finally.hpp>
@@ -28,11 +29,17 @@ namespace GHULBUS_GRAPHICS_NAMESPACE
 struct Window::GLFW_Pimpl {
     GLFWwindow* window;
     VkSurfaceKHR surface;
-    GhulbusGraphics::GraphicsInstance* graphics_instance;
+    GraphicsInstance* graphics_instance;
+    WindowEventReactor event_reactor;
+    Window* graphics_window;
     std::optional<VkExtent2D> resized_to;
+    WindowEventReactor::HandlerContainer<WindowEventReactor::KeyEventHandler>::Guard default_key_handler_guard;
+    WindowEventReactor::HandlerContainer<WindowEventReactor::ViewportResizeEventHandler>::Guard default_resize_handler_guard;
 
-    GLFW_Pimpl(GraphicsInstance& instance, uint32_t width, uint32_t height, char8_t const* window_title)
-        :window(nullptr), surface(nullptr), graphics_instance(nullptr)
+    GLFW_Pimpl(GraphicsInstance& instance, Window& ngraphics_window, uint32_t width, uint32_t height, char8_t const* window_title)
+        :window(nullptr), surface(nullptr), graphics_instance(nullptr), graphics_window(nullptr),
+         default_key_handler_guard(installDefaultKeyHandler()),
+         default_resize_handler_guard(installDefaultResizeHandler())
     {
         GHULBUS_PRECONDITION(width > 0);
         GHULBUS_PRECONDITION(height > 0);
@@ -46,6 +53,7 @@ struct Window::GLFW_Pimpl {
         }
 
         graphics_instance = &instance;
+        graphics_window = &ngraphics_window;
         VkInstance const vk_instance = instance.getVulkanInstance().getVkInstance();
         VkResult const res = glfwCreateWindowSurface(vk_instance, window, nullptr, &surface);
         if (res != VK_SUCCESS) {
@@ -83,22 +91,63 @@ struct Window::GLFW_Pimpl {
 
     void keyCallback(int key, int scancode, int action, int mods)
     {
+        Event::Key key_event;
+        key_event.key = static_cast<Key>(key);
+        key_event.action = static_cast<KeyAction>(action);
+        key_event.modifiers = static_cast<ModifierFlag>(mods);
         GHULBUS_UNUSED_VARIABLE(scancode);
-        GHULBUS_UNUSED_VARIABLE(action);
-        GHULBUS_UNUSED_VARIABLE(mods);
-        if (key == GLFW_KEY_ESCAPE) {
-            glfwSetWindowShouldClose(window, true);
+        event_reactor.onKey(key_event);
+        /*
+        if(action == GLFW_PRESS) {
+            if (key == GLFW_KEY_ESCAPE) {
+                glfwSetWindowShouldClose(window, true);
+            } else if(key == GLFW_KEY_M) {
+                if(glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_NORMAL) {
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+                    if (glfwRawMouseMotionSupported()) { glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE); }
+                } else {
+                    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                    if (glfwRawMouseMotionSupported()) { glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE); }
+                }
+            }
         }
+        */
     }
 
     void resizeCallback(int width, int height)
     {
-        resized_to = VkExtent2D{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+        Event::ViewportResize resize_event;
+        resize_event.new_width = static_cast<uint32_t>(width);
+        resize_event.new_height = static_cast<uint32_t>(height);
+        event_reactor.onViewportResize(resize_event);
+    }
+
+    WindowEventReactor::HandlerContainer<WindowEventReactor::KeyEventHandler>::Guard installDefaultKeyHandler()
+    {
+        return event_reactor.eventHandlers.keyEvent.addHandler(
+            [this](Event::Key const& key_event) -> WindowEventReactor::Result
+            {
+                if ((key_event.key == Key::Escape) && (key_event.action == KeyAction::Press)) {
+                    glfwSetWindowShouldClose(window, true);
+                }
+                return WindowEventReactor::Result::ContinueProcessing;
+            });
+    }
+
+    WindowEventReactor::HandlerContainer<WindowEventReactor::ViewportResizeEventHandler>::Guard installDefaultResizeHandler()
+    {
+        return event_reactor.eventHandlers.viewportResizeEvent.addHandler(
+            [this](Event::ViewportResize const& resize_event) -> WindowEventReactor::Result
+            {
+                resized_to = VkExtent2D{ resize_event.new_width, resize_event.new_height };
+                return WindowEventReactor::Result::ContinueProcessing;
+            }
+        );
     }
 };
 
 Window::Window(GraphicsInstance& instance, int width, int height, char8_t const* window_title)
-    :m_width(width), m_height(height), m_glfw(std::make_unique<GLFW_Pimpl>(instance, width, height, window_title)),
+    :m_width(width), m_height(height), m_glfw(std::make_unique<GLFW_Pimpl>(instance, *this, width, height, window_title)),
     m_swapchain(instance.getVulkanDevice().createSwapchain(m_glfw->surface, instance.getGraphicsQueueFamilyIndex())),
     m_presentCommandBuffers(m_glfw->graphics_instance->getCommandPoolRegistry().allocateCommandBuffersGraphics(m_swapchain.getNumberOfImages())),
     m_presentQueue(&m_glfw->graphics_instance->getGraphicsQueue()),
@@ -110,6 +159,11 @@ Window::Window(GraphicsInstance& instance, int width, int height, char8_t const*
 Window::~Window()
 {
     if (m_backBuffer) { m_backBuffer->fence.wait(); }
+}
+
+void Window::close()
+{
+    glfwSetWindowShouldClose(m_glfw->window, GLFW_TRUE);
 }
 
 bool Window::isDone()
@@ -125,6 +179,11 @@ uint32_t Window::getWidth() const
 uint32_t Window::getHeight() const
 {
     return m_height;
+}
+
+WindowEventReactor& Window::getEventReactor()
+{
+    return m_glfw->event_reactor;
 }
 
 Window::PresentStatus Window::present()

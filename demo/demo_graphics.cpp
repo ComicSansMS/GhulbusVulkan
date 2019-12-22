@@ -17,6 +17,7 @@
 #include <gbGraphics/Mesh.hpp>
 #include <gbGraphics/ObjParser.hpp>
 #include <gbGraphics/Program.hpp>
+#include <gbGraphics/Reactor.hpp>
 #include <gbGraphics/Renderer.hpp>
 #include <gbGraphics/Window.hpp>
 
@@ -294,6 +295,7 @@ int main()
     main_window.addRecreateSwapchainCallback([&viewport_dimensions](GhulbusVulkan::Swapchain& swapchain) {
         viewport_dimensions.width = static_cast<float>(swapchain.getWidth());
         viewport_dimensions.height = static_cast<float>(swapchain.getHeight());
+        GHULBUS_LOG(Info, "Viewport resize " << swapchain.getWidth() << "x" << swapchain.getHeight());
     });
     auto update_uniform_buffer = [&timestamp, &ubo_data, &ubo_buffers, &viewport_dimensions](uint32_t index) {
         auto const t = std::chrono::steady_clock::now();
@@ -303,6 +305,8 @@ int main()
         ubo_data.view = GhulbusMath::make_view_look_at(GhulbusMath::Vector3f(2.0f, 2.0f, 2.0f),
             GhulbusMath::Vector3f(0.0f, 0.0f, 0.0f),
             GhulbusMath::Vector3f(0.0f, 0.0f, 1.0f)).m;
+        ubo_data.projection = GhulbusMath::make_perspective_projection(viewport_dimensions.width,
+                                                                       viewport_dimensions.height, 0.1f, 10.f).m;
         ubo_data.projection = GhulbusMath::make_perspective_projection_fov(
             (GhulbusMath::traits::Pi<float>::value / 4.f),
             viewport_dimensions.width / viewport_dimensions.height, 0.1f, 10.f).m;
@@ -452,8 +456,8 @@ int main()
     graphics_instance.getTransferQueue().clearAllStaged();
     graphics_sync_fence.wait();
     graphics_instance.getGraphicsQueue().clearAllStaged();
+    graphics_instance.getReactor().post([]() { GHULBUS_LOG(Debug, "Hello from Reactor!"); });
 
-    GHULBUS_LOG(Trace, "Entering main loop...");
     while(!main_window.isDone()) {
         graphics_instance.pollEvents();
 

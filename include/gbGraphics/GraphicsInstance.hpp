@@ -18,6 +18,7 @@
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
 class CommandPoolRegistry;
+class Reactor;
 
 struct ApplicationVersion {
     uint16_t major;
@@ -39,6 +40,7 @@ public:
 private:
     std::unique_ptr<Pimpl> m_pimpl;
     std::unique_ptr<CommandPoolRegistry> m_commandPoolRegistry;
+    std::unique_ptr<Reactor> m_reactor;
     std::mutex m_mtx;
 public:
     GraphicsInstance();
@@ -76,6 +78,8 @@ public:
     void waitEvents();
 
     CommandPoolRegistry& getCommandPoolRegistry();
+
+    Reactor& getReactor();
 
     template<typename F>
     void threadSafeDeviceAccess(F&& f)

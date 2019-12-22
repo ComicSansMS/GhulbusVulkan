@@ -53,6 +53,7 @@ GhulbusVulkan::PipelineLayout& Renderer::getPipelineLayout(uint32_t index)
 void Renderer::recreateAllPipelines()
 {
     GHULBUS_PRECONDITION(m_state);
+    GHULBUS_PRECONDITION(!m_pipelineBuilders.empty());
     m_pipelines.clear();
     for (auto& [builder, layout] : m_pipelineBuilders) {
         m_pipelines.emplace_back(

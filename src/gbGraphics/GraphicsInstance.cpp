@@ -2,6 +2,7 @@
 
 #include <gbGraphics/CommandPoolRegistry.hpp>
 #include <gbGraphics/Exceptions.hpp>
+#include <gbGraphics/Reactor.hpp>
 #include <gbGraphics/detail/DeviceMemoryAllocator_VMA.hpp>
 #include <gbGraphics/detail/QueueSelection.hpp>
 
@@ -53,7 +54,7 @@ namespace
 std::tuple<GhulbusVulkan::Device, detail::DeviceQueues> initializeVulkanDevice(GhulbusVulkan::Instance& instance);
 
 std::unique_ptr<GraphicsInstance::Pimpl> initializeVulkanInstance(char const* application_name,
-    GhulbusVulkan::Instance::Version application_version)
+                                                                  GhulbusVulkan::Instance::Version application_version)
 {
     GhulbusVulkan::Instance::Layers layers{
 #ifndef NDEBUG
@@ -211,6 +212,7 @@ GraphicsInstance::GraphicsInstance(char const* application_name, ApplicationVers
     exception_guard.defuse();
 
     m_commandPoolRegistry = std::make_unique<CommandPoolRegistry>(*this);
+    m_reactor = std::make_unique<Reactor>(*this);
 
 #ifndef NDEBUG
     setDebugLoggingEnabled(true);
@@ -341,5 +343,10 @@ void GraphicsInstance::waitEvents()
 CommandPoolRegistry& GraphicsInstance::getCommandPoolRegistry()
 {
     return *m_commandPoolRegistry;
+}
+
+Reactor& GraphicsInstance::getReactor()
+{
+    return *m_reactor;
 }
 }

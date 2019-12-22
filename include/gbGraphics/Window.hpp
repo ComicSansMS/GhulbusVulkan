@@ -26,6 +26,7 @@
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
 class GraphicsInstance;
+class WindowEventReactor;
 
 class Window {
 public:
@@ -57,10 +58,13 @@ public:
     Window(GraphicsInstance& instance, int width, int height, char8_t const* window_title);
     ~Window();
 
+    void close();
     bool isDone();
 
     uint32_t getWidth() const;
     uint32_t getHeight() const;
+
+    WindowEventReactor& getEventReactor();
 
     PresentStatus present();
 
