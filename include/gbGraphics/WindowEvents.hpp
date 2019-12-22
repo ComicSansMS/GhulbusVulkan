@@ -12,6 +12,7 @@
 #include <gbMath/Vector2.hpp>
 
 #include <cstdint>
+#include <iosfwd>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
@@ -140,6 +141,8 @@ enum class Key {
     Menu            = 348
 };
 
+std::ostream& operator<<(std::ostream& os, Key const& k);
+
 enum class ModifierFlag {
     Shift       = 0x0001,
     Ctrl        = 0x0002,
@@ -149,11 +152,15 @@ enum class ModifierFlag {
     NumLock     = 0x0020
 };
 
+std::ostream& operator<<(std::ostream& os, ModifierFlag const& m);
+
 enum class KeyAction {
     Release     = 0,
     Press       = 1,
     Repeat      = 2
 };
+
+std::ostream& operator<<(std::ostream& os, KeyAction const& a);
 
 enum class MouseButton {
     Left        = 0,
@@ -166,10 +173,14 @@ enum class MouseButton {
     Button8     = 7,
 };
 
+std::ostream& operator<<(std::ostream& os, MouseButton const& b);
+
 enum class MouseButtonAction {
     Release = 0,
     Press = 1
 };
+
+std::ostream& operator<<(std::ostream& os, MouseButtonAction const& a);
 
 namespace Event {
 struct Key {
