@@ -101,17 +101,17 @@ public:
         Guard addHandler(Handler_T const& event_handler)
         {
             m_handlers.insert(m_handlers.begin(), event_handler);
-            m_handlerIds.insert(m_handlerIds.begin(), m_currentIdCount++);
+            auto const it_id = m_handlerIds.insert(m_handlerIds.begin(), m_currentIdCount++);
             GHULBUS_ASSERT(m_handlers.size() == m_handlerIds.size());
-            return Guard(*this, m_handlerIds.back());
+            return Guard(*this, *it_id);
         }
 
         Guard addHandler(Handler_T&& event_handler)
         {
             m_handlers.emplace(m_handlers.begin(), std::move(event_handler));
-            m_handlerIds.insert(m_handlerIds.begin(), m_currentIdCount++);
+            auto const it_id = m_handlerIds.insert(m_handlerIds.begin(), m_currentIdCount++);
             GHULBUS_ASSERT(m_handlers.size() == m_handlerIds.size());
-            return Guard(*this, m_handlerIds.back());
+            return Guard(*this, *it_id);
         }
 
         template<typename... T_Args>
