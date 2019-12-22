@@ -27,18 +27,38 @@ CameraSpherical::CameraSpherical(Window& window)
     })), m_cameraAngleHorizontal(0.f), m_cameraAngleVertical(0.f), m_cameraDistance(5.f), m_transformIsValid(false),
     m_inRotate(false), m_inZoom(false)
 {
-    updateCamera();
+}
+
+void CameraSpherical::setCameraAngleHorizontal(float phi)
+{
+    float constexpr pi_2 = GhulbusMath::traits::Pi<float>::value * 2.f;
+    m_cameraAngleHorizontal = std::fmod(phi, pi_2);
+    m_transformIsValid = false;
+}
+
+void CameraSpherical::setCameraAngleVertical(float theta)
+{
+    float constexpr pi_1_2 = GhulbusMath::traits::Pi<float>::value / 2.f;
+    float constexpr epsilon = std::numeric_limits<float>::epsilon() * pi_1_2;
+    m_cameraAngleVertical = std::clamp(theta, -pi_1_2 + epsilon, pi_1_2 - epsilon);
+    m_transformIsValid = false;
+}
+
+void CameraSpherical::setCameraDistance(float d)
+{
+    m_cameraDistance = std::clamp(d, config.cameraDistanceMin, config.cameraDistanceMax);
+    m_transformIsValid = false;
 }
 
 void CameraSpherical::onMouseMove(Event::MouseMove const& mouse_move_event)
 {
     GhulbusMath::Vector2d const delta = mouse_move_event.position - m_lastPosition;
-    if (m_config.useMouseMove && m_inRotate) {
-        m_cameraAngleHorizontal += static_cast<float>(delta.x) * 0.01f * m_config.speedHorizontal;
-        m_cameraAngleVertical += static_cast<float>(delta.y) * 0.01f * m_config.speedVertical;
+    if (config.useMouseMove && m_inRotate) {
+        m_cameraAngleHorizontal += static_cast<float>(delta.x) * 0.01f * config.speedHorizontal;
+        m_cameraAngleVertical += static_cast<float>(delta.y) * 0.01f * config.speedVertical;
         m_transformIsValid = false;
-    } else if (m_config.useMouseZoom && m_inZoom) {
-        m_cameraDistance += static_cast<float>(delta.y) * 0.005f * m_cameraDistance * m_config.speedZoom;
+    } else if (config.useMouseZoom && m_inZoom) {
+        m_cameraDistance += static_cast<float>(delta.y) * 0.005f * m_cameraDistance * config.speedZoom;
         m_transformIsValid = false;
     }
     m_lastPosition = mouse_move_event.position;
@@ -46,9 +66,9 @@ void CameraSpherical::onMouseMove(Event::MouseMove const& mouse_move_event)
 
 void CameraSpherical::onMouseClick(Event::MouseClick const& mouse_click_event)
 {
-    if (mouse_click_event.button == m_config.mouseZoomButton) {
+    if (mouse_click_event.button == config.mouseZoomButton) {
         m_inZoom = (mouse_click_event.action == MouseButtonAction::Press);
-    } else if (mouse_click_event.button == m_config.mouseRotateButton) {
+    } else if (mouse_click_event.button == config.mouseRotateButton) {
         m_inRotate = (mouse_click_event.action == MouseButtonAction::Press);
     }
     if(m_inZoom || m_inRotate) {
@@ -66,9 +86,9 @@ void CameraSpherical::onMouseClick(Event::MouseClick const& mouse_click_event)
 
 void CameraSpherical::onMouseScroll(Event::MouseScroll const& mouse_scroll_event)
 {
-    if (m_config.useMouseWheelZoom) {
+    if (config.useMouseWheelZoom) {
         float const scroll_offset = static_cast<float>(mouse_scroll_event.offset.y);
-        m_cameraDistance += scroll_offset * -0.1f * m_cameraDistance * m_config.speedMouseWheelZoom;
+        m_cameraDistance += scroll_offset * -0.1f * m_cameraDistance * config.speedMouseWheelZoom;
         m_transformIsValid = false;
     }
 }
@@ -81,7 +101,7 @@ GhulbusMath::Transform3<float> CameraSpherical::getTransform()
 
 void CameraSpherical::updateCamera()
 {
-    m_cameraDistance = std::clamp(m_cameraDistance, m_config.cameraDistanceMin, m_config.cameraDistanceMax);
+    m_cameraDistance = std::clamp(m_cameraDistance, config.cameraDistanceMin, config.cameraDistanceMax);
     float constexpr pi_2 = GhulbusMath::traits::Pi<float>::value * 2.f;
     float constexpr pi_1_2 = GhulbusMath::traits::Pi<float>::value / 2.f;
     float constexpr epsilon = std::numeric_limits<float>::epsilon() * pi_1_2;

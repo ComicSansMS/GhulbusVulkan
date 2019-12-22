@@ -33,12 +33,12 @@ public:
         float cameraDistanceMin = 1.f;
         float cameraDistanceMax = 100.f;
     };
+    Config config;
 private:
     Window* m_window;
     WindowEventReactor::MouseMoveGuard m_mouseMoveGuard;
     WindowEventReactor::MouseClickGuard m_mouseClickGuard;
     WindowEventReactor::MouseScrollGuard m_mouseScrollGuard;
-    Config m_config;
     GhulbusMath::Transform3<float> m_transform;
     float m_cameraAngleHorizontal;
     float m_cameraAngleVertical;
@@ -49,6 +49,10 @@ private:
     GhulbusMath::Vector2d m_lastPosition;
 public:
     CameraSpherical(Window& window);
+
+    void setCameraAngleHorizontal(float phi);
+    void setCameraAngleVertical(float theta);
+    void setCameraDistance(float d);
 
     void onMouseMove(Event::MouseMove const& mouse_move_event);
     void onMouseClick(Event::MouseClick const& mouse_click_event);

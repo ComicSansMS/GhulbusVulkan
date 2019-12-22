@@ -13,6 +13,7 @@
 #include <gbGraphics/Graphics.hpp>
 #include <gbGraphics/Image2d.hpp>
 #include <gbGraphics/ImageLoader.hpp>
+#include <gbGraphics/InputCameraSpherical.hpp>
 #include <gbGraphics/MemoryBuffer.hpp>
 #include <gbGraphics/Mesh.hpp>
 #include <gbGraphics/ObjParser.hpp>
@@ -20,6 +21,7 @@
 #include <gbGraphics/Reactor.hpp>
 #include <gbGraphics/Renderer.hpp>
 #include <gbGraphics/Window.hpp>
+#include <gbGraphics/WindowEventReactor.hpp>
 
 #include <gbVk/Buffer.hpp>
 #include <gbVk/CommandBuffer.hpp>
@@ -297,14 +299,24 @@ int main()
         viewport_dimensions.height = static_cast<float>(swapchain.getHeight());
         GHULBUS_LOG(Info, "Viewport resize " << swapchain.getWidth() << "x" << swapchain.getHeight());
     });
-    auto update_uniform_buffer = [&timestamp, &ubo_data, &ubo_buffers, &viewport_dimensions](uint32_t index) {
+    GhulbusGraphics::Input::CameraSpherical camera(main_window);
+    camera.setCameraDistance(4.f);
+    camera.setCameraAngleVertical(0.785f);
+    bool do_animate = true;
+    auto key_handler_guard = main_window.getEventReactor().eventHandlers.keyEvent.addHandler(
+        [&do_animate](GhulbusGraphics::Event::Key const& e) {
+            if ((e.action == GhulbusGraphics::KeyAction::Press) && (e.key == GhulbusGraphics::Key::A)) {
+                do_animate ^= true;
+            }
+            return GhulbusGraphics::WindowEventReactor::Result::ContinueProcessing;
+        });
+    auto update_uniform_buffer = [&timestamp, &ubo_data, &ubo_buffers, &viewport_dimensions, &camera, &do_animate](uint32_t index) {
         auto const t = std::chrono::steady_clock::now();
-        float const time = std::chrono::duration<float>(t - timestamp).count();
-        ubo_data.model = GhulbusMath::make_rotation((GhulbusMath::traits::Pi<float>::value / 2.f) * time,
-            GhulbusMath::Vector3f(0.f, 0.f, 1.f)).m;
-        ubo_data.view = GhulbusMath::make_view_look_at(GhulbusMath::Vector3f(2.0f, 2.0f, 2.0f),
-            GhulbusMath::Vector3f(0.0f, 0.0f, 0.0f),
-            GhulbusMath::Vector3f(0.0f, 0.0f, 1.0f)).m;
+        float const time = (do_animate) ? std::chrono::duration<float>(t - timestamp).count() : 0.f;
+        ubo_data.model = GhulbusMath::make_rotation_x(-1.57079632679489f).m *
+            GhulbusMath::make_rotation((GhulbusMath::traits::Pi<float>::value / 2.f) * time,
+                                       GhulbusMath::Vector3f(0.f, 0.f, 1.f)).m;
+        ubo_data.view = camera.getTransform().m;
         ubo_data.projection = GhulbusMath::make_perspective_projection(viewport_dimensions.width,
                                                                        viewport_dimensions.height, 0.1f, 10.f).m;
         ubo_data.projection = GhulbusMath::make_perspective_projection_fov(
@@ -451,6 +463,17 @@ int main()
     renderer.recreateAllPipelines();
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Main setup");
+
+    auto const mouse_move_handler_guard = main_window.getEventReactor().eventHandlers.mouseMoveEvent.addHandler(
+        [](GhulbusGraphics::Event::MouseMove const& mm) {
+            //GHULBUS_LOG(Info, "Mouse " << mm.position.x << ", " << mm.position.y);
+            return GhulbusGraphics::WindowEventReactor::Result::ContinueProcessing;
+        });
+    auto const keypress_handler_guard = main_window.getEventReactor().eventHandlers.keyEvent.addHandler(
+        [](GhulbusGraphics::Event::Key const& ke) {
+        GHULBUS_LOG(Info, ke.key << " " << ke.action << " (" << ke.modifiers << ")");
+        return GhulbusGraphics::WindowEventReactor::Result::ContinueProcessing;
+    });
 
     transfer_fence.wait();
     graphics_instance.getTransferQueue().clearAllStaged();
