@@ -455,11 +455,13 @@ int main()
 
     auto const mouse_move_handler_guard = main_window.getEventReactor().eventHandlers.mouseMoveEvent.addHandler(
         [](GhulbusGraphics::Event::MouseMove const& mm) {
+            GHULBUS_UNUSED_VARIABLE(mm);
             //GHULBUS_LOG(Info, "Mouse " << mm.position.x << ", " << mm.position.y);
             return GhulbusGraphics::WindowEventReactor::Result::ContinueProcessing;
         });
     auto const keypress_handler_guard = main_window.getEventReactor().eventHandlers.keyEvent.addHandler(
         [](GhulbusGraphics::Event::Key const& ke) {
+        GHULBUS_UNUSED_VARIABLE(ke);
         GHULBUS_LOG(Info, ke.key << " " << ke.action << " (" << ke.modifiers << ")");
         return GhulbusGraphics::WindowEventReactor::Result::ContinueProcessing;
     });

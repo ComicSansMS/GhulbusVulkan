@@ -14,6 +14,8 @@
 
 #include <spirv_cross.hpp>
 
+#include <algorithm>
+
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
 struct Program::ReflectionInfo {
@@ -123,6 +125,33 @@ VkFormat determineAttributeFormat(VertexFormatBase::ComponentType type, VertexFo
         GHULBUS_THROW(Exceptions::NotImplemented(), "Attribute detection for type not implemented.");
     }
 }
+
+VertexFormatBase::ComponentType getMatchingComponentType(spirv_cross::SPIRType const& spir_type)
+{
+    switch(spir_type.basetype) {
+    case spirv_cross::SPIRType::Float:
+        if(spir_type.columns == 1) {
+            if(spir_type.vecsize == 2) {
+                return VertexFormatBase::ComponentType::t_vec2;
+            } else if(spir_type.vecsize == 3) {
+                return VertexFormatBase::ComponentType::t_vec3;
+            } else if(spir_type.vecsize == 4) {
+                return VertexFormatBase::ComponentType::t_vec4;
+            }
+        }
+        break;
+    default:
+        break;
+    }
+    GHULBUS_THROW(Exceptions::NotImplemented(), "Spir type not supported.");
+}
+
+void checkTypeMatch(spirv_cross::SPIRType const& spir_type, VertexFormatBase::ComponentType component_type)
+{
+    if (getMatchingComponentType(spir_type) != component_type) {
+        GHULBUS_THROW(Exceptions::ShaderError(), "Vertex Attribute type mismatch.");
+    }
+}
 }
 
 void Program::addVertexBinding(uint32_t binding, VertexFormatBase const& vertex_input_format)
@@ -147,8 +176,20 @@ void Program::bindVertexInput(VertexFormatBase::ComponentSemantics component_sem
         for (std::size_t i = 0; i < format.getNumberOfComponents(); ++i) {
             if (format.getComponentSemantics(i) == s) { return i; }
         }
-        GHULBUS_THROW(Exceptions::InvalidArgument(), "Requested semantic is not part of vertex format.");
+        GHULBUS_THROW(Exceptions::ShaderError(), "Requested semantic is not part of vertex format.");
     }(component_semantic);
+
+    auto const& resources = m_reflection->vertex_resources.stage_inputs;
+    auto const it_resource = 
+        std::find_if(resources.begin(), resources.end(), [this, binding, location](spirv_cross::Resource const& r) {
+            uint32_t const rbinding = m_reflection->vertex.get_decoration(r.id, spv::DecorationBinding);
+            uint32_t const rlocation = m_reflection->vertex.get_decoration(r.id, spv::DecorationLocation);
+            return (rbinding == binding) && (rlocation == location);
+        });
+    if(it_resource == resources.end()) {
+        GHULBUS_THROW(Exceptions::ShaderError(), "Invalid binding/location indices.");
+    }
+    checkTypeMatch(m_reflection->vertex.get_type(it_resource->base_type_id), format.getComponentType(component_index));
 
     VkVertexInputAttributeDescription vertex_attribute;
     vertex_attribute.location = location;
