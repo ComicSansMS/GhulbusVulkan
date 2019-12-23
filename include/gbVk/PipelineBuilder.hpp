@@ -64,8 +64,10 @@ public:
 
     PipelineBuilder(VkDevice logical_device, uint32_t viewport_width, uint32_t viewport_height);
 
-    void addVertexBindings(VkVertexInputBindingDescription* binding_data, uint32_t n_bindings,
-                           VkVertexInputAttributeDescription* attributes_data, uint32_t n_attributes);
+    void addVertexBindings(VkVertexInputBindingDescription const* binding_data, uint32_t n_bindings,
+                           VkVertexInputAttributeDescription const* attributes_data, uint32_t n_attributes);
+
+    void clearVertexBindings();
 
     void adjustViewportDimensions(uint32_t viewport_width, uint32_t viewport_height);
 

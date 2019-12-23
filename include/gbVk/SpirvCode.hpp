@@ -41,6 +41,7 @@ public:
 
     size_t getSize() const;
     uint32_t const* getCode() const;
+    std::vector<uint32_t> getCodeAsStdVector() const;
     SpirvVersion getSpirvVersion() const;
     uint32_t getBound() const;
 

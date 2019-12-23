@@ -21,6 +21,11 @@ uint32_t const* SpirvCode::getCode() const
     return m_data.get();
 }
 
+std::vector<uint32_t> SpirvCode::getCodeAsStdVector() const
+{
+    return std::vector<uint32_t>(m_data.get(), m_data.get() + (m_size / sizeof(uint32_t)));
+}
+
 SpirvCode::SpirvVersion SpirvCode::getSpirvVersion() const
 {
     SpirvVersion ret;

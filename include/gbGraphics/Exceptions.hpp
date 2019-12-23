@@ -45,6 +45,9 @@ namespace Exceptions
 
     struct GLFWError : public GHULBUS_BASE_NAMESPACE::Exceptions::impl::ExceptionImpl
     {};
+
+    struct ShaderError : public GHULBUS_BASE_NAMESPACE::Exceptions::impl::ExceptionImpl
+    {};
 }
 }
 #endif

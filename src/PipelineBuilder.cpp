@@ -199,12 +199,18 @@ PipelineBuilder::PipelineBuilder(VkDevice logical_device, uint32_t viewport_widt
     stage.color_blend->ci.blendConstants[3] = 0.f;
 }
 
-void PipelineBuilder::addVertexBindings(VkVertexInputBindingDescription* binding_data, uint32_t n_bindings,
-                                        VkVertexInputAttributeDescription* attributes_data, uint32_t n_attributes)
+void PipelineBuilder::addVertexBindings(VkVertexInputBindingDescription const* binding_data, uint32_t n_bindings,
+                                        VkVertexInputAttributeDescription const* attributes_data, uint32_t n_attributes)
 {
     GHULBUS_PRECONDITION(stage.vertex_input);
     stage.vertex_bindings.insert(stage.vertex_bindings.end(), binding_data, binding_data + n_bindings);
     stage.vertex_attributes.insert(stage.vertex_attributes.end(), attributes_data, attributes_data + n_attributes);
+}
+
+void PipelineBuilder::clearVertexBindings()
+{
+    stage.vertex_bindings.clear();
+    stage.vertex_attributes.clear();
 }
 
 void PipelineBuilder::adjustViewportDimensions(uint32_t viewport_width, uint32_t viewport_height)

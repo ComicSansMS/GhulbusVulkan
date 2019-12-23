@@ -24,6 +24,7 @@ class ImageView;
 class Instance;
 class PhysicalDevice;
 class Pipeline;
+class PipelineBuilder;
 class PipelineLayout;
 class Queue;
 class RenderPass;

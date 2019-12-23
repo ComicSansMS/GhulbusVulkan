@@ -99,7 +99,7 @@ find_package(glfw3 REQUIRED HINTS ${PROJECT_BINARY_DIR}/dependencies/glfw3/insta
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-# find_package(spirv-cross REQUIRED)
+find_package(spirv-cross REQUIRED)
 find_package(VulkanMemoryAllocator REQUIRED)
 find_package(stb REQUIRED)
 
@@ -290,6 +290,7 @@ set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/Program.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Reactor.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Renderer.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/VertexFormat.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Window.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/WindowEventReactor.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/WindowEvents.cpp
@@ -311,6 +312,7 @@ set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Program.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Reactor.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Renderer.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/VertexFormat.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Window.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/WindowEventReactor.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/WindowEvents.hpp
@@ -343,7 +345,8 @@ add_library(gbGraphics
 )
 target_include_directories(gbGraphics PUBLIC $<BUILD_INTERFACE:${GB_GRAPHICS_INCLUDE_DIR}>)
 target_link_libraries(gbGraphics PUBLIC Ghulbus::gbBase Ghulbus::gbMath gbVk glfw)
-target_link_libraries(gbGraphics PRIVATE VulkanMemoryAllocator::VulkanMemoryAllocator stb::stb)
+target_link_libraries(gbGraphics PRIVATE VulkanMemoryAllocator::VulkanMemoryAllocator spirv-cross-reflect stb::stb)
+target_link_libraries(gbGraphics PRIVATE VulkanMemoryAllocator::VulkanMemoryAllocator spirv-cross-reflect stb::stb)
 
 if(NOT GB_GENERATE_COVERAGE_INFO)
     target_compile_definitions(gbGraphics PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
@@ -484,7 +487,7 @@ add_shader(demo ${PROJECT_BINARY_DIR}/shaders/simple_compute.spv ${PROJECT_SOURC
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_hardcoded.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_hardcoded.vert)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_direct.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_direct_vertices.vert)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_mvp.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_ubo_mvp.vert COMPILE_OPTIONS -O)
-add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_textured.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_textured.vert COMPILE_OPTIONS -O)
+add_shader(demo ${PROJECT_BINARY_DIR}/shaders/vert_textured.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_textured.vert)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/frag_hardcoded.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_hardcoded.frag)
 add_shader(demo ${PROJECT_BINARY_DIR}/shaders/frag_textured.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_textured.frag)
 

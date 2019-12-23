@@ -20,6 +20,7 @@
 #include <gbGraphics/Program.hpp>
 #include <gbGraphics/Reactor.hpp>
 #include <gbGraphics/Renderer.hpp>
+#include <gbGraphics/VertexFormat.hpp>
 #include <gbGraphics/Window.hpp>
 #include <gbGraphics/WindowEventReactor.hpp>
 
@@ -241,26 +242,12 @@ int main()
 
     std::vector<Vertex> const vertex_data = generateVertexData();
     std::vector<Index> const index_data = generateIndexData();
-    VkVertexInputBindingDescription vertex_binding;
-    vertex_binding.binding = 0;
-    vertex_binding.stride = sizeof(Vertex);
-    vertex_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    std::array<VkVertexInputAttributeDescription, 3> vertex_attributes;
-    vertex_attributes[0].location = 0;
-    vertex_attributes[0].binding = vertex_binding.binding;
-    vertex_attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes[0].offset = offsetof(Vertex, position);
-
-    vertex_attributes[1].location = 1;
-    vertex_attributes[1].binding = vertex_binding.binding;
-    vertex_attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertex_attributes[1].offset = offsetof(Vertex, normal);
-
-    vertex_attributes[2].location = 2;
-    vertex_attributes[2].binding = vertex_binding.binding;
-    vertex_attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertex_attributes[2].offset = offsetof(Vertex, texCoord);
+    using MyVertexFormat = GhulbusGraphics::VertexFormat<
+        GhulbusGraphics::VertexComponent<GhulbusMath::Vector3f, GhulbusGraphics::VertexComponentSemantics::Position>,
+        GhulbusGraphics::VertexComponent<GhulbusMath::Vector3f, GhulbusGraphics::VertexComponentSemantics::Color>,
+        GhulbusGraphics::VertexComponent<GhulbusMath::Vector2f, GhulbusGraphics::VertexComponentSemantics::Texture>
+    >;
+    MyVertexFormat vertex_format;
 
     //*
     GhulbusGraphics::ImageLoader img_loader("textures/statue.jpg");
@@ -371,6 +358,10 @@ int main()
     auto vert_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/vert_textured.spv");
     auto frag_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/frag_textured.spv");
     GhulbusGraphics::Program shader_program(graphics_instance, vert_textured_spirv_code, frag_textured_spirv_code);
+    shader_program.addVertexBinding(0, vertex_format);
+    shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Position, 0, 0);
+    shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Color, 0, 1);
+    shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Texture, 0, 2);
 
     // ubo
     GhulbusVulkan::DescriptorSetLayout ubo_layout = [&device]() {
@@ -440,8 +431,6 @@ int main()
         renderer.addPipelineBuilder(std::move(pipeline_layout));
     }
     GhulbusVulkan::PipelineLayout& pipeline_layout = renderer.getPipelineLayout(0);
-    renderer.getPipelineBuilder(0).addVertexBindings(&vertex_binding, 1, vertex_attributes.data(),
-                                                     static_cast<uint32_t>(vertex_attributes.size()));
 
     renderer.recordDrawCommands(0,
         [&ubo_descriptor_sets, &pipeline_layout, &vertex_buffer, &index_buffer, &mesh]
