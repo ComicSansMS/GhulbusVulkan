@@ -169,8 +169,8 @@ void fullBarrier(GhulbusVulkan::CommandBuffer& command_buffer)
         0, nullptr, 0, nullptr);
 }
 
-using Vertex = GhulbusGraphics::Mesh::VertexData;
-using Index = GhulbusGraphics::Mesh::IndexData;
+using VertexData = GhulbusGraphics::Mesh::VertexData;
+using Index = GhulbusGraphics::Mesh::IndexData::value_type;
 
 struct UBOMVP {
     GhulbusMath::Matrix4<float> model;
@@ -178,18 +178,19 @@ struct UBOMVP {
     GhulbusMath::Matrix4<float> projection;
 };
 
-inline std::vector<Vertex> generateVertexData()
+inline VertexData generateVertexData()
 {
+    using namespace GhulbusMath;
     return {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+        {Point3f{-0.5f, -0.5f,  0.0f}, Normal3f{1.0f, 0.0f, 0.0f}, Vector2f{0.0f, 0.0f}},
+        {Point3f{ 0.5f, -0.5f,  0.0f}, Normal3f{0.0f, 1.0f, 0.0f}, Vector2f{1.0f, 0.0f}},
+        {Point3f{ 0.5f,  0.5f,  0.0f}, Normal3f{0.0f, 0.0f, 1.0f}, Vector2f{1.0f, 1.0f}},
+        {Point3f{-0.5f,  0.5f,  0.0f}, Normal3f{1.0f, 1.0f, 1.0f}, Vector2f{0.0f, 1.0f}},
 
-        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{ 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+        {Point3f{-0.5f, -0.5f, -0.5f}, Normal3f{1.0f, 0.0f, 0.0f}, Vector2f{0.0f, 0.0f}},
+        {Point3f{ 0.5f, -0.5f, -0.5f}, Normal3f{0.0f, 1.0f, 0.0f}, Vector2f{1.0f, 0.0f}},
+        {Point3f{ 0.5f,  0.5f, -0.5f}, Normal3f{0.0f, 0.0f, 1.0f}, Vector2f{1.0f, 1.0f}},
+        {Point3f{-0.5f,  0.5f, -0.5f}, Normal3f{1.0f, 1.0f, 1.0f}, Vector2f{0.0f, 1.0f}}
     };
 }
 
@@ -240,19 +241,12 @@ int main()
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Initial present");
 
-    std::vector<Vertex> const vertex_data = generateVertexData();
+    VertexData const vertex_data = generateVertexData();
     std::vector<Index> const index_data = generateIndexData();
-    using MyVertexFormat = GhulbusGraphics::VertexFormat<
-        GhulbusGraphics::VertexComponent<GhulbusMath::Vector3f, GhulbusGraphics::VertexComponentSemantics::Position>,
-        GhulbusGraphics::VertexComponent<GhulbusMath::Vector3f, GhulbusGraphics::VertexComponentSemantics::Color>,
-        GhulbusGraphics::VertexComponent<GhulbusMath::Vector2f, GhulbusGraphics::VertexComponentSemantics::Texture>
-    >;
-    MyVertexFormat vertex_format;
 
     //*
     GhulbusGraphics::ImageLoader img_loader("textures/statue.jpg");
-    GhulbusGraphics::Mesh mesh(graphics_instance, vertex_data.data(), vertex_data.size(),
-                               index_data.data(), index_data.size(), img_loader);
+    GhulbusGraphics::Mesh mesh(graphics_instance, vertex_data, index_data, img_loader);
     /*/
     GhulbusGraphics::ObjParser obj_parser;
     obj_parser.readFile("chalet.obj");
@@ -358,9 +352,9 @@ int main()
     auto vert_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/vert_textured.spv");
     auto frag_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/frag_textured.spv");
     GhulbusGraphics::Program shader_program(graphics_instance, vert_textured_spirv_code, frag_textured_spirv_code);
-    shader_program.addVertexBinding(0, vertex_format);
+    shader_program.addVertexBinding(0, vertex_data.getFormat());
     shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Position, 0, 0);
-    shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Color, 0, 1);
+    //shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Color, 0, 1);
     shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Texture, 0, 2);
 
     // ubo

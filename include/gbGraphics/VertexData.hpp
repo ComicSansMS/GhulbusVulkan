@@ -30,7 +30,7 @@ private:
 public:
     VertexData() = default;
 
-    VertexData(std::initializer_list<Format> init)
+    VertexData(std::initializer_list<Storage> init)
         : m_data(init)
     {}
 
@@ -53,6 +53,10 @@ public:
     std::byte const* data() const {
         return reinterpret_cast<std::byte const*>(m_data.data());
     }
+
+    Format getFormat() const {
+        return Format{};
+    }
 };
 
 template<VertexFormatBase::ComponentSemantics Semantics, typename... Ts>
@@ -61,9 +65,6 @@ get(VertexData<Ts...>& v) noexcept {
     size_t constexpr index = VertexData<Ts...>::Format::getIndexForSemantics(Semantics);
     return get<index>(v.getStorage());
 }
-
-//template<typename... T_VertexComponents>
-//auto getBySemantic(VertexData<T_VertexComponents...> const& v) -> Vertex;
 
 template<typename T>
 struct VertexDataFromFormat;
