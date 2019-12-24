@@ -17,8 +17,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
@@ -140,11 +142,13 @@ template<size_t N>
 constexpr std::integral_constant<VertexFormatBase::ComponentType, VertexFormatBase::ComponentType::Padding>
 getVertexComponentType(VertexComponentLayout::Padding<N> const&);
 
+template<typename VectorTag_T>
 constexpr std::integral_constant<VertexFormatBase::ComponentType, VertexFormatBase::ComponentType::t_vec2>
-getVertexComponentType(GhulbusMath::Vector2f const&);
+getVertexComponentType(GhulbusMath::Vector2Impl<float, VectorTag_T> const&);
 
+template<typename VectorTag_T>
 constexpr std::integral_constant<VertexFormatBase::ComponentType, VertexFormatBase::ComponentType::t_vec3>
-getVertexComponentType(GhulbusMath::Vector3f const&);
+getVertexComponentType(GhulbusMath::Vector3Impl<float, VectorTag_T> const&);
 
 constexpr std::integral_constant<VertexFormatBase::ComponentType, VertexFormatBase::ComponentType::t_vec4>
 getVertexComponentType(GhulbusMath::Vector4<float> const&);
@@ -178,26 +182,26 @@ namespace VertexComponentSemantics {
 }
 
 constexpr std::integral_constant<VertexFormatBase::ComponentSemantics, VertexFormatBase::ComponentSemantics::None>
-getVertexComponenentSemantics(VertexComponentSemantics::None);
+getVertexComponentSemantics(VertexComponentSemantics::None);
 
 template<int N>
 constexpr std::integral_constant<VertexFormatBase::ComponentSemantics, VertexFormatBase::ComponentSemantics::Generic>
-getVertexComponenentSemantics(VertexComponentSemantics::Generic<N>);
+getVertexComponentSemantics(VertexComponentSemantics::Generic<N>);
 
 constexpr std::integral_constant<VertexFormatBase::ComponentSemantics, VertexFormatBase::ComponentSemantics::Padding>
-getVertexComponenentSemantics(VertexComponentSemantics::Padding);
+getVertexComponentSemantics(VertexComponentSemantics::Padding);
 
 constexpr std::integral_constant<VertexFormatBase::ComponentSemantics, VertexFormatBase::ComponentSemantics::Position>
-getVertexComponenentSemantics(VertexComponentSemantics::Position);
+getVertexComponentSemantics(VertexComponentSemantics::Position);
 
 constexpr std::integral_constant<VertexFormatBase::ComponentSemantics, VertexFormatBase::ComponentSemantics::Color>
-getVertexComponenentSemantics(VertexComponentSemantics::Color);
+getVertexComponentSemantics(VertexComponentSemantics::Color);
 
 constexpr std::integral_constant<VertexFormatBase::ComponentSemantics, VertexFormatBase::ComponentSemantics::Normal>
-getVertexComponenentSemantics(VertexComponentSemantics::Normal);
+getVertexComponentSemantics(VertexComponentSemantics::Normal);
 
 constexpr std::integral_constant<VertexFormatBase::ComponentSemantics, VertexFormatBase::ComponentSemantics::Texture>
-getVertexComponenentSemantics(VertexComponentSemantics::Texture);
+getVertexComponentSemantics(VertexComponentSemantics::Texture);
 
 template<typename T>
 struct InvalidSemantic {
@@ -207,7 +211,7 @@ struct InvalidSemantic {
     static constexpr VertexFormatBase::ComponentSemantics value = invalid();
 };
 template<typename T>
-inline constexpr InvalidSemantic<T> getVertexComponenentSemantics(T);
+inline constexpr InvalidSemantic<T> getVertexComponentSemantics(T);
 
 template<typename T_Layout, typename T_Semantics = VertexComponentSemantics::None>
 struct VertexComponent {
@@ -225,7 +229,7 @@ static constexpr VertexComponentInfo determineComponentInfo() {
         sizeof(Layout),
         0,                  // offset will be filled in a second step
         decltype(getVertexComponentType(std::declval<Layout>()))::value,
-        decltype(getVertexComponenentSemantics(std::declval<Semantics>()))::value
+        decltype(getVertexComponentSemantics(std::declval<Semantics>()))::value
     };
 }
 
@@ -236,11 +240,24 @@ class VertexFormat : public VertexFormatBase {
 private:
     std::array<VertexComponentInfo, sizeof...(T_VertexComponents)> m_runtimeInfo;
 public:
-    VertexFormat()
+    constexpr VertexFormat()
         :m_runtimeInfo(buildRuntimeInfo())
     {}
 
     ~VertexFormat() override = default;
+
+    static constexpr std::optional<size_t> getIndexForSemantics(ComponentSemantics semantics) {
+        std::array<VertexComponentInfo, sizeof...(T_VertexComponents)> constexpr infos = buildRuntimeInfo();
+        for (size_t i = 0; i < infos.size(); ++i) {
+            if(infos[i].semantics == semantics) { return i; }
+        }
+        return std::nullopt;
+    }
+
+    static constexpr size_t getStrideStatic() {
+        std::array<VertexComponentInfo, sizeof...(T_VertexComponents)> constexpr infos = buildRuntimeInfo();
+        return infos.back().offset + infos.back().size;
+    }
 protected:
     std::unique_ptr<VertexFormatBase> do_clone() const override {
         return std::make_unique<VertexFormat>();

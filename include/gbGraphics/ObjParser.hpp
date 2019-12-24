@@ -8,6 +8,8 @@
  */
 #include <gbGraphics/config.hpp>
 
+#include <gbGraphics/VertexData.hpp>
+
 #include <gbMath/Vector2.hpp>
 #include <gbMath/Vector3.hpp>
 
@@ -62,20 +64,16 @@ public:
      * @note Each entry holds the name for the FaceData at the same index in FaceGroups.
      */
     using FaceGroupNames = std::vector<std::string>;
-    
-    /** Data structure for flat vertices.
-     * In OBJ, the different vertex attributes (position, normal, texcoord) are stored in independent arrays.
-     * The ObjParser flattens these into a single array-of-structures layout.
-     */
-    struct VertexEntryFlat {
-        GhulbusMath::Point3f vertex;                ///< Geometry
-        GhulbusMath::Normal3f normal;               ///< Normal
-        GhulbusMath::Vector2f texCoord;             ///< Texture Coordinate
-    };
 
     /** Container for flat vertex data.
      */
-    using VertexDataFlat = std::vector<VertexEntryFlat>;
+    using VertexDataFlat = ::GHULBUS_GRAPHICS_NAMESPACE::VertexData<
+        VertexComponent<GhulbusMath::Point3f, VertexComponentSemantics::Position>,      ///< Geometry data
+        VertexComponent<GhulbusMath::Normal3f, VertexComponentSemantics::Normal>,       ///< Normal data
+        VertexComponent<GhulbusMath::Vector2f, VertexComponentSemantics::Texture>       ///< Texture Coordinate
+    >;
+
+    using VertexEntryFlat = VertexDataFlat::Storage;
 
     /** Container for flat index data.
      */

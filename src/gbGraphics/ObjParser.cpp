@@ -192,7 +192,7 @@ void ObjParser::clearMesh()
     m_vertexData.texCoord.clear();
     m_faceGroups.clear();
     m_faceGroupNames.clear();
-    m_vertexDataFlat.clear();
+    m_vertexDataFlat.getStorage().clear();
     m_indexDataFlat.clear();
 }
 
@@ -535,19 +535,22 @@ inline void addFlattenedFaces(std::vector<IndexTuple> const& index_tuples,
         if (map_it == index_tuple_map.end()) {
             /// index tuple does not exist; create a new vertex
             ObjParser::VertexEntryFlat v;
-            v.vertex = vertex_data.vertex[it->vertexIndex - 1];
+            size_t constexpr position = *ObjParser::VertexDataFlat::Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Position);
+            size_t constexpr normal = *ObjParser::VertexDataFlat::Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Normal);
+            size_t constexpr texture = *ObjParser::VertexDataFlat::Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Texture);
+            get<position>(v) = vertex_data.vertex[it->vertexIndex - 1];
             if (vertex_data.normal.empty()) {
-                v.normal = GhulbusMath::Normal3f(1.0f, 0.0f, 0.0f);
+                get<normal>(v) = GhulbusMath::Normal3f(1.0f, 0.0f, 0.0f);
             } else {
-                v.normal = vertex_data.normal[it->normalIndex - 1];
+                get<normal>(v) = vertex_data.normal[it->normalIndex - 1];
             }
             if (vertex_data.texCoord.empty()) {
-                v.texCoord = GhulbusMath::Vector2f(0.0f, 0.0f);
+                get<texture>(v) = GhulbusMath::Vector2f(0.0f, 0.0f);
             } else {
-                v.texCoord = vertex_data.texCoord[it->textureIndex - 1];
+                get<texture>(v) = vertex_data.texCoord[it->textureIndex - 1];
             }
             // add new vertex to flat data structures
-            out_flat_vertex_data.push_back(v);
+            out_flat_vertex_data.getStorage().push_back(v);
             GHULBUS_ASSERT(out_flat_vertex_data.size() < std::numeric_limits<ObjParser::IndexType>::max());
             auto const index = static_cast<ObjParser::IndexType>(out_flat_vertex_data.size()) - 1;
             index_tuple_map[(*it)] = index;
