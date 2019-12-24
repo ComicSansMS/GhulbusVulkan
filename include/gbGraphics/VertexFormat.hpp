@@ -22,6 +22,8 @@
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
+struct VertexComponentInfo;
+
 class VertexFormatBase {
 public:
     enum class ComponentType {
@@ -88,31 +90,44 @@ public:
         return do_getNumberOfComponents();
     }
 
-    size_t getComponentSize(size_t index) const {
-        return do_getComponentSize(index);
+    VertexComponentInfo const& getVertexComponentInfo(size_t index) {
+        return do_getVertexComponentInfo(index);
     }
 
-    size_t getComponentOffset(size_t index) const {
-        return do_getComponentOffset(index);
-    }
-
-    ComponentType getComponentType(size_t index) const {
-        return do_getComponentType(index);
-    }
-
-    ComponentSemantics getComponentSemantics(size_t index) const {
-        return do_getComponentSemantics(index);
-    }
+    size_t getComponentSize(size_t index) const;
+    size_t getComponentOffset(size_t index) const;
+    ComponentType getComponentType(size_t index) const;
+    ComponentSemantics getComponentSemantics(size_t index) const;
 protected:
     VertexFormatBase() = default;
     virtual std::unique_ptr<VertexFormatBase> do_clone() const = 0;
     virtual size_t do_getStride() const = 0;
     virtual size_t do_getNumberOfComponents() const = 0;
-    virtual size_t do_getComponentSize(size_t index) const = 0;
-    virtual size_t do_getComponentOffset(size_t index) const = 0;
-    virtual ComponentType do_getComponentType(size_t index) const = 0;
-    virtual ComponentSemantics do_getComponentSemantics(size_t index) const = 0;
+    virtual VertexComponentInfo const& do_getVertexComponentInfo(size_t index) const = 0;
 };
+
+struct VertexComponentInfo {
+    std::size_t size;
+    std::size_t offset;
+    VertexFormatBase::ComponentType type;
+    VertexFormatBase::ComponentSemantics semantics;
+};
+
+inline size_t VertexFormatBase::getComponentSize(size_t index) const {
+    return do_getVertexComponentInfo(index).size;
+}
+
+inline size_t VertexFormatBase::getComponentOffset(size_t index) const {
+    return do_getVertexComponentInfo(index).offset;
+}
+
+inline VertexFormatBase::ComponentType VertexFormatBase::getComponentType(size_t index) const {
+    return do_getVertexComponentInfo(index).type;
+}
+
+inline VertexFormatBase::ComponentSemantics VertexFormatBase::getComponentSemantics(size_t index) const {
+    return do_getVertexComponentInfo(index).semantics;
+}
 
 namespace VertexComponentLayout {
     template<size_t N>
@@ -200,13 +215,6 @@ struct VertexComponent {
     using semantics_type = T_Semantics;
 };
 
-struct VertexComponentInfo {
-    std::size_t size;
-    std::size_t offset;
-    VertexFormatBase::ComponentType type;
-    VertexFormatBase::ComponentSemantics semantics;
-};
-
 namespace detail {
 
 template<typename T_VertexComponent>
@@ -244,17 +252,8 @@ protected:
     size_t do_getNumberOfComponents() const override {
         return sizeof...(T_VertexComponents);
     }
-    size_t do_getComponentSize(size_t index) const override {
-        return m_runtimeInfo[index].size;
-    }
-    size_t do_getComponentOffset(size_t index) const override {
-        return m_runtimeInfo[index].offset;
-    }
-    ComponentType do_getComponentType(size_t index) const override {
-        return m_runtimeInfo[index].type;
-    }
-    ComponentSemantics do_getComponentSemantics(size_t index) const override {
-        return m_runtimeInfo[index].semantics;
+    VertexComponentInfo const& do_getVertexComponentInfo(size_t index) const override {
+        return m_runtimeInfo[index];
     }
 
     static constexpr std::array<VertexComponentInfo, sizeof...(T_VertexComponents)> buildRuntimeInfo()

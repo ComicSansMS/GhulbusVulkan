@@ -44,11 +44,14 @@ public:
 
     void addVertexBinding(uint32_t binding, VertexFormatBase const& vertex_input_format);
     void bindVertexInput(VertexFormatBase::ComponentSemantics component_semantic, uint32_t binding, uint32_t location);
+    void bindVertexInputByName(VertexFormatBase::ComponentSemantics component_semantic, uint32_t binding, char const* name);
 
     std::vector<VkVertexInputBindingDescription> const& getVertexInputBindings() const;
     std::vector<VkVertexInputAttributeDescription> const& getVertexInputAttributeDescriptions() const;
 private:
     std::vector<VkPipelineShaderStageCreateInfo> createShaderStageCreateInfos();
+    VertexComponentInfo const& getVertexComponentInfoBySemantic(uint32_t binding,
+        VertexFormatBase::ComponentSemantics component_semantic) const;
 };
 }
 #endif

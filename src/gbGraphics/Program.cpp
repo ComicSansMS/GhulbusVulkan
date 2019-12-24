@@ -32,6 +32,9 @@ struct Program::ReflectionInfo {
 
     ReflectionInfo(ReflectionInfo const&) = delete;
     ReflectionInfo& operator=(ReflectionInfo const&) = delete;
+
+    spirv_cross::Resource const& getVertexInputStageResourceByLocation(uint32_t location_index) const;
+    spirv_cross::Resource const& getVertexInputStageResourceByName(char const* name) const;
 };
 
 Program::ReflectionInfo::ReflectionInfo(GhulbusVulkan::SpirvCode const& vertex_shader,
@@ -60,6 +63,34 @@ Program::ReflectionInfo::ReflectionInfo(GhulbusVulkan::SpirvCode const& vertex_s
         spirv_cross::SPIRType const rtype = vertex.get_type(r.type_id);
     }
 }
+
+spirv_cross::Resource const& Program::ReflectionInfo::getVertexInputStageResourceByLocation(uint32_t location_index) const
+{
+    auto const& resources = vertex_resources.stage_inputs;
+    auto const it_resource =
+        std::find_if(resources.begin(), resources.end(), [this, location_index](spirv_cross::Resource const& r) {
+        uint32_t const rlocation = vertex.get_decoration(r.id, spv::DecorationLocation);
+        return (rlocation == location_index);
+    });
+    if(it_resource == resources.end()) {
+        GHULBUS_THROW(Exceptions::ShaderError(), "Invalid binding/location indices.");
+    }
+    return *it_resource;
+}
+
+spirv_cross::Resource const& Program::ReflectionInfo::getVertexInputStageResourceByName(char const* name) const
+{
+    auto const& resources = vertex_resources.stage_inputs;
+    auto const it_resource =
+        std::find_if(resources.begin(), resources.end(), [this, name](spirv_cross::Resource const& r) {
+        return (r.name == name);
+    });
+    if(it_resource == resources.end()) {
+        GHULBUS_THROW(Exceptions::ShaderError(), "Invalid binding/location indices.");
+    }
+    return *it_resource;
+}
+
 
 Program::Program(GraphicsInstance& instance, GhulbusVulkan::SpirvCode const& vertex_shader,
                  GhulbusVulkan::SpirvCode const& fragment_shader)
@@ -164,8 +195,8 @@ void Program::addVertexBinding(uint32_t binding, VertexFormatBase const& vertex_
     m_vertexInputBinding.push_back(vertex_binding);
 }
 
-void Program::bindVertexInput(VertexFormatBase::ComponentSemantics component_semantic,
-                              uint32_t binding, uint32_t location)
+VertexComponentInfo const& Program::getVertexComponentInfoBySemantic(uint32_t binding,
+    VertexFormatBase::ComponentSemantics component_semantic) const
 {
     auto const it = std::find_if(m_vertexInputBinding.begin(), m_vertexInputBinding.end(),
         [binding](VkVertexInputBindingDescription const& vertex_binding) { return vertex_binding.binding == binding; });
@@ -178,25 +209,39 @@ void Program::bindVertexInput(VertexFormatBase::ComponentSemantics component_sem
         }
         GHULBUS_THROW(Exceptions::ShaderError(), "Requested semantic is not part of vertex format.");
     }(component_semantic);
+    return format.getVertexComponentInfo(component_index);
+}
 
-    auto const& resources = m_reflection->vertex_resources.stage_inputs;
-    auto const it_resource = 
-        std::find_if(resources.begin(), resources.end(), [this, binding, location](spirv_cross::Resource const& r) {
-            uint32_t const rbinding = m_reflection->vertex.get_decoration(r.id, spv::DecorationBinding);
-            uint32_t const rlocation = m_reflection->vertex.get_decoration(r.id, spv::DecorationLocation);
-            return (rbinding == binding) && (rlocation == location);
-        });
-    if(it_resource == resources.end()) {
-        GHULBUS_THROW(Exceptions::ShaderError(), "Invalid binding/location indices.");
-    }
-    checkTypeMatch(m_reflection->vertex.get_type(it_resource->base_type_id), format.getComponentType(component_index));
+void Program::bindVertexInput(VertexFormatBase::ComponentSemantics component_semantic,
+                              uint32_t binding, uint32_t location)
+{
+    VertexComponentInfo const& component_info = getVertexComponentInfoBySemantic(binding, component_semantic);
+
+    spirv_cross::Resource const& resource = m_reflection->getVertexInputStageResourceByLocation(location);
+    checkTypeMatch(m_reflection->vertex.get_type(resource.base_type_id), component_info.type);
 
     VkVertexInputAttributeDescription vertex_attribute;
     vertex_attribute.location = location;
     vertex_attribute.binding = binding;
-    vertex_attribute.format = determineAttributeFormat(format.getComponentType(component_index),
-                                                       format.getComponentSemantics(component_index));
-    vertex_attribute.offset = static_cast<uint32_t>(format.getComponentOffset(component_index));
+    vertex_attribute.format = determineAttributeFormat(component_info.type, component_info.semantics);
+    vertex_attribute.offset = static_cast<uint32_t>(component_info.offset);
+
+    m_vertexInputAttributes.push_back(vertex_attribute);
+}
+
+void Program::bindVertexInputByName(VertexFormatBase::ComponentSemantics component_semantic,
+                                    uint32_t binding, char const* name)
+{
+    VertexComponentInfo const& component_info = getVertexComponentInfoBySemantic(binding, component_semantic);
+
+    spirv_cross::Resource const& resource = m_reflection->getVertexInputStageResourceByName(name);
+    checkTypeMatch(m_reflection->vertex.get_type(resource.base_type_id), component_info.type);
+
+    VkVertexInputAttributeDescription vertex_attribute;
+    vertex_attribute.location = m_reflection->vertex.get_decoration(resource.id, spv::DecorationLocation);
+    vertex_attribute.binding = binding;
+    vertex_attribute.format = determineAttributeFormat(component_info.type, component_info.semantics);
+    vertex_attribute.offset = static_cast<uint32_t>(component_info.offset);
 
     m_vertexInputAttributes.push_back(vertex_attribute);
 }
