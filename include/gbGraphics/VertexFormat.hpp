@@ -211,21 +211,21 @@ inline constexpr InvalidSemantic<T> getVertexComponenentSemantics(T);
 
 template<typename T_Layout, typename T_Semantics = VertexComponentSemantics::None>
 struct VertexComponent {
-    using layout_type = T_Layout;
-    using semantics_type = T_Semantics;
+    using Layout = T_Layout;
+    using Semantics = T_Semantics;
 };
 
 namespace detail {
 
 template<typename T_VertexComponent>
 static constexpr VertexComponentInfo determineComponentInfo() {
-    using layout = typename T_VertexComponent::layout_type;
-    using semantics = typename T_VertexComponent::semantics_type;
+    using Layout = typename T_VertexComponent::Layout;
+    using Semantics = typename T_VertexComponent::Semantics;
     return VertexComponentInfo{
-        sizeof(layout),
+        sizeof(Layout),
         0,                  // offset will be filled in a second step
-        decltype(getVertexComponentType(std::declval<layout>()))::value,
-        decltype(getVertexComponenentSemantics(std::declval<semantics>()))::value
+        decltype(getVertexComponentType(std::declval<Layout>()))::value,
+        decltype(getVertexComponenentSemantics(std::declval<Semantics>()))::value
     };
 }
 

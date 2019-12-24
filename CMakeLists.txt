@@ -290,6 +290,8 @@ set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/Program.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Reactor.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Renderer.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/VertexData.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/VertexDataStorage.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/VertexFormat.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Window.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/WindowEventReactor.cpp
@@ -312,6 +314,8 @@ set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Program.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Reactor.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Renderer.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/VertexData.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/VertexDataStorage.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/VertexFormat.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Window.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/WindowEventReactor.hpp
