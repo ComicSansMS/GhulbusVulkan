@@ -57,13 +57,17 @@ public:
     Format getFormat() const {
         return Format{};
     }
+
+    uint32_t getNumberOfVertices() const {
+        return static_cast<uint32_t>(m_data.size());
+    }
 };
 
 template<VertexFormatBase::ComponentSemantics Semantics, typename... Ts>
 inline constexpr decltype(auto)
-get(VertexData<Ts...>& v) noexcept {
-    size_t constexpr index = VertexData<Ts...>::Format::getIndexForSemantics(Semantics);
-    return get<index>(v.getStorage());
+get(VertexData<Ts...>& v, std::size_t vertex_index) noexcept {
+    size_t constexpr component_index = *VertexData<Ts...>::Format::getIndexForSemantics(Semantics);
+    return get<component_index>(v.getStorage()[vertex_index]);
 }
 
 template<typename T>

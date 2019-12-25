@@ -282,5 +282,18 @@ protected:
     }
 };
 
+template<VertexFormatBase::ComponentSemantics Semantics, typename VertexFormat_T>
+struct GetComponentBySemantics;
+
+template<VertexFormatBase::ComponentSemantics Semantics, typename... Components_T>
+struct GetComponentBySemantics<Semantics, VertexFormat<Components_T...>> {
+    using Format = VertexFormat<Components_T...>;
+    static std::optional<size_t> constexpr OptIndex = Format::getIndexForSemantics(Semantics);
+    static_assert(OptIndex.has_value(), "Invalid semantics for vertex format.");
+    using type = std::decay_t<decltype(std::get<(*OptIndex)>(std::declval<std::tuple<Components_T...>>()))>;
+};
+
+template<VertexFormatBase::ComponentSemantics Semantics, typename VertexFormat_T>
+using GetComponentBySemantics_t = typename GetComponentBySemantics<Semantics, VertexFormat_T>::type;
 }
 #endif
