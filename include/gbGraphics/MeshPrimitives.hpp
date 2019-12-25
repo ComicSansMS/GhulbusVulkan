@@ -12,6 +12,8 @@
 #include <gbGraphics/IndexData.hpp>
 #include <gbGraphics/VertexData.hpp>
 
+#include <gbMath/AABB3.hpp>
+
 #include <gbBase/Assert.hpp>
 
 #include <type_traits>
@@ -172,6 +174,99 @@ public:
                 t[idx+1].i2 = static_cast<IndexType_T>(ix * (n_segments_z + 1) + iz + 1);
                 t[idx+1].i3 = static_cast<IndexType_T>((ix + 1) * (n_segments_z + 1) + iz + 1);
             }
+        }
+    }
+};
+
+template<typename VertexData_T, typename IndexType_T=uint16_t>
+class Box {
+public:
+    using VertexData = VertexData_T;
+    using Format = typename VertexData::Format;
+    using Storage = typename VertexData::Storage;
+    using IndexType = IndexType_T;
+    using IndexData = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
+private:
+    static auto constexpr PositionIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Position);
+    static auto constexpr ColorIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Color);
+    static auto constexpr TextureIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Texture);
+    static_assert(PositionIndex, "Invalid vertex format: Need at least one component with Position semantics.");
+public:
+    using Position = GetComponentBySemantics_t<VertexFormatBase::ComponentSemantics::Position, Format>;
+    using PositionVectorValueType = typename Position::Layout::ValueType;
+    VertexData m_vertexData;
+    IndexData m_indexData;
+public:
+    Box(GhulbusMath::AABB3<PositionVectorValueType> const& box) {
+        m_vertexData.getStorage().resize(24);
+        fillVertexData(box.min.to_vector(), box.max.to_vector());
+        m_indexData.getStorage().resize(12);
+        fillIndexData();
+    }
+
+    void fillVertexData(GhulbusMath::Vector3<PositionVectorValueType> const& min,
+                        GhulbusMath::Vector3<PositionVectorValueType> const& max)
+    {
+        using PositionVec = typename Position::Layout;
+        if constexpr (GhulbusMath::VectorTraits::IsVector3<PositionVec>::value) {
+            // front
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData,  0) = PositionVec(min.x, min.y, min.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData,  1) = PositionVec(min.x, max.y, min.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData,  2) = PositionVec(max.x, max.y, min.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData,  3) = PositionVec(max.x, min.y, min.z);
+            // right
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData,  4) = PositionVec(max.x, min.y, min.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData,  5) = PositionVec(max.x, max.y, min.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData,  6) = PositionVec(max.x, max.y, max.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData,  7) = PositionVec(max.x, min.y, max.z);
+            // back
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData,  8) = PositionVec(max.x, min.y, max.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData,  9) = PositionVec(max.x, max.y, max.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 10) = PositionVec(min.x, max.y, max.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 11) = PositionVec(min.x, min.y, max.z);
+            // left
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 12) = PositionVec(min.x, min.y, max.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 13) = PositionVec(min.x, max.y, max.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 14) = PositionVec(min.x, max.y, min.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 15) = PositionVec(min.x, min.y, min.z);
+            // top
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 16) = PositionVec(min.x, max.y, min.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 17) = PositionVec(min.x, max.y, max.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 18) = PositionVec(max.x, max.y, max.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 19) = PositionVec(max.x, max.y, min.z);
+            // bottom
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 20) = PositionVec(max.x, min.y, min.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 21) = PositionVec(max.x, min.y, max.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 22) = PositionVec(min.x, min.y, max.z);
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 23) = PositionVec(min.x, min.y, min.z);
+        } else {
+            static_assert(false, "Unsupported Position Type");
+        }
+        if constexpr(TextureIndex) {
+            using GhulbusMath::Vector2;
+            using Texture = GetComponentBySemantics_t<VertexFormatBase::ComponentSemantics::Texture, Format>;
+            using TexT = typename Texture::Layout::ValueType;
+            for(int i = 0; i < 6; ++i) {
+                int const idx = i*4;
+                get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, idx)     = Vector2<TexT>(0, 1);
+                get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, idx + 1) = Vector2<TexT>(0, 0);
+                get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, idx + 2) = Vector2<TexT>(1, 0);
+                get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, idx + 3) = Vector2<TexT>(1, 1);
+            }
+        }
+    }
+
+    void fillIndexData()
+    {
+        std::vector<IndexComponent::Triangle<IndexType_T>>& t = m_indexData.getStorage();
+        for(int i = 0; i < 6; ++i) {
+            t[i*2].i1   = static_cast<IndexType_T>(i*4);
+            t[i*2].i2   = static_cast<IndexType_T>(i*4+1);
+            t[i*2].i3   = static_cast<IndexType_T>(i*4+2);
+
+            t[i*2+1].i1 = static_cast<IndexType_T>(i*4);
+            t[i*2+1].i2 = static_cast<IndexType_T>(i*4+2);
+            t[i*2+1].i3 = static_cast<IndexType_T>(i*4+3);
         }
     }
 };
