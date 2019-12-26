@@ -10,6 +10,7 @@
 #include <gbGraphics/config.hpp>
 
 #include <gbGraphics/Image2d.hpp>
+#include <gbGraphics/IndexData.hpp>
 #include <gbGraphics/MemoryBuffer.hpp>
 #include <gbGraphics/VertexData.hpp>
 
@@ -32,7 +33,7 @@ public:
         VertexComponent<GhulbusMath::Vector2f, VertexComponentSemantics::Texture>
     >;
     using VertexData = VertexDataFromFormat<VertexFormat>::type;
-    using IndexData = std::vector<std::uint32_t>;
+    using IndexData = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, uint32_t>;
 private:
     GhulbusGraphics::MemoryBuffer m_vertexBuffer;
     GhulbusGraphics::MemoryBuffer m_indexBuffer;

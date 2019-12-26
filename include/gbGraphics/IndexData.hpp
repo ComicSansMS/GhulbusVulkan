@@ -31,6 +31,7 @@ struct Triangle {
                   "Only allowed Index types are uint16_t and uint32_t.");
     static constexpr IndexFormatBase::PrimitiveTopology topology = IndexFormatBase::PrimitiveTopology::TriangleList;
     static constexpr size_t indicesPerPrimitive = 3;
+    using ValueType = T;
     T i1;
     T i2;
     T i3;

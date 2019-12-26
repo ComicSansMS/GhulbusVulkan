@@ -171,7 +171,7 @@ void fullBarrier(GhulbusVulkan::CommandBuffer& command_buffer)
 }
 
 using VertexData = GhulbusGraphics::Mesh::VertexData;
-using Index = GhulbusGraphics::Mesh::IndexData::value_type;
+using IndexData = GhulbusGraphics::Mesh::IndexData;
 
 struct UBOMVP {
     GhulbusMath::Matrix4<float> model;
@@ -195,9 +195,9 @@ inline VertexData generateVertexData()
     };
 }
 
-inline std::vector<Index> generateIndexData() {
-    return { 0, 1, 2, 2, 3, 0,
-             4, 5, 6, 6, 7, 4 };
+inline IndexData generateIndexData() {
+    return { {0, 1, 2}, {2, 3, 0},
+             {4, 5, 6}, {6, 7, 4} };
 }
 
 int main()
@@ -243,16 +243,15 @@ int main()
     perflog.tick(Ghulbus::LogLevel::Debug, "Initial present");
 
     VertexData const vertex_data = generateVertexData();
-    std::vector<Index> const index_data = generateIndexData();
+    //std::vector<Index> const index_data = generateIndexData();
 
-    GhulbusGraphics::Primitives::Quad<VertexData> mesh_quad(1.f, 1.f);
-    GhulbusGraphics::Primitives::Grid<VertexData> mesh_grid(1.f, 1.f, 4, 6);
-    GhulbusGraphics::GetComponentBySemantics_t<GhulbusGraphics::VertexFormatBase::ComponentSemantics::Position, VertexData::Format>::Layout f;
-    f.x = 1.f;
+    GhulbusGraphics::Primitives::Quad<VertexData, uint32_t> mesh_quad(1.f, 1.f);
+    GhulbusGraphics::Primitives::Grid<VertexData, uint32_t> mesh_grid(1.f, 1.f, 4, 6);
+    GhulbusGraphics::Primitives::Box<VertexData, uint32_t> mesh_box(GhulbusMath::AABB3<float>({-0.5f, -0.75f, -1.5f}, {0.5f, 0.75f, 1.5f}));
 
     //*
     GhulbusGraphics::ImageLoader img_loader("textures/statue.jpg");
-    GhulbusGraphics::Mesh mesh(graphics_instance, vertex_data, index_data, img_loader);
+    GhulbusGraphics::Mesh mesh(graphics_instance, mesh_box.m_vertexData, mesh_box.m_indexData, img_loader);
     /*/
     GhulbusGraphics::ObjParser obj_parser;
     obj_parser.readFile("chalet.obj");

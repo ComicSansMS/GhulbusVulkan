@@ -32,7 +32,7 @@ Mesh::Mesh(GraphicsInstance& instance, VertexData const& vertex_data,
            IndexData const& index_data, ImageLoader const& texture_loader)
     :m_vertexBuffer(instance, vertex_data.size() * sizeof(VertexData::Storage),
                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, MemoryUsage::GpuOnly),
-    m_indexBuffer(instance, index_data.size() * sizeof(IndexData::value_type),
+    m_indexBuffer(instance, index_data.size() * sizeof(IndexData::IndexType),
                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, MemoryUsage::GpuOnly),
     m_texture(instance, texture_loader.getWidth(), texture_loader.getHeight())
 {
@@ -41,7 +41,7 @@ Mesh::Mesh(GraphicsInstance& instance, VertexData const& vertex_data,
         m_vertexBuffer.setDataAsynchronously(vertex_data.data(),
                                              instance.getGraphicsQueueFamilyIndex()));
     transfer_queue.stageSubmission(
-        m_indexBuffer.setDataAsynchronously(reinterpret_cast<std::byte const*>(index_data.data()),
+        m_indexBuffer.setDataAsynchronously(index_data.data(),
                                             instance.getGraphicsQueueFamilyIndex()));
     transfer_queue.stageSubmission(
         m_texture.setDataAsynchronously(reinterpret_cast<std::byte const*>(texture_loader.getData()),
@@ -50,7 +50,7 @@ Mesh::Mesh(GraphicsInstance& instance, VertexData const& vertex_data,
 
 uint32_t Mesh::getNumberOfIndices() const
 {
-    return static_cast<uint32_t>(m_indexBuffer.getSize() / sizeof(IndexData::value_type));
+    return static_cast<uint32_t>(m_indexBuffer.getSize() / sizeof(IndexData::IndexType::ValueType));
 }
 
 uint32_t Mesh::getNumberOfVertices() const
