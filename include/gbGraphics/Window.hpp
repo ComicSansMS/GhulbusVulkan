@@ -96,6 +96,7 @@ public:
 
 private:
     void prepareBackbuffer();
+    void onResize(uint32_t new_width, uint32_t new_height);
 };
 }
 #endif

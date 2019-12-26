@@ -61,6 +61,7 @@ void Renderer::recreateAllPipelines()
         auto const& program_attributes = m_program->getVertexInputAttributeDescriptions();
         builder.addVertexBindings(program_bindings.data(), static_cast<uint32_t>(program_bindings.size()),
                                   program_attributes.data(), static_cast<uint32_t>(program_attributes.size()));
+        builder.adjustViewportDimensions(m_swapchain->getWidth(), m_swapchain->getHeight());
         m_pipelines.emplace_back(
             builder.create(layout, m_program->getShaderStageCreateInfos(), m_program->getNumberOfShaderStages(),
                            m_state->renderPass.getVkRenderPass()));

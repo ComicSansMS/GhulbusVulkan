@@ -215,6 +215,7 @@ struct Window::GLFW_Pimpl {
             [this](Event::ViewportResize const& resize_event) -> WindowEventReactor::Result
             {
                 resized_to = VkExtent2D{ resize_event.new_width, resize_event.new_height };
+                graphics_window->onResize(resize_event.new_width, resize_event.new_height);
                 return WindowEventReactor::Result::ContinueProcessing;
             }
         );
@@ -392,5 +393,11 @@ void Window::prepareBackbuffer()
             }
         }
     }
+}
+
+void Window::onResize(uint32_t new_width, uint32_t new_height)
+{
+    m_width = static_cast<int>(new_width);
+    m_height = static_cast<int>(new_height);
 }
 }
