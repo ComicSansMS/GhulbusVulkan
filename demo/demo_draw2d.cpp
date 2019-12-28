@@ -69,7 +69,7 @@
 #include <vector>
 
 using VertexData = GhulbusGraphics::Mesh::VertexData;
-using Index = GhulbusGraphics::Mesh::IndexData::value_type;
+using IndexData = GhulbusGraphics::Mesh::IndexData;
 
 struct UBOMVP {
     GhulbusMath::Matrix4<float> model;
@@ -86,8 +86,8 @@ inline VertexData generateVertexData()
              {Point3f{-0.5f,  0.5f, 0.0f}, Normal3f{1.0f, 1.0f, 1.0f}, Vector2f{1.0f, 1.0f}} };
 }
 
-inline std::vector<Index> generateIndexData() {
-    return { 0, 1, 2, 2, 3, 0 };
+inline IndexData generateIndexData() {
+    return { { 0, 1, 2 }, { 2, 3, 0 } };
 }
 
 using MyVertexData = GhulbusGraphics::VertexData<
@@ -136,7 +136,7 @@ int main()
     perflog.tick(Ghulbus::LogLevel::Debug, "Window creation");
 
     VertexData const vertex_data = generateVertexData();
-    std::vector<Index> const index_data = generateIndexData();
+    IndexData const index_data = generateIndexData();
     using MyVertexFormat = GhulbusGraphics::VertexFormat<
         GhulbusGraphics::VertexComponent<GhulbusMath::Vector3f, GhulbusGraphics::VertexComponentSemantics::Position>,
         GhulbusGraphics::VertexComponent<GhulbusMath::Vector3f, GhulbusGraphics::VertexComponentSemantics::Color>,

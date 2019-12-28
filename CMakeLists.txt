@@ -505,6 +505,11 @@ add_executable(demo_graphics ${PROJECT_SOURCE_DIR}/demo/demo_graphics.cpp)
 target_link_libraries(demo_graphics PUBLIC gbGraphics)
 target_include_directories(demo_graphics PUBLIC ${PROJECT_SOURCE_DIR}/demo)
 
+add_executable(demo_draw2d ${PROJECT_SOURCE_DIR}/demo/demo_draw2d.cpp)
+target_link_libraries(demo_draw2d PUBLIC gbGraphics)
+add_shader(demo_draw2d ${PROJECT_BINARY_DIR}/shaders/vert_draw2d.spv ${PROJECT_SOURCE_DIR}/demo/shaders/draw2d.vert)
+add_shader(demo_draw2d ${PROJECT_BINARY_DIR}/shaders/frag_draw2d.spv ${PROJECT_SOURCE_DIR}/demo/shaders/draw2d.frag)
+
 ###############################################################################
 ## Doxygen gbVk
 ###############################################################################
