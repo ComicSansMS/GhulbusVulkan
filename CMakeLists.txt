@@ -27,7 +27,7 @@ if(GB_GENERATE_COVERAGE_INFO)
     endif()
 endif()
 
-option(GB_AUTO_BUILD_DEPENDENCIES "If set, dependencies will be built automatically as part of the initial configuration" OFF)
+option(GB_AUTO_BUILD_DEPENDENCIES "If set, dependencies will be built automatically as part of the initial configuration" ON)
 if(GB_AUTO_BUILD_DEPENDENCIES)
     find_package(Git REQUIRED)
     if(NOT EXISTS ${PROJECT_BINARY_DIR}/dependencies/build_dependencies.cmake)
