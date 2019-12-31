@@ -21,6 +21,8 @@
 #include <gbVk/RenderPass.hpp>
 #include <gbVk/Semaphore.hpp>
 
+#include <gbMath/Color4.hpp>
+
 #include <functional>
 #include <memory>
 #include <optional>
@@ -67,6 +69,8 @@ private:
     GhulbusVulkan::Semaphore m_renderFinishedSemaphore;
 
     std::vector<std::vector<DrawRecordingCallback>> m_drawRecordings;   ///< one vector per pipeline
+
+    GhulbusMath::Color4f m_clearColor;
 public:
     Renderer(GraphicsInstance& instance, Program& program, GhulbusVulkan::Swapchain& swapchain);
 
@@ -85,6 +89,8 @@ public:
 
     GhulbusVulkan::RenderPass& getRenderPass();
     GhulbusVulkan::Framebuffer& getFramebufferByIndex(uint32_t idx);
+
+    void setClearColor(GhulbusMath::Color4f const& clear_color);
 
 private:
     static GenericImage createDepthBuffer(GraphicsInstance& instance, uint32_t width, uint32_t height);

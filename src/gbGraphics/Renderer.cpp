@@ -24,7 +24,8 @@ namespace GHULBUS_GRAPHICS_NAMESPACE
 Renderer::Renderer(GraphicsInstance& instance, Program& program, GhulbusVulkan::Swapchain& swapchain)
     :m_instance(&instance), m_program(&program), m_swapchain(&swapchain), m_target(nullptr),
      m_state(createRendererState(instance, swapchain)),
-     m_renderFinishedSemaphore(instance.getVulkanDevice().createSemaphore())
+     m_renderFinishedSemaphore(instance.getVulkanDevice().createSemaphore()),
+     m_clearColor(0.5f, 0.f, 0.5f, 1.f)
 {
 }
 
@@ -97,10 +98,10 @@ void Renderer::recreateAllPipelines()
             render_pass_info.renderArea.extent.width = m_swapchain->getWidth();
             render_pass_info.renderArea.extent.height = m_swapchain->getHeight();
             std::array<VkClearValue, 2> clear_color;
-            clear_color[0].color.float32[0] = 0.5f;
-            clear_color[0].color.float32[1] = 0.f;
-            clear_color[0].color.float32[2] = 0.5f;
-            clear_color[0].color.float32[3] = 1.f;
+            clear_color[0].color.float32[0] = m_clearColor.r;
+            clear_color[0].color.float32[1] = m_clearColor.g;
+            clear_color[0].color.float32[2] = m_clearColor.b;
+            clear_color[0].color.float32[3] = m_clearColor.a;
             clear_color[1].depthStencil.depth = 1.0f;
             clear_color[1].depthStencil.stencil = 0;
             render_pass_info.clearValueCount = static_cast<uint32_t>(clear_color.size());
@@ -184,6 +185,11 @@ GhulbusVulkan::Framebuffer& Renderer::getFramebufferByIndex(uint32_t idx)
     GHULBUS_PRECONDITION((idx >= 0) && (idx < m_state->framebuffers.size()));
     GHULBUS_PRECONDITION(m_state);
     return m_state->framebuffers[idx];
+}
+
+void Renderer::setClearColor(GhulbusMath::Color4f const& clear_color)
+{
+    m_clearColor = clear_color;
 }
 
 GenericImage Renderer::createDepthBuffer(GraphicsInstance& instance, uint32_t width, uint32_t height)
