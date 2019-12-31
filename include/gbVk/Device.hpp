@@ -43,8 +43,9 @@ private:
     VkDevice m_device;
     VkPhysicalDevice m_physicalDevice;
     DeviceMemoryAllocator_Trivial m_allocator;
+    VkPhysicalDeviceFeatures m_enabledFeatures;
 public:
-    Device(VkPhysicalDevice physical_device, VkDevice logical_device);
+    Device(VkPhysicalDevice physical_device, VkDevice logical_device, VkPhysicalDeviceFeatures enabled_features);
 
     ~Device();
 
@@ -57,6 +58,8 @@ public:
     VkDevice getVkDevice();
 
     PhysicalDevice getPhysicalDevice();
+
+    VkPhysicalDeviceFeatures const& getEnabledFeatures() const;
 
     Swapchain createSwapchain(VkSurfaceKHR surface, uint32_t queue_family);
     Swapchain createSwapchain(VkSurfaceKHR surface, uint32_t queue_family, VkSwapchainKHR old_swapchain);

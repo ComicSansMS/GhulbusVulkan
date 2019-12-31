@@ -147,6 +147,11 @@ std::tuple<GhulbusVulkan::Device, detail::DeviceQueues> initializeVulkanDevice(G
                 continue;
             }
 
+            // required features
+            auto const pd_features = pd.getFeatures();
+            if (!pd_features.fillModeNonSolid) { continue; }
+            if (!pd_features.samplerAnisotropy) { continue; }
+
             candidates.push_back(candidate);
         }
 
@@ -183,6 +188,10 @@ std::tuple<GhulbusVulkan::Device, detail::DeviceQueues> initializeVulkanDevice(G
     detail::DeviceQueues queues = detail::selectQueues(winner, physical_device.getQueueFamilyProperties());
     for (auto const& q : detail::uniqueQueues(queues)) { device_builder.addQueues(q.queue_family_index, 1); }
     for (auto const& ext : required_extensions) { device_builder.addExtension(ext); }
+
+    // add requested features
+    device_builder.requested_features.fillModeNonSolid = VK_TRUE;      // wireframe drawing
+    device_builder.requested_features.samplerAnisotropy = VK_TRUE;     // anisotropic filtering
 
     return std::make_tuple(device_builder.create(), queues);
 }

@@ -38,6 +38,15 @@ uint32_t Renderer::addPipelineBuilder(GhulbusVulkan::PipelineLayout&& layout)
     return static_cast<uint32_t>(m_pipelineBuilders.size() - 1);
 }
 
+uint32_t Renderer::clonePipelineBuilder(uint32_t source_index)
+{
+    GHULBUS_PRECONDITION((source_index >= 0) && (source_index < m_pipelineBuilders.size()));
+    m_pipelineBuilders.emplace_back(m_pipelineBuilders[source_index]);
+    m_drawRecordings.emplace_back();
+    GHULBUS_ASSERT(m_pipelineBuilders.size() == m_drawRecordings.size());
+    return static_cast<uint32_t>(m_pipelineBuilders.size() - 1);
+}
+
 GhulbusVulkan::PipelineBuilder& Renderer::getPipelineBuilder(uint32_t index)
 {
     GHULBUS_PRECONDITION((index >= 0) && (index < m_pipelineBuilders.size()));
@@ -47,7 +56,7 @@ GhulbusVulkan::PipelineBuilder& Renderer::getPipelineBuilder(uint32_t index)
 GhulbusVulkan::PipelineLayout& Renderer::getPipelineLayout(uint32_t index)
 {
     GHULBUS_PRECONDITION((index >= 0) && (index < m_pipelineBuilders.size()));
-    return m_pipelineBuilders[index].layout;
+    return *m_pipelineBuilders[index].layout;
 }
 
 void Renderer::recreateAllPipelines()
@@ -63,7 +72,7 @@ void Renderer::recreateAllPipelines()
                                   program_attributes.data(), static_cast<uint32_t>(program_attributes.size()));
         builder.adjustViewportDimensions(m_swapchain->getWidth(), m_swapchain->getHeight());
         m_pipelines.emplace_back(
-            builder.create(layout, m_program->getShaderStageCreateInfos(), m_program->getNumberOfShaderStages(),
+            builder.create(*layout, m_program->getShaderStageCreateInfos(), m_program->getNumberOfShaderStages(),
                            m_state->renderPass.getVkRenderPass()));
     }
     uint32_t const n_pipelines = static_cast<uint32_t>(m_pipelineBuilders.size());
@@ -148,6 +157,20 @@ uint32_t Renderer::recordDrawCommands(uint32_t pipeline_index, DrawRecordingCall
     GHULBUS_ASSERT(m_drawRecordings.size() == m_pipelineBuilders.size());
     m_drawRecordings[pipeline_index].push_back(recording_cb);
     return static_cast<uint32_t>(m_drawRecordings[pipeline_index].size()) - 1;
+}
+
+uint32_t Renderer::copyDrawCommands(uint32_t source_pipeline_index, uint32_t source_draw_command_index,
+                                    uint32_t destination_pipeline_index)
+{
+    GHULBUS_PRECONDITION((source_pipeline_index >= 0) && (source_pipeline_index < m_pipelineBuilders.size()));
+    GHULBUS_PRECONDITION((destination_pipeline_index >= 0) &&
+                         (destination_pipeline_index < m_pipelineBuilders.size()));
+    GHULBUS_ASSERT(m_drawRecordings.size() == m_pipelineBuilders.size());
+    auto const& src_commands = m_drawRecordings[source_pipeline_index];
+    auto& dst_commands = m_drawRecordings[destination_pipeline_index];
+    GHULBUS_PRECONDITION((source_draw_command_index >= 0) && (source_draw_command_index < src_commands.size()));
+    dst_commands.push_back(src_commands[source_draw_command_index]);
+    return static_cast<uint32_t>(dst_commands.size()) - 1;
 }
 
 GhulbusVulkan::RenderPass& Renderer::getRenderPass()

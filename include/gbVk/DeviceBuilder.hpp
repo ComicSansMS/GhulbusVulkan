@@ -24,7 +24,7 @@ public:
     std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
     std::vector<std::vector<float>> queue_create_priorities;
     std::vector<std::string> extensions;
-    std::optional<VkPhysicalDeviceFeatures> requested_features;
+    VkPhysicalDeviceFeatures requested_features;
 private:
     VkPhysicalDevice m_physicalDevice;
 public:

@@ -29,8 +29,9 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
-Device::Device(VkPhysicalDevice physical_device, VkDevice logical_device)
-    :m_device(logical_device), m_physicalDevice(physical_device), m_allocator(logical_device, physical_device)
+Device::Device(VkPhysicalDevice physical_device, VkDevice logical_device, VkPhysicalDeviceFeatures enabled_features)
+    :m_device(logical_device), m_physicalDevice(physical_device), m_allocator(logical_device, physical_device),
+     m_enabledFeatures(enabled_features)
 {
 }
 
@@ -43,7 +44,8 @@ Device::~Device()
 }
 
 Device::Device(Device&& rhs)
-    :m_device(rhs.m_device), m_physicalDevice(rhs.m_physicalDevice), m_allocator(std::move(rhs.m_allocator))
+    :m_device(rhs.m_device), m_physicalDevice(rhs.m_physicalDevice), m_allocator(std::move(rhs.m_allocator)),
+     m_enabledFeatures(rhs.m_enabledFeatures)
 {
     rhs.m_device = nullptr;
     rhs.m_physicalDevice = nullptr;
@@ -57,6 +59,11 @@ VkDevice Device::getVkDevice()
 PhysicalDevice Device::getPhysicalDevice()
 {
     return PhysicalDevice(m_physicalDevice);
+}
+
+VkPhysicalDeviceFeatures const& Device::getEnabledFeatures() const
+{
+    return m_enabledFeatures;
 }
 
 Swapchain Device::createSwapchain(VkSurfaceKHR surface, uint32_t queue_family)

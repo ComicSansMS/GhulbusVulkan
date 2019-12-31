@@ -10,7 +10,7 @@
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 DeviceBuilder::DeviceBuilder(VkPhysicalDevice physical_device)
-    :m_physicalDevice(physical_device)
+    :m_physicalDevice(physical_device), requested_features()
 {
 }
 
@@ -63,16 +63,11 @@ Device DeviceBuilder::create()
     for (auto const& s : extensions) { extensions_cstr.push_back(s.c_str()); }
     dev_create_info.enabledExtensionCount = static_cast<uint32_t>(extensions_cstr.size());
     dev_create_info.ppEnabledExtensionNames = (!extensions_cstr.empty()) ? extensions_cstr.data() : nullptr;
-
-    VkPhysicalDeviceFeatures rf = requested_features.value_or(VkPhysicalDeviceFeatures{});
-                                                                    // @todo: select requested features, compare
-                                                                    //        against vkGetPhysicalDeviceFeatures()
-    rf.samplerAnisotropy = VK_TRUE;             // @todo: anisotropy is currently always requested
-    dev_create_info.pEnabledFeatures = &rf;     // this is used as an in/out param by vkCreateDevice
+    dev_create_info.pEnabledFeatures = &requested_features;     // this is used as an in/out param by vkCreateDevice
 
     VkDevice device;
     VkResult res = vkCreateDevice(m_physicalDevice, &dev_create_info, nullptr, &device);
     checkVulkanError(res, "Error in vkCreateDevice.");
-    return Device(m_physicalDevice, device);
+    return Device(m_physicalDevice, device, requested_features);
 }
 }

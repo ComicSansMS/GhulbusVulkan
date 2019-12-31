@@ -430,6 +430,9 @@ int main()
         renderer.addPipelineBuilder(std::move(pipeline_layout));
     }
     GhulbusVulkan::PipelineLayout& pipeline_layout = renderer.getPipelineLayout(0);
+    renderer.clonePipelineBuilder(0);
+    renderer.getPipelineBuilder(1).stage.rasterization.polygonMode = VK_POLYGON_MODE_LINE;
+    renderer.getPipelineBuilder(1).stage.rasterization.cullMode = VK_CULL_MODE_NONE;
 
     renderer.recordDrawCommands(0,
         [&ubo_descriptor_sets, &pipeline_layout, &vertex_buffer, &index_buffer, &mesh]
@@ -448,10 +451,16 @@ int main()
             auto const nvertices = mesh.getNumberOfVertices();
             vkCmdDrawIndexed(command_buffer.getVkCommandBuffer(), mesh.getNumberOfIndices(), 1, 0, 0, 0);
         });
+    renderer.copyDrawCommands(0, 0, 1);
     renderer.recreateAllPipelines();
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Main setup");
 
+    enum class DrawMode {
+        Solid,
+        Wireframe
+    };
+    DrawMode draw_mode = DrawMode::Solid;
     auto const mouse_move_handler_guard = main_window.getEventReactor().eventHandlers.mouseMoveEvent.addHandler(
         [](GhulbusGraphics::Event::MouseMove const& mm) {
             GHULBUS_UNUSED_VARIABLE(mm);
@@ -459,9 +468,14 @@ int main()
             return GhulbusGraphics::WindowEventReactor::Result::ContinueProcessing;
         });
     auto const keypress_handler_guard = main_window.getEventReactor().eventHandlers.keyEvent.addHandler(
-        [](GhulbusGraphics::Event::Key const& ke) {
+        [&draw_mode](GhulbusGraphics::Event::Key const& ke) {
         GHULBUS_UNUSED_VARIABLE(ke);
         GHULBUS_LOG(Info, ke.key << " " << ke.action << " (" << ke.modifiers << ")");
+        if (ke.action == GhulbusGraphics::KeyAction::Press) {
+            if (ke.key == GhulbusGraphics::Key::W) {
+                draw_mode = (draw_mode != DrawMode::Wireframe) ? DrawMode::Wireframe : DrawMode::Solid;
+            }
+        }
         return GhulbusGraphics::WindowEventReactor::Result::ContinueProcessing;
     });
 
@@ -477,6 +491,7 @@ int main()
         uint32_t frame_image_idx = main_window.getCurrentImageSwapchainIndex();
         update_uniform_buffer(frame_image_idx);
 
-        renderer.render(0, main_window);
+        uint32_t active_pipeline = (draw_mode == DrawMode::Wireframe) ? 1 : 0;
+        renderer.render(active_pipeline, main_window);
     }
 }

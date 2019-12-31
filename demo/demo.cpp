@@ -187,6 +187,7 @@ int main()
                                     &queue_family_properties]()
     {
         GhulbusVulkan::DeviceBuilder device_builder = physical_device.createDeviceBuilder();
+        device_builder.requested_features.samplerAnisotropy = VK_TRUE;
         if (queue_family == transfer_queue_family) {
             device_builder.addQueues(queue_family, std::min(queue_family_properties[queue_family].queueCount, 2u));
         } else {

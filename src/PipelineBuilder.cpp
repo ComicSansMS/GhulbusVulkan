@@ -90,6 +90,12 @@ void PipelineBuilder::Stages::ColorBlend::refreshReferences()
     ci.pAttachments = (!attachments.empty()) ? attachments.data() : nullptr;
 }
 
+void PipelineBuilder::Stages::refreshReferences()
+{
+    if (viewport) { viewport->refreshReferences(); }
+    if (color_blend) { color_blend->refreshReferences(); }
+}
+
 PipelineBuilder::PipelineBuilder(VkDevice logical_device, uint32_t viewport_width, uint32_t viewport_height)
     :m_device(logical_device)
 {
@@ -197,6 +203,22 @@ PipelineBuilder::PipelineBuilder(VkDevice logical_device, uint32_t viewport_widt
     stage.color_blend->ci.blendConstants[1] = 0.f;
     stage.color_blend->ci.blendConstants[2] = 0.f;
     stage.color_blend->ci.blendConstants[3] = 0.f;
+}
+
+PipelineBuilder::PipelineBuilder(PipelineBuilder const& rhs)
+    :stage(rhs.stage), m_device(rhs.m_device)
+{
+    stage.refreshReferences();
+}
+
+PipelineBuilder& PipelineBuilder::operator=(PipelineBuilder const& rhs)
+{
+    if (&rhs != this) {
+        stage = rhs.stage;
+        m_device = rhs.m_device;
+        stage.refreshReferences();
+    }
+    return *this;
 }
 
 void PipelineBuilder::addVertexBindings(VkVertexInputBindingDescription const* binding_data, uint32_t n_bindings,

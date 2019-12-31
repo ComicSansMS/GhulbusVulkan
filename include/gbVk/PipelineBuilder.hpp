@@ -56,6 +56,8 @@ public:
             void refreshReferences();
         };
         std::optional<ColorBlend> color_blend;
+
+        void refreshReferences();
     } stage;
 
 private:
@@ -63,6 +65,11 @@ private:
 public:
 
     PipelineBuilder(VkDevice logical_device, uint32_t viewport_width, uint32_t viewport_height);
+
+    PipelineBuilder(PipelineBuilder const& rhs);
+    PipelineBuilder& operator=(PipelineBuilder const& rhs);
+    PipelineBuilder(PipelineBuilder&&) noexcept = default;
+    PipelineBuilder& operator=(PipelineBuilder&&) noexcept = default;
 
     void addVertexBindings(VkVertexInputBindingDescription const* binding_data, uint32_t n_bindings,
                            VkVertexInputAttributeDescription const* attributes_data, uint32_t n_attributes);

@@ -22,6 +22,7 @@
 #include <gbVk/Semaphore.hpp>
 
 #include <functional>
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -38,10 +39,10 @@ public:
 private:
     struct PipelineBuildingBlocks {
         GhulbusVulkan::PipelineBuilder builder;
-        GhulbusVulkan::PipelineLayout layout;
+        std::shared_ptr<GhulbusVulkan::PipelineLayout> layout;
 
         PipelineBuildingBlocks(GhulbusVulkan::PipelineBuilder&& b, GhulbusVulkan::PipelineLayout&& l)
-            :builder(std::move(b)), layout(std::move(l))
+            :builder(std::move(b)), layout(std::make_shared<GhulbusVulkan::PipelineLayout>(std::move(l)))
         {}
     };
     struct RendererState {
@@ -70,12 +71,15 @@ public:
     Renderer(GraphicsInstance& instance, Program& program, GhulbusVulkan::Swapchain& swapchain);
 
     uint32_t addPipelineBuilder(GhulbusVulkan::PipelineLayout&& layout);
+    uint32_t clonePipelineBuilder(uint32_t source_index);
     GhulbusVulkan::PipelineBuilder& getPipelineBuilder(uint32_t index);
     GhulbusVulkan::PipelineLayout& getPipelineLayout(uint32_t index);
     void recreateAllPipelines();
     GhulbusVulkan::Pipeline& getPipeline(uint32_t index);
 
     uint32_t recordDrawCommands(uint32_t pipeline_index, DrawRecordingCallback const& recording_cb);
+    uint32_t copyDrawCommands(uint32_t source_pipeline_index, uint32_t source_draw_command_index,
+                              uint32_t destination_pipeline_index);
 
     void render(uint32_t pipeline_index, Window& target_window);
 
