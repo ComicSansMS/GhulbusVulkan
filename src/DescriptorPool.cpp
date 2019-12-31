@@ -61,4 +61,9 @@ DescriptorSets DescriptorPool::allocateDescriptorSets(uint32_t descriptor_set_co
     return (m_setsHaveOwnership) ? DescriptorSets(m_device, m_descriptorPool, std::move(descriptor_sets)) :
         DescriptorSets(m_device, m_descriptorPool, std::move(descriptor_sets), DescriptorSets::NonOwning{});
 }
+
+VkDescriptorPool DescriptorPool::getVkDescriptorPool()
+{
+    return m_descriptorPool;
+}
 }

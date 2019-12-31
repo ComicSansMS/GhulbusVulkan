@@ -102,6 +102,7 @@ find_package(Threads REQUIRED)
 find_package(spirv-cross REQUIRED)
 find_package(VulkanMemoryAllocator REQUIRED)
 find_package(stb REQUIRED)
+find_package(dearimgui REQUIRED)
 
 set(GHULBUS_BASE_ROOT "" CACHE PATH "GhulbusBase installation root directory.")
 if(GHULBUS_BASE_ROOT)
@@ -509,6 +510,9 @@ add_executable(demo_draw2d ${PROJECT_SOURCE_DIR}/demo/demo_draw2d.cpp)
 target_link_libraries(demo_draw2d PUBLIC gbGraphics)
 add_shader(demo_draw2d ${PROJECT_BINARY_DIR}/shaders/vert_draw2d.spv ${PROJECT_SOURCE_DIR}/demo/shaders/draw2d.vert)
 add_shader(demo_draw2d ${PROJECT_BINARY_DIR}/shaders/frag_draw2d.spv ${PROJECT_SOURCE_DIR}/demo/shaders/draw2d.frag)
+
+add_executable(demo_imgui ${PROJECT_SOURCE_DIR}/demo/demo_imgui.cpp)
+target_link_libraries(demo_imgui PUBLIC gbGraphics dearimgui)
 
 ###############################################################################
 ## Doxygen gbVk

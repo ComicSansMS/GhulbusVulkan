@@ -1,4 +1,3 @@
-
 #include <gbBase/Finally.hpp>
 #include <gbBase/Log.hpp>
 #include <gbBase/LogHandlers.hpp>
@@ -62,113 +61,15 @@
 
 #include <gbBase/PerfLog.hpp>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
+
 #include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <memory>
 #include <vector>
-
-void drawToBackbuffer(GhulbusGraphics::GraphicsInstance& graphics_instance, GhulbusGraphics::Window& main_window)
-{
-    auto command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
-    auto& command_buffer = command_buffers.getCommandBuffer(0);
-
-    auto& swapchain_image = main_window.getAcquiredImage();
-
-    command_buffer.begin();
-
-    GhulbusGraphics::Image2d source_image(graphics_instance, main_window.getWidth(), main_window.getHeight(),
-        VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-        GhulbusGraphics::MemoryUsage::CpuOnly);
-
-    // fill host image
-    //source_image.getImage().transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-    //                                   VK_ACCESS_HOST_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
-    {
-        auto mapped = source_image.map();
-        GhulbusGraphics::ImageLoader img_loader("textures/statue.jpg");
-        auto const dim_x = img_loader.getWidth();
-        auto const dim_y = img_loader.getHeight();
-        auto img_data = img_loader.getData();
-        for (uint32_t iy = 0; iy < main_window.getHeight(); ++iy) {
-            for (uint32_t ix = 0; ix < main_window.getWidth(); ++ix) {
-                uint32_t const i = iy * main_window.getWidth() + ix;
-                if (!img_data || ix >= dim_x || iy >= dim_y) {
-                    mapped[i * 4] = std::byte(255);           //R
-                    mapped[i * 4 + 1] = std::byte(0);         //G
-                    mapped[i * 4 + 2] = std::byte(0);         //B
-                    mapped[i * 4 + 3] = std::byte(255);       //A
-                } else {
-                    auto const pixel_index = (iy * dim_x + ix) * 4;
-                    mapped[i * 4] = img_data[pixel_index];                  //R
-                    mapped[i * 4 + 1] = img_data[pixel_index + 1];          //G
-                    mapped[i * 4 + 2] = img_data[pixel_index + 2];          //B
-                    mapped[i * 4 + 3] = img_data[pixel_index + 3];          //A
-                }
-            }
-        }
-    }
-
-    // copy
-    source_image.getImage().transition(command_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    GhulbusVulkan::Image::blit(command_buffer, source_image.getImage(), *swapchain_image);
-
-    swapchain_image->transition(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-        VK_ACCESS_MEMORY_READ_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-    command_buffer.end();
-
-    GhulbusVulkan::SubmitStaging submission;
-    submission.addCommandBuffers(command_buffers);
-    submission.adoptResources(std::move(source_image), std::move(command_buffers));
-    graphics_instance.getGraphicsQueue().stageSubmission(std::move(submission));
-}
-
-void fullBarrier(GhulbusVulkan::CommandBuffer& command_buffer)
-{
-    VkMemoryBarrier memoryBarrier;
-    memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-    memoryBarrier.pNext = nullptr;
-    memoryBarrier.srcAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT |
-        VK_ACCESS_INDEX_READ_BIT |
-        VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT |
-        VK_ACCESS_UNIFORM_READ_BIT |
-        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT |
-        VK_ACCESS_SHADER_READ_BIT |
-        VK_ACCESS_SHADER_WRITE_BIT |
-        VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-        VK_ACCESS_TRANSFER_READ_BIT |
-        VK_ACCESS_TRANSFER_WRITE_BIT |
-        VK_ACCESS_HOST_READ_BIT |
-        VK_ACCESS_HOST_WRITE_BIT;
-    memoryBarrier.dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT |
-        VK_ACCESS_INDEX_READ_BIT |
-        VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT |
-        VK_ACCESS_UNIFORM_READ_BIT |
-        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT |
-        VK_ACCESS_SHADER_READ_BIT |
-        VK_ACCESS_SHADER_WRITE_BIT |
-        VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-        VK_ACCESS_TRANSFER_READ_BIT |
-        VK_ACCESS_TRANSFER_WRITE_BIT |
-        VK_ACCESS_HOST_READ_BIT |
-        VK_ACCESS_HOST_WRITE_BIT;
-
-    vkCmdPipelineBarrier(command_buffer.getVkCommandBuffer(),
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0,
-        1,                                  // memoryBarrierCount
-        &memoryBarrier,                     // pMemoryBarriers
-        0, nullptr, 0, nullptr);
-}
 
 using VertexData = GhulbusGraphics::Mesh::VertexData;
 using IndexData = GhulbusGraphics::Mesh::IndexData;
@@ -178,27 +79,6 @@ struct UBOMVP {
     GhulbusMath::Matrix4<float> view;
     GhulbusMath::Matrix4<float> projection;
 };
-
-inline VertexData generateVertexData()
-{
-    using namespace GhulbusMath;
-    return {
-        {Point3f{-0.5f, -0.5f,  0.0f}, Normal3f{1.0f, 0.0f, 0.0f}, Vector2f{0.0f, 0.0f}},
-        {Point3f{ 0.5f, -0.5f,  0.0f}, Normal3f{0.0f, 1.0f, 0.0f}, Vector2f{1.0f, 0.0f}},
-        {Point3f{ 0.5f,  0.5f,  0.0f}, Normal3f{0.0f, 0.0f, 1.0f}, Vector2f{1.0f, 1.0f}},
-        {Point3f{-0.5f,  0.5f,  0.0f}, Normal3f{1.0f, 1.0f, 1.0f}, Vector2f{0.0f, 1.0f}},
-
-        {Point3f{-0.5f, -0.5f, -0.5f}, Normal3f{1.0f, 0.0f, 0.0f}, Vector2f{0.0f, 0.0f}},
-        {Point3f{ 0.5f, -0.5f, -0.5f}, Normal3f{0.0f, 1.0f, 0.0f}, Vector2f{1.0f, 0.0f}},
-        {Point3f{ 0.5f,  0.5f, -0.5f}, Normal3f{0.0f, 0.0f, 1.0f}, Vector2f{1.0f, 1.0f}},
-        {Point3f{-0.5f,  0.5f, -0.5f}, Normal3f{1.0f, 1.0f, 1.0f}, Vector2f{0.0f, 1.0f}}
-    };
-}
-
-inline IndexData generateIndexData() {
-    return { {0, 1, 2}, {2, 3, 0},
-             {4, 5, 6}, {6, 7, 4} };
-}
 
 int main()
 {
@@ -224,44 +104,17 @@ int main()
     int const WINDOW_HEIGHT = 720;
 
     GhulbusGraphics::Window main_window(graphics_instance, WINDOW_WIDTH, WINDOW_HEIGHT, u8"Vulkan Demo");
+    ImGuiContext* imgui_context = ImGui::CreateContext();
+    auto const guard_imgui_context = Ghulbus::finally([imgui_context]() { ImGui::DestroyContext(imgui_context); });
+    ImGui::SetCurrentContext(imgui_context);
+    ImGui_ImplGlfw_InitForVulkan(main_window.getGlfwWindow(), true);
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Window creation");
 
-    drawToBackbuffer(graphics_instance, main_window);
-
-    // presentation
-    if(main_window.present() != GhulbusGraphics::Window::PresentStatus::Ok) {
-        GHULBUS_LOG(Error, "Error during initial present.");
-        return 1;
-    }
-
-    graphics_instance.getGraphicsQueue().clearAllStaged();
-
-    //std::this_thread::sleep_for(std::chrono::seconds(5));
-    //return 0;
-
-    perflog.tick(Ghulbus::LogLevel::Debug, "Initial present");
-
-    VertexData const vertex_data = generateVertexData();
-    //std::vector<Index> const index_data = generateIndexData();
-
     GhulbusGraphics::Primitives::Quad<VertexData, uint32_t> mesh_quad(1.f, 1.f);
-    GhulbusGraphics::Primitives::Grid<VertexData, uint32_t> mesh_grid(1.f, 1.f, 4, 6);
-    GhulbusGraphics::Primitives::Box<VertexData, uint32_t> mesh_box(GhulbusMath::AABB3<float>({-0.5f, -0.75f, -1.5f}, {0.5f, 0.75f, 1.5f}));
-    GhulbusGraphics::Primitives::OpenCylinder<VertexData, uint32_t> mesh_opencyl(0.2f, 1.f, 12, 7);
-    GhulbusGraphics::Primitives::Disc<VertexData, uint32_t> mesh_disc(0.2f, 15);
-    GhulbusGraphics::Primitives::Cone<VertexData, uint32_t> mesh_cone(0.2f, 0.5f, 15);
-    GhulbusGraphics::Primitives::Sphere<VertexData, uint32_t> mesh_sphere(0.5f, 25, 20);
 
-    //*
     GhulbusGraphics::ImageLoader img_loader("textures/statue.jpg");
-    GhulbusGraphics::Mesh mesh(graphics_instance, mesh_sphere.m_vertexData, mesh_sphere.m_indexData, img_loader);
-    /*/
-    GhulbusGraphics::ObjParser obj_parser;
-    obj_parser.readFile("chalet.obj");
-    GhulbusGraphics::ImageLoader img_loader("chalet.jpg");
-    GhulbusGraphics::Mesh mesh(graphics_instance, obj_parser, img_loader);
-    //*/
+    GhulbusGraphics::Mesh mesh(graphics_instance, mesh_quad.m_vertexData, mesh_quad.m_indexData, img_loader);
     auto& vertex_buffer = mesh.getVertexBuffer();
     auto& index_buffer = mesh.getIndexBuffer();
     auto& texture = mesh.getTexture();
@@ -288,15 +141,22 @@ int main()
         viewport_dimensions.width = static_cast<float>(swapchain.getWidth());
         viewport_dimensions.height = static_cast<float>(swapchain.getHeight());
         GHULBUS_LOG(Info, "Viewport resize " << swapchain.getWidth() << "x" << swapchain.getHeight());
-    });
+                                             });
     GhulbusGraphics::Input::CameraSpherical camera(main_window);
     camera.setCameraDistance(4.f);
     camera.setCameraAngleVertical(0.785f);
     bool do_animate = true;
+    struct RenderMode {
+        bool wireframe = false;
+    } render_mode;
     auto key_handler_guard = main_window.getEventReactor().eventHandlers.keyEvent.addHandler(
-        [&do_animate](GhulbusGraphics::Event::Key const& e) {
-            if ((e.action == GhulbusGraphics::KeyAction::Press) && (e.key == GhulbusGraphics::Key::A)) {
-                do_animate ^= true;
+        [&do_animate, &render_mode](GhulbusGraphics::Event::Key const& e) {
+            if (e.action == GhulbusGraphics::KeyAction::Press) {
+                if (e.key == GhulbusGraphics::Key::A) {
+                    do_animate ^= true;
+                } else if (e.key == GhulbusGraphics::Key::W) {
+                    render_mode.wireframe ^= true;
+                }
             }
             return GhulbusGraphics::WindowEventReactor::Result::ContinueProcessing;
         });
@@ -306,7 +166,6 @@ int main()
         ubo_data.model = GhulbusMath::make_rotation_x(-1.57079632679489f).m *
             GhulbusMath::make_rotation((GhulbusMath::traits::Pi<float>::value / 2.f) * time,
                                        GhulbusMath::Vector3f(0.f, 0.f, 1.f)).m;
-        ubo_data.model = GhulbusMath::identity4<float>();
         ubo_data.view = camera.getTransform().m;
         ubo_data.projection = GhulbusMath::make_perspective_projection(viewport_dimensions.width,
                                                                        viewport_dimensions.height, 0.1f, 10.f).m;
@@ -362,7 +221,7 @@ int main()
     auto vert_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/vert_textured.spv");
     auto frag_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/frag_textured.spv");
     GhulbusGraphics::Program shader_program(graphics_instance, vert_textured_spirv_code, frag_textured_spirv_code);
-    shader_program.addVertexBinding(0, vertex_data.getFormat());
+    shader_program.addVertexBinding(0, mesh_quad.m_vertexData.getFormat());
     shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Position, 0, 0);
     //shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Color, 0, 1);
     shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Texture, 0, 2);
@@ -435,38 +294,70 @@ int main()
         renderer.addPipelineBuilder(std::move(pipeline_layout));
     }
     GhulbusVulkan::PipelineLayout& pipeline_layout = renderer.getPipelineLayout(0);
-    renderer.clonePipelineBuilder(0);
-    renderer.getPipelineBuilder(1).stage.rasterization.polygonMode = VK_POLYGON_MODE_LINE;
-    renderer.getPipelineBuilder(1).stage.rasterization.cullMode = VK_CULL_MODE_NONE;
+
+    auto imgui_descpool = [&device]() {
+        auto imgui_descpool_builder = device.createDescriptorPoolBuilder();
+        imgui_descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, 1000);
+        imgui_descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000);
+        imgui_descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000);
+        imgui_descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000);
+        imgui_descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000);
+        imgui_descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000);
+        imgui_descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000);
+        imgui_descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000);
+        imgui_descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000);
+        imgui_descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000);
+        imgui_descpool_builder.addDescriptorPoolSize(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000);
+        return imgui_descpool_builder.create(11000, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
+    }();
+    {
+        ImGui_ImplVulkan_InitInfo imgui_init;
+        imgui_init.Instance = graphics_instance.getVulkanInstance().getVkInstance();
+        imgui_init.PhysicalDevice = physical_device.getVkPhysicalDevice();
+        imgui_init.Device = device.getVkDevice();
+        imgui_init.Queue = graphics_instance.getGraphicsQueue().getVkQueue();
+        imgui_init.PipelineCache = nullptr;
+        imgui_init.DescriptorPool = imgui_descpool.getVkDescriptorPool();
+        imgui_init.MinImageCount = 2;
+        imgui_init.ImageCount = 2;
+        imgui_init.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        imgui_init.Allocator = nullptr;
+        imgui_init.CheckVkResultFn = nullptr;
+        ImGui_ImplVulkan_Init(&imgui_init, renderer.getRenderPass().getVkRenderPass());
+    }
+    auto guard_imgui_vulkan = Ghulbus::finally([]() { ImGui_ImplVulkan_Shutdown(); });
+    {
+        auto imgui_command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
+        auto& imgui_create_command_buffer = imgui_command_buffers.getCommandBuffer(0);
+        imgui_create_command_buffer.begin();
+        ImGui_ImplVulkan_CreateFontsTexture(imgui_create_command_buffer.getVkCommandBuffer());
+        imgui_create_command_buffer.end();
+        graphics_instance.getGraphicsQueue().submit(imgui_create_command_buffer);
+        graphics_instance.getGraphicsQueue().waitIdle();
+        ImGui_ImplVulkan_DestroyFontUploadObjects();
+    }
 
     renderer.recordDrawCommands(0,
-        [&ubo_descriptor_sets, &pipeline_layout, &vertex_buffer, &index_buffer, &mesh]
-        (GhulbusVulkan::CommandBuffer& command_buffer, uint32_t i)
-        {
-            VkDescriptorSet desc_set_i = ubo_descriptor_sets.getDescriptorSet(i).getVkDescriptorSet();
-            vkCmdBindDescriptorSets(command_buffer.getVkCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
-                pipeline_layout.getVkPipelineLayout(), 0, 1, &desc_set_i, 0, nullptr);
+                                [&ubo_descriptor_sets, &pipeline_layout, &vertex_buffer, &index_buffer, &mesh]
+    (GhulbusVulkan::CommandBuffer& command_buffer, uint32_t i)
+                                {
+                                    VkDescriptorSet desc_set_i = ubo_descriptor_sets.getDescriptorSet(i).getVkDescriptorSet();
+                                    vkCmdBindDescriptorSets(command_buffer.getVkCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                            pipeline_layout.getVkPipelineLayout(), 0, 1, &desc_set_i, 0, nullptr);
 
-            VkBuffer vertexBuffers[] = { vertex_buffer.getBuffer().getVkBuffer() };
-            VkDeviceSize offsets[] = { 0 };
-            vkCmdBindVertexBuffers(command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(command_buffer.getVkCommandBuffer(), index_buffer.getBuffer().getVkBuffer(),
-                0, VK_INDEX_TYPE_UINT32);
-            auto const nindices = mesh.getNumberOfIndices();
-            auto const nvertices = mesh.getNumberOfVertices();
-            vkCmdDrawIndexed(command_buffer.getVkCommandBuffer(), mesh.getNumberOfIndices(), 1, 0, 0, 0);
-        });
-    renderer.copyDrawCommands(0, 0, 1);
-    renderer.setClearColor(GhulbusMath::Color4f(0.8f, 0.8f, 0.8f));
+                                    VkBuffer vertexBuffers[] = { vertex_buffer.getBuffer().getVkBuffer() };
+                                    VkDeviceSize offsets[] = { 0 };
+                                    vkCmdBindVertexBuffers(command_buffer.getVkCommandBuffer(), 0, 1, vertexBuffers, offsets);
+                                    vkCmdBindIndexBuffer(command_buffer.getVkCommandBuffer(), index_buffer.getBuffer().getVkBuffer(),
+                                                         0, VK_INDEX_TYPE_UINT32);
+                                    auto const nindices = mesh.getNumberOfIndices();
+                                    auto const nvertices = mesh.getNumberOfVertices();
+                                    vkCmdDrawIndexed(command_buffer.getVkCommandBuffer(), mesh.getNumberOfIndices(), 1, 0, 0, 0);
+                                });
     renderer.recreateAllPipelines();
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Main setup");
 
-    enum class DrawMode {
-        Solid,
-        Wireframe
-    };
-    DrawMode draw_mode = DrawMode::Solid;
     auto const mouse_move_handler_guard = main_window.getEventReactor().eventHandlers.mouseMoveEvent.addHandler(
         [](GhulbusGraphics::Event::MouseMove const& mm) {
             GHULBUS_UNUSED_VARIABLE(mm);
@@ -474,16 +365,11 @@ int main()
             return GhulbusGraphics::WindowEventReactor::Result::ContinueProcessing;
         });
     auto const keypress_handler_guard = main_window.getEventReactor().eventHandlers.keyEvent.addHandler(
-        [&draw_mode](GhulbusGraphics::Event::Key const& ke) {
-        GHULBUS_UNUSED_VARIABLE(ke);
-        GHULBUS_LOG(Info, ke.key << " " << ke.action << " (" << ke.modifiers << ")");
-        if (ke.action == GhulbusGraphics::KeyAction::Press) {
-            if (ke.key == GhulbusGraphics::Key::W) {
-                draw_mode = (draw_mode != DrawMode::Wireframe) ? DrawMode::Wireframe : DrawMode::Solid;
-            }
-        }
-        return GhulbusGraphics::WindowEventReactor::Result::ContinueProcessing;
-    });
+        [](GhulbusGraphics::Event::Key const& ke) {
+            GHULBUS_UNUSED_VARIABLE(ke);
+            GHULBUS_LOG(Info, ke.key << " " << ke.action << " (" << ke.modifiers << ")");
+            return GhulbusGraphics::WindowEventReactor::Result::ContinueProcessing;
+        });
 
     transfer_fence.wait();
     graphics_instance.getTransferQueue().clearAllStaged();
@@ -491,13 +377,24 @@ int main()
     graphics_instance.getGraphicsQueue().clearAllStaged();
     graphics_instance.getReactor().post([]() { GHULBUS_LOG(Debug, "Hello from Reactor!"); });
 
+    bool show_demo_window = true;
+    renderer.recordDrawCommands(0, [](GhulbusVulkan::CommandBuffer& command_buffer, uint32_t) {
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), command_buffer.getVkCommandBuffer());
+    });
     while(!main_window.isDone()) {
         graphics_instance.pollEvents();
 
         uint32_t frame_image_idx = main_window.getCurrentImageSwapchainIndex();
         update_uniform_buffer(frame_image_idx);
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        if (show_demo_window) {
+            ImGui::ShowDemoWindow(&show_demo_window);
+        }
+        ImGui::Render();
+        renderer.forceInvokeDrawCallback(0, frame_image_idx);
 
-        uint32_t active_pipeline = (draw_mode == DrawMode::Wireframe) ? 1 : 0;
-        renderer.render(active_pipeline, main_window);
+        renderer.render(0, main_window);
     }
 }

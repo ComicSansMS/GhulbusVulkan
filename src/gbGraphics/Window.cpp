@@ -400,4 +400,9 @@ void Window::onResize(uint32_t new_width, uint32_t new_height)
     m_width = static_cast<int>(new_width);
     m_height = static_cast<int>(new_height);
 }
+
+GLFWwindow* Window::getGlfwWindow()
+{
+    return m_glfw->window;
+}
 }

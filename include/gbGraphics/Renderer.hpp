@@ -82,6 +82,7 @@ public:
     GhulbusVulkan::Pipeline& getPipeline(uint32_t index);
 
     uint32_t recordDrawCommands(uint32_t pipeline_index, DrawRecordingCallback const& recording_cb);
+    void forceInvokeDrawCallback(uint32_t pipeline_index, uint32_t target_index);       /// @todo this is a hack for imgui
     uint32_t copyDrawCommands(uint32_t source_pipeline_index, uint32_t source_draw_command_index,
                               uint32_t destination_pipeline_index);
 

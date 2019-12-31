@@ -36,6 +36,8 @@ public:
     DescriptorSets allocateDescriptorSets(uint32_t descriptor_set_count,
                                           std::vector<DescriptorSetLayout> const& layouts);
     DescriptorSets allocateDescriptorSets(uint32_t descriptor_set_count, VkDescriptorSetLayout* layouts);
+
+    VkDescriptorPool getVkDescriptorPool();
 };
 }
 #endif

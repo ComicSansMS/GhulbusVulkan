@@ -160,6 +160,47 @@ uint32_t Renderer::recordDrawCommands(uint32_t pipeline_index, DrawRecordingCall
     return static_cast<uint32_t>(m_drawRecordings[pipeline_index].size()) - 1;
 }
 
+void Renderer::forceInvokeDrawCallback(uint32_t pipeline_index, uint32_t target_index)
+{
+    GHULBUS_PRECONDITION((pipeline_index >= 0) && (pipeline_index < m_pipelineBuilders.size()));
+    GHULBUS_ASSERT(m_drawRecordings.size() == m_pipelineBuilders.size());
+    GhulbusVulkan::CommandBuffer& command_buffer =
+        m_commandBuffers.getCommandBuffer(getCommandBufferIndex(pipeline_index, target_index));
+    command_buffer.reset();
+
+    command_buffer.begin(VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT);
+
+    VkRenderPassBeginInfo render_pass_info;
+    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    render_pass_info.pNext = nullptr;
+    render_pass_info.renderPass = m_state->renderPass.getVkRenderPass();
+    render_pass_info.framebuffer = m_state->framebuffers[target_index].getVkFramebuffer();
+    render_pass_info.renderArea.offset.x = 0;
+    render_pass_info.renderArea.offset.y = 0;
+    render_pass_info.renderArea.extent.width = m_swapchain->getWidth();
+    render_pass_info.renderArea.extent.height = m_swapchain->getHeight();
+    std::array<VkClearValue, 2> clear_color;
+    clear_color[0].color.float32[0] = m_clearColor.r;
+    clear_color[0].color.float32[1] = m_clearColor.g;
+    clear_color[0].color.float32[2] = m_clearColor.b;
+    clear_color[0].color.float32[3] = m_clearColor.a;
+    clear_color[1].depthStencil.depth = 1.0f;
+    clear_color[1].depthStencil.stencil = 0;
+    render_pass_info.clearValueCount = static_cast<uint32_t>(clear_color.size());
+    render_pass_info.pClearValues = clear_color.data();
+
+    vkCmdBeginRenderPass(command_buffer.getVkCommandBuffer(), &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindPipeline(command_buffer.getVkCommandBuffer(),
+                      VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelines[pipeline_index].getVkPipeline());
+
+    for(auto const& draw_cb : m_drawRecordings[pipeline_index]) {
+        draw_cb(command_buffer, target_index);
+    }
+
+    vkCmdEndRenderPass(command_buffer.getVkCommandBuffer());
+    command_buffer.end();
+}
+
 uint32_t Renderer::copyDrawCommands(uint32_t source_pipeline_index, uint32_t source_draw_command_index,
                                     uint32_t destination_pipeline_index)
 {

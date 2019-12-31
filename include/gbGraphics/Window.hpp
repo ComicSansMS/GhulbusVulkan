@@ -27,6 +27,8 @@
 #include <optional>
 #include <string>
 
+struct GLFWwindow;
+
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
 class GraphicsInstance;
@@ -93,6 +95,8 @@ public:
 
     void addRecreateSwapchainCallback(RecreateSwapchainCallback cb);
     void recreateSwapchain();
+
+    GLFWwindow* getGlfwWindow();
 
 private:
     void prepareBackbuffer();
