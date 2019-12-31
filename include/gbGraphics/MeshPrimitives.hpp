@@ -292,7 +292,9 @@ public:
     IndexData m_indexData;
 public:
     OpenCylinder(PositionVectorValueType radius, PositionVectorValueType height, int n_segments, int n_height_segments = 1) {
-        m_vertexData.getStorage().resize(n_segments * n_height_segments * 4);
+        GHULBUS_PRECONDITION(n_segments >= 3);
+        GHULBUS_PRECONDITION(n_height_segments >= 1);
+        m_vertexData.getStorage().resize((n_segments + 1) * (n_height_segments + 1));
         fillVertexData(radius, height, n_segments, n_height_segments);
         m_indexData.getStorage().resize(n_segments * n_height_segments * 2);
         fillIndexData(n_segments, n_height_segments);
@@ -308,27 +310,15 @@ public:
         }
         int v_index = 0;
         T const height_increment = height / static_cast<T>(n_height_segments);
-        for (int h = 0; h < n_height_segments; ++h) {
+        for (int h = 0; h <= n_height_segments; ++h) {
             T const current_height = static_cast<T>(h) * height_increment;
-            T const next_height = static_cast<T>(h + 1) * height_increment;
             T const PI_2 = 2 * GhulbusMath::traits::Pi<T>::value;
             T const phi_increment = PI_2 * (static_cast<T>(1) / static_cast<T>(n_segments));
-            for (int i = 0; i < n_segments; ++i) {
-                T const phi = static_cast<T>(i) * phi_increment;
-                T const phi_next = static_cast<T>(i + 1) * phi_increment;
+            v.y = current_height;
+            for (int i = 0; i <= n_segments; ++i) {
+                T const phi = (i == n_segments) ? 0 : (static_cast<T>(i) * phi_increment);
                 T const sin_phi = radius * std::sin(phi);
-                T const sin_phi_next = radius * std::sin(phi_next);
                 T const cos_phi = radius * std::cos(phi);
-                T const cos_phi_next = radius * std::cos(phi_next);
-                v.x = sin_phi;
-                v.y = current_height;
-                v.z = cos_phi;
-                get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, v_index++) = v;
-                v.x = sin_phi_next;
-                v.z = cos_phi_next;
-                get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, v_index++) = v;
-                v.y = next_height;
-                get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, v_index++) = v;
                 v.x = sin_phi;
                 v.z = cos_phi;
                 get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, v_index++) = v;
@@ -337,13 +327,8 @@ public:
                     using Texture = GetComponentBySemantics_t<VertexFormatBase::ComponentSemantics::Texture, Format>;
                     using TexT = typename Texture::Layout::ValueType;
                     TexT const current_u = static_cast<TexT>(i) / static_cast<TexT>(n_segments);
-                    TexT const next_u = static_cast<TexT>(i + 1) / static_cast<TexT>(n_segments);
                     TexT const current_v = static_cast<TexT>(h) / static_cast<TexT>(n_height_segments);
-                    TexT const next_v = static_cast<TexT>(h + 1) / static_cast<TexT>(n_height_segments);
-                    get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 4) = Vector2<TexT>(current_u, current_v);
-                    get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 3) = Vector2<TexT>(next_u, current_v);
-                    get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 2) = Vector2<TexT>(next_u, next_v);
-                    get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 1) = Vector2<TexT>(current_u, next_v);
+                    get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 1) = Vector2<TexT>(current_u, current_v);
                 }
             }
         }
@@ -352,14 +337,20 @@ public:
     void fillIndexData(int n_segments, int n_height_segments)
     {
         std::vector<IndexComponent::Triangle<IndexType_T>>& t = m_indexData.getStorage();
-        for (int i = 0; i < n_height_segments * n_segments; ++i) {
-            t[i*2].i1 = static_cast<IndexType_T>(i*4);
-            t[i*2].i2 = static_cast<IndexType_T>(i*4 + 1);
-            t[i*2].i3 = static_cast<IndexType_T>(i*4 + 2);
-
-            t[i*2+1].i1 = static_cast<IndexType_T>(i*4);
-            t[i*2+1].i2 = static_cast<IndexType_T>(i*4 + 2);
-            t[i*2+1].i3 = static_cast<IndexType_T>(i*4 + 3);
+        int index = 0;
+        for (int h = 0; h < n_height_segments; ++h) {
+            int const current_height_base = h * (n_segments + 1);
+            int const next_height_base = (h + 1) * (n_segments + 1);
+            for (int i = 0; i < n_segments; ++i) {
+                t[index].i1 = static_cast<IndexType_T>(current_height_base + i);
+                t[index].i2 = static_cast<IndexType_T>(current_height_base + i + 1);
+                t[index].i3 = static_cast<IndexType_T>(next_height_base + i + 1);
+                ++index;
+                t[index].i1 = static_cast<IndexType_T>(current_height_base + i);
+                t[index].i2 = static_cast<IndexType_T>(next_height_base + i + 1);
+                t[index].i3 = static_cast<IndexType_T>(next_height_base + i);
+                ++index;
+            }
         }
     }
 };
@@ -384,6 +375,7 @@ public:
     IndexData m_indexData;
 public:
     Disc(PositionVectorValueType radius, int n_segments) {
+        GHULBUS_PRECONDITION(n_segments >= 3);
         m_vertexData.getStorage().resize(n_segments + 1);
         fillVertexData(radius, n_segments);
         m_indexData.getStorage().resize(n_segments);
