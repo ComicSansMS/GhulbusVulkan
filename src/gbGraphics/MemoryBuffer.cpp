@@ -42,6 +42,16 @@ bool MemoryBuffer::isMappable() const
            (m_memoryUsage == MemoryUsage::GpuToCpu);
 }
 
+VkBufferUsageFlags MemoryBuffer::getBufferUsage() const
+{
+    return m_bufferUsage;
+}
+
+MemoryUsage MemoryBuffer::getMemoryUsage() const
+{
+    return m_memoryUsage;
+}
+
 GhulbusVulkan::MappedMemory MemoryBuffer::map()
 {
     GHULBUS_PRECONDITION(isMappable());

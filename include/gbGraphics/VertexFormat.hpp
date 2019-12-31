@@ -157,6 +157,7 @@ template<typename T>
 struct InvalidLayout {
     static constexpr VertexFormatBase::ComponentType invalid() {
         static_assert(sizeof(T) == 0, "Type is not a valid Vertex Component Layout.");
+        return VertexFormatBase::ComponentType::Padding;
     }
     static constexpr VertexFormatBase::ComponentType value = invalid();
 };
@@ -207,6 +208,7 @@ template<typename T>
 struct InvalidSemantic {
     static constexpr VertexFormatBase::ComponentSemantics invalid() {
         static_assert(sizeof(T) == 0, "Type is not a valid Vertex Component Semantic.");
+        return VertexFormatBase::ComponentSemantics::None;
     }
     static constexpr VertexFormatBase::ComponentSemantics value = invalid();
 };

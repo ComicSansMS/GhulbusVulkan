@@ -10,7 +10,7 @@
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 DeviceBuilder::DeviceBuilder(VkPhysicalDevice physical_device)
-    :m_physicalDevice(physical_device), requested_features()
+    :requested_features(), m_physicalDevice(physical_device)
 {
 }
 

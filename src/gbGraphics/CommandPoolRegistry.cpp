@@ -10,7 +10,7 @@ namespace GHULBUS_GRAPHICS_NAMESPACE
 {
 
 CommandPoolRegistry::CommandPoolRegistry(GraphicsInstance& instance)
-    :m_instance(&instance), m_mainThread(std::this_thread::get_id())
+    :m_mainThread(std::this_thread::get_id()), m_instance(&instance)
 {
 }
 
@@ -21,7 +21,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersGraphic
         uint32_t const queue_family = m_instance->getGraphicsQueueFamilyIndex();
         VkCommandPoolCreateFlags const flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         m_instance->threadSafeDeviceAccess(
-            [&out_pool = p.graphics.default_pool, flags, queue_family](GhulbusVulkan::Device& device) {
+            [&out_pool = p.graphics.default_pool, queue_family](GhulbusVulkan::Device& device) {
                 out_pool.emplace(device.createCommandPool(flags, queue_family));
             });
     }
@@ -35,7 +35,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersGraphic
         uint32_t const queue_family = m_instance->getGraphicsQueueFamilyIndex();
         VkCommandPoolCreateFlags const flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
         m_instance->threadSafeDeviceAccess(
-            [&out_pool = p.graphics.transient, flags, queue_family](GhulbusVulkan::Device& device) {
+            [&out_pool = p.graphics.transient, queue_family](GhulbusVulkan::Device& device) {
                 out_pool.emplace(device.createCommandPool(flags, queue_family));
             });
     }
@@ -49,7 +49,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersGraphic
         uint32_t const queue_family = m_instance->getGraphicsQueueFamilyIndex();
         VkCommandPoolCreateFlags const flags = 0;
         m_instance->threadSafeDeviceAccess(
-            [&out_pool = p.graphics.non_resetable, flags, queue_family](GhulbusVulkan::Device& device) {
+            [&out_pool = p.graphics.non_resetable, queue_family](GhulbusVulkan::Device& device) {
                 out_pool.emplace(device.createCommandPool(flags, queue_family));
             });
     }
@@ -63,7 +63,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersCompute
         uint32_t const queue_family = m_instance->getComputeQueueFamilyIndex();
         VkCommandPoolCreateFlags const flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         m_instance->threadSafeDeviceAccess(
-            [&out_pool = p.compute.default_pool, flags, queue_family](GhulbusVulkan::Device& device) {
+            [&out_pool = p.compute.default_pool, queue_family](GhulbusVulkan::Device& device) {
             out_pool.emplace(device.createCommandPool(flags, queue_family));
         });
     }
@@ -77,7 +77,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersCompute
         uint32_t const queue_family = m_instance->getComputeQueueFamilyIndex();
         VkCommandPoolCreateFlags const flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
         m_instance->threadSafeDeviceAccess(
-            [&out_pool = p.compute.transient, flags, queue_family](GhulbusVulkan::Device& device) {
+            [&out_pool = p.compute.transient, queue_family](GhulbusVulkan::Device& device) {
             out_pool.emplace(device.createCommandPool(flags, queue_family));
         });
     }
@@ -91,7 +91,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersCompute
         uint32_t const queue_family = m_instance->getComputeQueueFamilyIndex();
         VkCommandPoolCreateFlags const flags = 0;
         m_instance->threadSafeDeviceAccess(
-            [&out_pool = p.compute.non_resetable, flags, queue_family](GhulbusVulkan::Device& device) {
+            [&out_pool = p.compute.non_resetable, queue_family](GhulbusVulkan::Device& device) {
             out_pool.emplace(device.createCommandPool(flags, queue_family));
         });
     }
@@ -105,7 +105,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersTransfe
         uint32_t const queue_family = m_instance->getTransferQueueFamilyIndex();
         VkCommandPoolCreateFlags const flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         m_instance->threadSafeDeviceAccess(
-            [&out_pool = p.transfer.default_pool, flags, queue_family](GhulbusVulkan::Device& device) {
+            [&out_pool = p.transfer.default_pool, queue_family](GhulbusVulkan::Device& device) {
             out_pool.emplace(device.createCommandPool(flags, queue_family));
         });
     }
@@ -119,7 +119,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersTransfe
         uint32_t const queue_family = m_instance->getTransferQueueFamilyIndex();
         VkCommandPoolCreateFlags const flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
         m_instance->threadSafeDeviceAccess(
-            [&out_pool = p.transfer.transient, flags, queue_family](GhulbusVulkan::Device& device) {
+            [&out_pool = p.transfer.transient, queue_family](GhulbusVulkan::Device& device) {
             out_pool.emplace(device.createCommandPool(flags, queue_family));
         });
     }
@@ -133,7 +133,7 @@ GhulbusVulkan::CommandBuffers CommandPoolRegistry::allocateCommandBuffersTransfe
         uint32_t const queue_family = m_instance->getTransferQueueFamilyIndex();
         VkCommandPoolCreateFlags const flags = 0;
         m_instance->threadSafeDeviceAccess(
-            [&out_pool = p.transfer.non_resetable, flags, queue_family](GhulbusVulkan::Device& device) {
+            [&out_pool = p.transfer.non_resetable, queue_family](GhulbusVulkan::Device& device) {
             out_pool.emplace(device.createCommandPool(flags, queue_family));
         });
     }

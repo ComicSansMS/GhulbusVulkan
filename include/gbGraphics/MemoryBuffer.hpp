@@ -44,6 +44,8 @@ public:
     MemoryBuffer(MemoryBuffer&&) = default;
 
     bool isMappable() const;
+    VkBufferUsageFlags getBufferUsage() const;
+    MemoryUsage getMemoryUsage() const;
 
     GhulbusVulkan::MappedMemory map();
 
