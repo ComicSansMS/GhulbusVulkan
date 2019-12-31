@@ -16,6 +16,7 @@
 
 #include <gbBase/Assert.hpp>
 
+#include <cmath>
 #include <type_traits>
 #include <vector>
 
@@ -267,6 +268,98 @@ public:
             t[i*2+1].i1 = static_cast<IndexType_T>(i*4);
             t[i*2+1].i2 = static_cast<IndexType_T>(i*4+2);
             t[i*2+1].i3 = static_cast<IndexType_T>(i*4+3);
+        }
+    }
+};
+
+template<typename VertexData_T, typename IndexType_T=uint16_t>
+class OpenCylinder {
+public:
+    using VertexData = VertexData_T;
+    using Format = typename VertexData::Format;
+    using Storage = typename VertexData::Storage;
+    using IndexType = IndexType_T;
+    using IndexData = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
+private:
+    static auto constexpr PositionIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Position);
+    static auto constexpr ColorIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Color);
+    static auto constexpr TextureIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Texture);
+    static_assert(PositionIndex, "Invalid vertex format: Need at least one component with Position semantics.");
+public:
+    using Position = GetComponentBySemantics_t<VertexFormatBase::ComponentSemantics::Position, Format>;
+    using PositionVectorValueType = typename Position::Layout::ValueType;
+    VertexData m_vertexData;
+    IndexData m_indexData;
+public:
+    OpenCylinder(PositionVectorValueType radius, PositionVectorValueType height, int n_segments, int n_height_segments = 1) {
+        m_vertexData.getStorage().resize(n_segments * n_height_segments * 4);
+        fillVertexData(radius, height, n_segments, n_height_segments);
+        m_indexData.getStorage().resize(n_segments * n_height_segments * 2);
+        fillIndexData(n_segments, n_height_segments);
+    }
+
+    void fillVertexData(PositionVectorValueType radius, PositionVectorValueType height, int n_segments, int n_height_segments)
+    {
+        using PositionVec = typename Position::Layout;
+        using T = PositionVectorValueType;
+        PositionVec v;
+        if constexpr (GhulbusMath::VectorTraits::IsVector4<PositionVec>::value) {
+            v.w = 1;
+        }
+        int v_index = 0;
+        T const height_increment = height / static_cast<T>(n_height_segments);
+        for (int h = 0; h < n_height_segments; ++h) {
+            T const current_height = static_cast<T>(h) * height_increment;
+            T const next_height = static_cast<T>(h + 1) * height_increment;
+            T const PI_2 = 2 * GhulbusMath::traits::Pi<T>::value;
+            T const phi_increment = PI_2 * (static_cast<T>(1) / static_cast<T>(n_segments));
+            for (int i = 0; i < n_segments; ++i) {
+                T const phi = static_cast<T>(i) * phi_increment;
+                T const phi_next = static_cast<T>(i + 1) * phi_increment;
+                T const sin_phi = radius * std::sin(phi);
+                T const sin_phi_next = radius * std::sin(phi_next);
+                T const cos_phi = radius * std::cos(phi);
+                T const cos_phi_next = radius * std::cos(phi_next);
+                v.x = sin_phi;
+                v.y = current_height;
+                v.z = cos_phi;
+                get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, v_index++) = v;
+                v.x = sin_phi_next;
+                v.z = cos_phi_next;
+                get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, v_index++) = v;
+                v.y = next_height;
+                get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, v_index++) = v;
+                v.x = sin_phi;
+                v.z = cos_phi;
+                get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, v_index++) = v;
+                if constexpr (TextureIndex) {
+                    using GhulbusMath::Vector2;
+                    using Texture = GetComponentBySemantics_t<VertexFormatBase::ComponentSemantics::Texture, Format>;
+                    using TexT = typename Texture::Layout::ValueType;
+                    T const current_u = static_cast<T>(i) / static_cast<T>(n_segments);
+                    T const next_u = static_cast<T>(i + 1) / static_cast<T>(n_segments);
+                    T const current_v = static_cast<T>(h) / static_cast<T>(n_height_segments);
+                    T const next_v = static_cast<T>(h + 1) / static_cast<T>(n_height_segments);
+                    get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 4) = Vector2<TexT>(current_u, current_v);
+                    get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 3) = Vector2<TexT>(next_u, current_v);
+                    get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 2) = Vector2<TexT>(next_u, next_v);
+                    get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 1) = Vector2<TexT>(current_u, next_v);
+                }
+            }
+        }
+    }
+
+    void fillIndexData(int n_segments, int n_height_segments)
+    {
+        std::vector<IndexComponent::Triangle<IndexType_T>>& t = m_indexData.getStorage();
+        for (int i = 0; i < n_height_segments * n_segments; ++i) {
+            t[i*2].i1 = static_cast<IndexType_T>(i*4);
+            t[i*2].i2 = static_cast<IndexType_T>(i*4 + 1);
+            t[i*2].i3 = static_cast<IndexType_T>(i*4 + 2);
+
+            t[i*2+1].i1 = static_cast<IndexType_T>(i*4);
+            t[i*2+1].i2 = static_cast<IndexType_T>(i*4 + 2);
+            t[i*2+1].i3 = static_cast<IndexType_T>(i*4 + 3);
         }
     }
 };
