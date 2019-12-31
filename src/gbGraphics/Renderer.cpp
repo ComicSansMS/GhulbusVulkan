@@ -22,7 +22,7 @@ namespace GHULBUS_GRAPHICS_NAMESPACE
 {
 
 Renderer::Renderer(GraphicsInstance& instance, Program& program, GhulbusVulkan::Swapchain& swapchain)
-    :m_instance(&instance), m_program(&program), m_swapchain(&swapchain), m_target(nullptr),
+    :m_instance(&instance), m_program(&program), m_swapchain(&swapchain),
      m_state(createRendererState(instance, swapchain)),
      m_renderFinishedSemaphore(instance.getVulkanDevice().createSemaphore()),
      m_clearColor(0.5f, 0.f, 0.5f, 1.f)

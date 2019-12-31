@@ -61,7 +61,6 @@ private:
     GraphicsInstance* m_instance;
     Program* m_program;
     GhulbusVulkan::Swapchain* m_swapchain;
-    Image2d* m_target;
     GhulbusVulkan::CommandBuffers m_commandBuffers;
     std::optional<RendererState> m_state;
     std::vector<PipelineBuildingBlocks> m_pipelineBuilders;

@@ -70,7 +70,7 @@ public:
             get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 2) = PositionVec(width, height, 0, 1);
             get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 3) = PositionVec(    0, height, 0, 1);
         } else {
-            static_assert(false, "Unsupported Position Type");
+            static_assert(sizeof(PositionVec) == 0, "Unsupported Position Type");
         }
         if constexpr(TextureIndex) {
             //
@@ -241,7 +241,7 @@ public:
             get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 22) = PositionVec(min.x, min.y, max.z);
             get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, 23) = PositionVec(min.x, min.y, min.z);
         } else {
-            static_assert(false, "Unsupported Position Type");
+            static_assert(sizeof(PositionVec) == 0, "Unsupported Position Type");
         }
         if constexpr(TextureIndex) {
             using GhulbusMath::Vector2;

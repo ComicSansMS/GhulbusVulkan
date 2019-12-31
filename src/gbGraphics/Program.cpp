@@ -82,7 +82,7 @@ spirv_cross::Resource const& Program::ReflectionInfo::getVertexInputStageResourc
 {
     auto const& resources = vertex_resources.stage_inputs;
     auto const it_resource =
-        std::find_if(resources.begin(), resources.end(), [this, name](spirv_cross::Resource const& r) {
+        std::find_if(resources.begin(), resources.end(), [name](spirv_cross::Resource const& r) {
         return (r.name == name);
     });
     if(it_resource == resources.end()) {

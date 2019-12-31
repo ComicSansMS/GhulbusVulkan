@@ -272,7 +272,6 @@ Window::PresentStatus Window::present(GhulbusVulkan::Semaphore& semaphore)
     GHULBUS_PRECONDITION(m_backBuffer);
     m_backBuffer->fence.wait();
 
-    uint32_t const idx = m_backBuffer->image.getSwapchainIndex();
     m_presentQueue->stageSubmission(std::move(m_windowSubmits));
     m_windowSubmits = GhulbusVulkan::SubmitStaging{};
     m_presentFence.reset();
