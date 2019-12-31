@@ -28,14 +28,23 @@ if(GB_GENERATE_COVERAGE_INFO)
 endif()
 
 option(GB_AUTO_BUILD_DEPENDENCIES "If set, dependencies will be built automatically as part of the initial configuration" ON)
+option(GB_FORCE_DEPENDENCY_UPDATE "Check this option to enforce building the dependencies on the next configure run. This option will uncheck itself after a successful update." OFF)
 if(GB_AUTO_BUILD_DEPENDENCIES)
     find_package(Git REQUIRED)
-    if(NOT EXISTS ${PROJECT_BINARY_DIR}/dependencies/build_dependencies.cmake)
-        execute_process(
-            COMMAND ${GIT_EXECUTABLE} clone https://github.com/ComicSansMS/GhulbusVulkanDependencies.git
-                    ${PROJECT_BINARY_DIR}/dependencies
-            RESULT_VARIABLE result
-        )
+    if((NOT EXISTS ${PROJECT_BINARY_DIR}/dependencies/build_dependencies.cmake) OR (GB_FORCE_DEPENDENCY_UPDATE))
+        if(NOT EXISTS ${PROJECT_BINARY_DIR}/dependencies/build_dependencies.cmake)
+            execute_process(
+                COMMAND ${GIT_EXECUTABLE} clone https://github.com/ComicSansMS/GhulbusVulkanDependencies.git
+                        ${PROJECT_BINARY_DIR}/dependencies
+                RESULT_VARIABLE result
+            )
+        else()
+            execute_process(
+                COMMAND ${GIT_EXECUTABLE} pull --recurse-submodules=yes
+                WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/dependencies
+                RESULT_VARIABLE result
+            )
+        endif()
         if(NOT result EQUAL 0)
             message(FATAL_ERROR "Error cloning dependencies repo.")
         endif()
@@ -56,6 +65,7 @@ if(GB_AUTO_BUILD_DEPENDENCIES)
         if(NOT result EQUAL 0)
             message(FATAL_ERROR "Error building dependencies.")
         endif()
+        set(GB_FORCE_DEPENDENCY_UPDATE OFF CACHE BOOL "" FORCE)
     endif()
 endif()
 
