@@ -336,10 +336,10 @@ public:
                     using GhulbusMath::Vector2;
                     using Texture = GetComponentBySemantics_t<VertexFormatBase::ComponentSemantics::Texture, Format>;
                     using TexT = typename Texture::Layout::ValueType;
-                    T const current_u = static_cast<T>(i) / static_cast<T>(n_segments);
-                    T const next_u = static_cast<T>(i + 1) / static_cast<T>(n_segments);
-                    T const current_v = static_cast<T>(h) / static_cast<T>(n_height_segments);
-                    T const next_v = static_cast<T>(h + 1) / static_cast<T>(n_height_segments);
+                    TexT const current_u = static_cast<TexT>(i) / static_cast<TexT>(n_segments);
+                    TexT const next_u = static_cast<TexT>(i + 1) / static_cast<TexT>(n_segments);
+                    TexT const current_v = static_cast<TexT>(h) / static_cast<TexT>(n_height_segments);
+                    TexT const next_v = static_cast<TexT>(h + 1) / static_cast<TexT>(n_height_segments);
                     get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 4) = Vector2<TexT>(current_u, current_v);
                     get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 3) = Vector2<TexT>(next_u, current_v);
                     get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 2) = Vector2<TexT>(next_u, next_v);
@@ -363,6 +363,89 @@ public:
         }
     }
 };
+
+template<typename VertexData_T, typename IndexType_T=uint16_t>
+class Disc {
+public:
+    using VertexData = VertexData_T;
+    using Format = typename VertexData::Format;
+    using Storage = typename VertexData::Storage;
+    using IndexType = IndexType_T;
+    using IndexData = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
+private:
+    static auto constexpr PositionIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Position);
+    static auto constexpr ColorIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Color);
+    static auto constexpr TextureIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Texture);
+    static_assert(PositionIndex, "Invalid vertex format: Need at least one component with Position semantics.");
+public:
+    using Position = GetComponentBySemantics_t<VertexFormatBase::ComponentSemantics::Position, Format>;
+    using PositionVectorValueType = typename Position::Layout::ValueType;
+    VertexData m_vertexData;
+    IndexData m_indexData;
+public:
+    Disc(PositionVectorValueType radius, int n_segments) {
+        m_vertexData.getStorage().resize(n_segments + 1);
+        fillVertexData(radius, n_segments);
+        m_indexData.getStorage().resize(n_segments);
+        fillIndexData(n_segments);
+    }
+
+    void fillVertexData(PositionVectorValueType radius, int n_segments)
+    {
+        using PositionVec = typename Position::Layout;
+        using T = PositionVectorValueType;
+        PositionVec v;
+        if constexpr (GhulbusMath::VectorTraits::IsVector3<PositionVec>::value) {
+            v.z = 0;
+        }
+        if constexpr (GhulbusMath::VectorTraits::IsVector4<PositionVec>::value) {
+            v.w = 1;
+        }
+        int v_index = 0;
+        T const PI_2 = 2 * GhulbusMath::traits::Pi<T>::value;
+        T const phi_increment = PI_2 * (static_cast<T>(1) / static_cast<T>(n_segments));
+        v.x = 0;
+        v.y = 0;
+        get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, v_index++) = v;
+        if constexpr (TextureIndex) {
+            using GhulbusMath::Vector2;
+            using Texture = GetComponentBySemantics_t<VertexFormatBase::ComponentSemantics::Texture, Format>;
+            using TexT = typename Texture::Layout::ValueType;
+            get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, 0) = Vector2<TexT>(0.5, 0.5);
+        }
+        for (int i = 0; i < n_segments; ++i) {
+            T const phi = static_cast<T>(i) * phi_increment;
+            T const sin_phi = std::sin(phi);
+            T const cos_phi = std::cos(phi);
+            v.x = radius * sin_phi;
+            v.y = radius * cos_phi;
+            get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, v_index++) = v;
+            if constexpr (TextureIndex) {
+                using GhulbusMath::Vector2;
+                using Texture = GetComponentBySemantics_t<VertexFormatBase::ComponentSemantics::Texture, Format>;
+                using TexT = typename Texture::Layout::ValueType;
+                TexT constexpr half = static_cast<TexT>(0.5);
+                TexT const tu = half*sin_phi + half;
+                TexT const tv = half*cos_phi + half;
+                get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 1) = Vector2<TexT>(tu, tv);
+            }
+        }
+    }
+
+    void fillIndexData(int n_segments)
+    {
+        std::vector<IndexComponent::Triangle<IndexType_T>>& t = m_indexData.getStorage();
+        for (int i = 0; i < n_segments - 1; ++i) {
+            t[i].i1 = static_cast<IndexType_T>(0);
+            t[i].i2 = static_cast<IndexType_T>(i + 2);
+            t[i].i3 = static_cast<IndexType_T>(i + 1);
+        }
+        t[n_segments - 1].i1 = static_cast<IndexType_T>(0);
+        t[n_segments - 1].i2 = static_cast<IndexType_T>(1);
+        t[n_segments - 1].i3 = static_cast<IndexType_T>(n_segments);
+    }
+};
+
 }
 }
 #endif

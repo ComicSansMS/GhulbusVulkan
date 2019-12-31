@@ -249,10 +249,11 @@ int main()
     GhulbusGraphics::Primitives::Grid<VertexData, uint32_t> mesh_grid(1.f, 1.f, 4, 6);
     GhulbusGraphics::Primitives::Box<VertexData, uint32_t> mesh_box(GhulbusMath::AABB3<float>({-0.5f, -0.75f, -1.5f}, {0.5f, 0.75f, 1.5f}));
     GhulbusGraphics::Primitives::OpenCylinder<VertexData, uint32_t> mesh_opencyl(0.2f, 1.f, 17, 4);
+    GhulbusGraphics::Primitives::Disc<VertexData, uint32_t> mesh_disc(0.2f, 17);
 
     //*
     GhulbusGraphics::ImageLoader img_loader("textures/statue.jpg");
-    GhulbusGraphics::Mesh mesh(graphics_instance, mesh_opencyl.m_vertexData, mesh_opencyl.m_indexData, img_loader);
+    GhulbusGraphics::Mesh mesh(graphics_instance, mesh_disc.m_vertexData, mesh_disc.m_indexData, img_loader);
     /*/
     GhulbusGraphics::ObjParser obj_parser;
     obj_parser.readFile("chalet.obj");
