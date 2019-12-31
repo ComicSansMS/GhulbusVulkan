@@ -531,7 +531,91 @@ public:
     }
 };
 
+template<typename VertexData_T, typename IndexType_T=uint16_t>
+class Sphere {
+public:
+    using VertexData = VertexData_T;
+    using Format = typename VertexData::Format;
+    using Storage = typename VertexData::Storage;
+    using IndexType = IndexType_T;
+    using IndexData = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
+private:
+    static auto constexpr PositionIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Position);
+    static auto constexpr ColorIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Color);
+    static auto constexpr TextureIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Texture);
+    static_assert(PositionIndex, "Invalid vertex format: Need at least one component with Position semantics.");
+public:
+    using Position = GetComponentBySemantics_t<VertexFormatBase::ComponentSemantics::Position, Format>;
+    using PositionVectorValueType = typename Position::Layout::ValueType;
+    VertexData m_vertexData;
+    IndexData m_indexData;
+public:
+    Sphere(PositionVectorValueType radius, int n_segments_horizontal, int n_segments_vertical) {
+        GHULBUS_PRECONDITION(n_segments_horizontal >= 3);
+        GHULBUS_PRECONDITION(n_segments_vertical >= 2);
+        m_vertexData.getStorage().resize((n_segments_horizontal + 1) * (n_segments_vertical + 2));
+        fillVertexData(radius, n_segments_horizontal, n_segments_vertical);
+        m_indexData.getStorage().resize(2 * n_segments_horizontal * n_segments_vertical);
+        fillIndexData(n_segments_horizontal, n_segments_vertical);
+    }
 
+    void fillVertexData(PositionVectorValueType radius, int n_segments_horizontal, int n_segments_vertical)
+    {
+        using PositionVec = typename Position::Layout;
+        using T = PositionVectorValueType;
+        PositionVec v;
+        if constexpr (GhulbusMath::VectorTraits::IsVector4<PositionVec>::value) {
+            v.w = 1;
+        }
+        int v_index = 0;
+        T const PI_1_2 = GhulbusMath::traits::Pi<T>::value / 2;
+        T const PI_2 = 2 * GhulbusMath::traits::Pi<T>::value;
+        T const theta_increment = GhulbusMath::traits::Pi<T>::value / n_segments_vertical;
+        T const phi_increment = PI_2 * (static_cast<T>(1) / static_cast<T>(n_segments_horizontal));
+        for (int h = 0; h <= n_segments_vertical; ++h) {
+            T const theta = (h * theta_increment) - PI_1_2;
+            T const sin_theta = radius * std::sin(theta);
+            T const cos_theta = radius * std::cos(theta);
+            v.y = sin_theta;
+            for (int i = 0; i <= n_segments_horizontal; ++i) {
+                T const phi = (i == n_segments_horizontal) ? 0 : (static_cast<T>(i) * phi_increment);
+                T const sin_phi = cos_theta * std::sin(phi);
+                T const cos_phi = cos_theta * std::cos(phi);
+                v.x = cos_phi;
+                v.z = sin_phi;
+                get<VertexFormatBase::ComponentSemantics::Position>(m_vertexData, v_index++) = v;
+                if constexpr (TextureIndex) {
+                    using GhulbusMath::Vector2;
+                    using Texture = GetComponentBySemantics_t<VertexFormatBase::ComponentSemantics::Texture, Format>;
+                    using TexT = typename Texture::Layout::ValueType;
+                    TexT const current_u = static_cast<TexT>(i) / static_cast<TexT>(n_segments_horizontal);
+                    TexT const current_v = static_cast<TexT>(h) / static_cast<TexT>(n_segments_vertical);
+                    get<VertexFormatBase::ComponentSemantics::Texture>(m_vertexData, v_index - 1) = Vector2<TexT>(current_u, current_v);
+                }
+            }
+        }
+    }
+
+    void fillIndexData(int n_segments_horizontal, int n_segments_vertical)
+    {
+        std::vector<IndexComponent::Triangle<IndexType_T>>& t = m_indexData.getStorage();
+        int index = 0;
+        for (int h = 0; h < n_segments_vertical; ++h) {
+            int const current_height_base = h * (n_segments_horizontal + 1);
+            int const next_height_base = (h + 1) * (n_segments_horizontal + 1);
+            for (int i = 0; i < n_segments_horizontal; ++i) {
+                t[index].i1 = static_cast<IndexType_T>(current_height_base + i);
+                t[index].i2 = static_cast<IndexType_T>(next_height_base + i + 1);
+                t[index].i3 = static_cast<IndexType_T>(current_height_base + i + 1);
+                ++index;
+                t[index].i1 = static_cast<IndexType_T>(current_height_base + i);
+                t[index].i2 = static_cast<IndexType_T>(next_height_base + i);
+                t[index].i3 = static_cast<IndexType_T>(next_height_base + i + 1);
+                ++index;
+            }
+        }
+    }
+};
 }
 }
 #endif
