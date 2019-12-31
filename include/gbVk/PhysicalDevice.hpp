@@ -57,7 +57,7 @@ public:
 
     bool getSurfaceSupport(uint32_t queue_family, VkSurfaceKHR surface);
 
-    std::vector<VkLayerProperties> [[deprecated]] enumerateDeviceLayerProperties();
+    [[deprecated]] std::vector<VkLayerProperties> enumerateDeviceLayerProperties();
 
     std::vector<VkExtensionProperties> enumerateDeviceExtensionProperties();
 
