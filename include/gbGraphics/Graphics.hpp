@@ -9,7 +9,10 @@
 
 #include <gbGraphics/config.hpp>
 #include <gbGraphics/CommandPoolRegistry.hpp>
+#include <gbGraphics/Draw2d.hpp>
 #include <gbGraphics/GraphicsInstance.hpp>
+#include <gbGraphics/Program.hpp>
+#include <gbGraphics/Renderer.hpp>
 #include <gbGraphics/Window.hpp>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE

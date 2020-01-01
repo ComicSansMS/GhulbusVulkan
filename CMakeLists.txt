@@ -289,6 +289,7 @@ set(GB_GRAPHICS_TEST_DIR ${PROJECT_SOURCE_DIR}/test/gbGraphics)
 
 set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/CommandPoolRegistry.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/Draw2d.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/GenericImage.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Graphics.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/GraphicsInstance.cpp
@@ -314,6 +315,7 @@ set(GB_GRAPHICS_SOURCE_FILES
 set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/CommandPoolRegistry.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/config.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Draw2d.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Exceptions.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/GenericImage.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Graphics.hpp
@@ -338,6 +340,7 @@ set(GB_GRAPHICS_HEADER_FILES
 )
 
 set(GB_GRAPHICS_DETAIL_SOURCE_FILES
+    ${GB_GRAPHICS_SOURCE_DIR}/detail/CompiledShaders.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/detail/DeviceMemoryAllocator_VMA.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/detail/QueueSelection.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/detail/VulkanMemoryAllocator.cpp
@@ -345,6 +348,7 @@ set(GB_GRAPHICS_DETAIL_SOURCE_FILES
 source_group("detail\\Source Files" FILES ${GB_GRAPHICS_DETAIL_SOURCE_FILES})
 
 set(GB_GRAPHICS_DETAIL_HEADER_FILES
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/detail/CompiledShaders.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/detail/DeviceMemoryAllocator_VMA.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/detail/QueueSelection.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/detail/VulkanMemoryAllocator.hpp
@@ -366,6 +370,21 @@ target_include_directories(gbGraphics PUBLIC $<BUILD_INTERFACE:${GB_GRAPHICS_INC
 target_link_libraries(gbGraphics PUBLIC Ghulbus::gbBase Ghulbus::gbMath gbVk glfw)
 target_link_libraries(gbGraphics PRIVATE VulkanMemoryAllocator::VulkanMemoryAllocator spirv-cross-reflect stb::stb)
 target_link_libraries(gbGraphics PRIVATE VulkanMemoryAllocator::VulkanMemoryAllocator spirv-cross-reflect stb::stb)
+
+add_shader(gbGraphics
+    ${PROJECT_BINARY_DIR}/generated/gbGraphics/detail/shader/draw2d.vert.h
+    ${PROJECT_SOURCE_DIR}/shader/draw2d.vert
+    COMPILE_OPTIONS -mfmt=c
+)
+add_shader(gbGraphics
+    ${PROJECT_BINARY_DIR}/generated/gbGraphics/detail/shader/draw2d.frag.h
+    ${PROJECT_SOURCE_DIR}/shader/draw2d.frag
+    COMPILE_OPTIONS -mfmt=c
+)
+source_group("detail\\Compiled Shaders" FILES
+    ${PROJECT_BINARY_DIR}/generated/gbGraphics/detail/shader/draw2d.vert.h
+    ${PROJECT_BINARY_DIR}/generated/gbGraphics/detail/shader/draw2d.frag.h
+)
 
 if(NOT GB_GENERATE_COVERAGE_INFO)
     target_compile_definitions(gbGraphics PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
