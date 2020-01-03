@@ -9,6 +9,7 @@
 
 #include <gbGraphics/config.hpp>
 
+#include <gbMath/Color4.hpp>
 #include <gbMath/Vector2.hpp>
 #include <gbMath/Vector3.hpp>
 #include <gbMath/Vector4.hpp>
@@ -141,6 +142,9 @@ namespace VertexComponentLayout {
 template<size_t N>
 constexpr std::integral_constant<VertexFormatBase::ComponentType, VertexFormatBase::ComponentType::Padding>
 getVertexComponentType(VertexComponentLayout::Padding<N> const&);
+
+constexpr std::integral_constant<VertexFormatBase::ComponentType, VertexFormatBase::ComponentType::t_vec4>
+getVertexComponentType(GhulbusMath::Color4<float> const&);
 
 template<typename VectorTag_T>
 constexpr std::integral_constant<VertexFormatBase::ComponentType, VertexFormatBase::ComponentType::t_vec2>
