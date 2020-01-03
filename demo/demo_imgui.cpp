@@ -71,8 +71,8 @@
 #include <memory>
 #include <vector>
 
-using VertexData = GhulbusGraphics::Mesh::VertexData;
-using IndexData = GhulbusGraphics::Mesh::IndexData;
+using VertexData = GhulbusGraphics::Mesh<>::VertexData;
+using IndexData = GhulbusGraphics::Mesh<>::IndexData;
 
 struct UBOMVP {
     GhulbusMath::Matrix4<float> model;

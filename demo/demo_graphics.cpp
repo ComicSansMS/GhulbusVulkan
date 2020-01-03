@@ -170,8 +170,8 @@ void fullBarrier(GhulbusVulkan::CommandBuffer& command_buffer)
         0, nullptr, 0, nullptr);
 }
 
-using VertexData = GhulbusGraphics::Mesh::VertexData;
-using IndexData = GhulbusGraphics::Mesh::IndexData;
+using VertexData = GhulbusGraphics::Mesh<>::VertexData;
+using IndexData = GhulbusGraphics::Mesh<>::IndexData;
 
 struct UBOMVP {
     GhulbusMath::Matrix4<float> model;
@@ -255,7 +255,7 @@ int main()
 
     //*
     GhulbusGraphics::ImageLoader img_loader("textures/statue.jpg");
-    GhulbusGraphics::Mesh mesh(graphics_instance, mesh_sphere.m_vertexData, mesh_sphere.m_indexData, img_loader);
+    GhulbusGraphics::AnyMesh mesh(GhulbusGraphics::Mesh(graphics_instance, mesh_sphere.m_vertexData, mesh_sphere.m_indexData, img_loader));
     /*/
     GhulbusGraphics::ObjParser obj_parser;
     obj_parser.readFile("chalet.obj");
