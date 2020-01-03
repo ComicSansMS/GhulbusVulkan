@@ -36,8 +36,8 @@ public:
     DescriptorSets(DescriptorSets const&) = delete;
     DescriptorSets& operator=(DescriptorSets const&) = delete;
 
-    DescriptorSets(DescriptorSets&& rhs);
-    DescriptorSets& operator=(DescriptorSets&&) = delete;
+    DescriptorSets(DescriptorSets&& rhs) noexcept;
+    DescriptorSets& operator=(DescriptorSets&& rhs);
 
     uint32_t size() const;
 

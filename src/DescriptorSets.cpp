@@ -30,11 +30,27 @@ DescriptorSets::~DescriptorSets()
     }
 }
 
-DescriptorSets::DescriptorSets(DescriptorSets&& rhs)
+DescriptorSets::DescriptorSets(DescriptorSets&& rhs) noexcept
     :m_descriptorSets(std::move(rhs.m_descriptorSets)), m_device(rhs.m_device), m_descriptorPool(rhs.m_descriptorPool),
      m_hasOwnership(rhs.m_hasOwnership)
 {
     rhs.m_descriptorSets.clear();
+}
+
+DescriptorSets& DescriptorSets::operator=(DescriptorSets&& rhs)
+{
+    if (&rhs != this) {
+        if (m_hasOwnership && !m_descriptorSets.empty()) {
+            vkFreeDescriptorSets(m_device, m_descriptorPool,
+                                 static_cast<uint32_t>(m_descriptorSets.size()), m_descriptorSets.data());
+        }
+        m_descriptorSets = std::move(rhs.m_descriptorSets);
+        m_device = rhs.m_device;
+        m_descriptorPool = rhs.m_descriptorPool;
+        m_hasOwnership = rhs.m_hasOwnership;
+        rhs.m_descriptorSets.clear();
+    }
+    return *this;
 }
 
 uint32_t DescriptorSets::size() const
