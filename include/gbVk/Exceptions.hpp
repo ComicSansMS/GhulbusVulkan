@@ -39,7 +39,7 @@ namespace Exception_Info {
      */
     /** An int representation of the invalid enum value.
      */
-    typedef boost::error_info<Tags::vulkan_error_code, VkResult> vulkan_error_code;
+    using vulkan_error_code = ::GHULBUS_BASE_NAMESPACE::ErrorInfo<Tags::vulkan_error_code, VkResult>;
     /// @}
 }
 namespace Exceptions

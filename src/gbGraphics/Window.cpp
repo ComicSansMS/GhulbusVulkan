@@ -279,7 +279,7 @@ Window::PresentStatus Window::present(GhulbusVulkan::Semaphore& semaphore)
     try {
         m_swapchain.present(m_presentQueue->getVkQueue(), semaphore, std::move(m_backBuffer->image));
     } catch(GhulbusVulkan::Exceptions::VulkanError const& e) {
-        VkResult const* const res = boost::get_error_info<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
+        VkResult const* const res = Ghulbus::getErrorInfo<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
         if(!res || ((*res != VK_ERROR_OUT_OF_DATE_KHR) && (*res != VK_SUBOPTIMAL_KHR))) { throw; }
         // we lost the back buffer; we'll have to recreate everything
         m_backBuffer.reset();
@@ -378,7 +378,7 @@ void Window::prepareBackbuffer()
         try {
             m_backBuffer->image = m_swapchain.acquireNextImage(m_backBuffer->fence, m_backBuffer->semaphore);
         } catch(GhulbusVulkan::Exceptions::VulkanError const& e) {
-            VkResult const* const res = boost::get_error_info<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
+            VkResult const* const res = Ghulbus::getErrorInfo<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
             if(!res || ((*res != VK_ERROR_OUT_OF_DATE_KHR) && (*res != VK_SUBOPTIMAL_KHR))) { throw; }
             if(*res == VK_SUBOPTIMAL_KHR) {
                 // layout is suboptimal for presentation, but we can still finish the frame.

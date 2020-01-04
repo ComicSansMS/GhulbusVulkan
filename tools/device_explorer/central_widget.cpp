@@ -224,8 +224,8 @@ void CentralWidget::onInstanceConfigurationChanged()
             GhulbusVulkan::Instance::createInstance(
                 "gbVk Device Explorer", GhulbusVulkan::Instance::Version(1, 0, 0), layers, extensions));
     } catch(GhulbusVulkan::Exceptions::VulkanError& e) {
-        auto desc = boost::get_error_info<GhulbusVulkan::Exception_Info::description>(e);
-        auto vkres = boost::get_error_info<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
+        auto desc = Ghulbus::getErrorInfo<GhulbusVulkan::Exception_Info::description>(e);
+        auto vkres = Ghulbus::getErrorInfo<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
         emit errorCreateInstance(QString::fromStdString(*desc) % " - " % GhulbusVulkan::to_string(*vkres));
         return;
     }

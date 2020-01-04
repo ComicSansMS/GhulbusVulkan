@@ -36,7 +36,7 @@ namespace Exception_Info {
     /** @name Decorators
      * @{
      */
-    typedef boost::error_info<Tags::io_offset, std::streamsize> io_offset;
+    using io_offset = ::GHULBUS_BASE_NAMESPACE::ErrorInfo<Tags::io_offset, std::streamsize>;
     /// @}
 }
 namespace Exceptions
