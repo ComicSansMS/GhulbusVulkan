@@ -4,14 +4,14 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     if(MSVC_VERSION EQUAL 1900)
         set(QT_DIR_SUFFIX "msvc2015_64")
     elseif(MSVC_VERSION GREATER_EQUAL 1910)
-        set(QT_DIR_SUFFIX "msvc2017_64")
+        set(QT_DIR_SUFFIX "msvc2017_64" "msvc2019_64")
     endif()
 endif()
 
 find_path(QT5_BASE_DIR
     NAMES "lib/cmake/Qt5"
     HINTS ENV QT5_ROOT
-    PATH_SUFFIXES "${QT_DIR_SUFFIX}"
+    PATH_SUFFIXES ${QT_DIR_SUFFIX}
     DOC "Qt5 Root Directory"
 )
 

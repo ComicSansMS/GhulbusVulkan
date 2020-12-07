@@ -58,7 +58,7 @@ public:
         std::vector<char const*> getRequestedLayers() const
         {
             std::vector<char const*> requested_layers;
-            if(LUNARG_standard_validation) { requested_layers.push_back("VK_LAYER_LUNARG_standard_validation"); }
+            if(LUNARG_standard_validation) { requested_layers.push_back("VK_LAYER_KHRONOS_validation"); }
             requested_layers.insert(end(requested_layers), begin(additional_layers), end(additional_layers));
             removeDuplicates(requested_layers);
             return requested_layers;
