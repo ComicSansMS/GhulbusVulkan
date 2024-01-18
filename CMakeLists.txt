@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.24)
 
 project(GhulbusVulkan)
 
@@ -85,8 +85,7 @@ option(BUILD_SHARED_LIBS "If checked, generate dynamic instead of static librari
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 find_package(Vulkan REQUIRED)
-find_program(Vulkan_GLSLC NAMES glslc HINTS ${Vulkan_INCLUDE_DIR}/../bin ENV GLSLC_EXECUTABLE)
-if(NOT Vulkan_GLSLC)
+if(NOT Vulkan_GLSLC_EXECUTABLE)
     message(SEND_ERROR "Cannot find glslc compiler. Provide may provide a search hint via the GLSLC_EXECUTABLE environment variable.")
 endif()
 function(add_shader target_name output_file source_file)
@@ -97,7 +96,7 @@ function(add_shader target_name output_file source_file)
                           "${multiValueArgs}" ${ARGN} )
     add_custom_command(
         OUTPUT ${output_file}
-        COMMAND ${Vulkan_GLSLC} ${ADD_SHADER_TARGET_COMPILE_OPTIONS} -o ${output_file} ${source_file}
+        COMMAND ${Vulkan_GLSLC_EXECUTABLE} ${ADD_SHADER_TARGET_COMPILE_OPTIONS} -o ${output_file} ${source_file}
         COMMENT "Compiling shader ${source_file}"
         MAIN_DEPENDENCY ${source_file}
     )
