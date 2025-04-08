@@ -230,8 +230,13 @@ GraphicsInstance::GraphicsInstance(char const* application_name, ApplicationVers
 
 GraphicsInstance::~GraphicsInstance()
 {
-    // reset pimpl manually to ensure Vulkan shuts down before glfw
+    // queues contain command buffers via their SubmitStagings; these must be destroyed
+    // before their respective command pools
+    m_pimpl->queue_graphics.clearAllStaged();
+    m_pimpl->queue_compute.clearAllStaged();
+    m_pimpl->queue_transfer.clearAllStaged();
     m_commandPoolRegistry.reset();
+    // reset pimpl manually to ensure Vulkan shuts down before glfw
     m_pimpl.reset();
     glfwTerminate();
 }

@@ -131,7 +131,7 @@ inline GhulbusGraphics::Image2d& Mesh<VertexData_T, IndexData_T>::getTexture()
 
 class AnyMesh {
 private:
-    using Storage = std::aligned_storage_t<sizeof(Mesh<>), alignof(Mesh<>)>;
+    using Storage = std::byte alignas(Mesh<>)[sizeof(Mesh<>)];
 
     class MeshConcept {
     public:
