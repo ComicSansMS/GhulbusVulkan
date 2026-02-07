@@ -1,20 +1,10 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 4.0)
 
 project(GhulbusVulkan)
-
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 ###############################################################################
 ## Build Options
 ###############################################################################
-
-if($ENV{TRAVIS})
-    if($ENV{TRAVIS} STREQUAL "true")
-        message(STATUS "Building on Travis-CI.")
-        set(IS_TRAVIS_BUILD TRUE)
-    endif()
-endif()
 
 option(GB_GENERATE_COVERAGE_INFO "If set, line coverage info will be generated from debug test runs." OFF)
 if(GB_GENERATE_COVERAGE_INFO)
@@ -231,33 +221,32 @@ set(GB_VK_TEST_SOURCES
     ${GB_VK_TEST_DIR}/TestStringConverters.cpp
 )
 
-add_library(gbVk
-    ${GB_VK_SOURCE_FILES}
-    ${GB_VK_HEADER_FILES}
-)
-target_include_directories(gbVk PUBLIC $<BUILD_INTERFACE:${GB_VK_INCLUDE_DIR}>)
-target_link_libraries(gbVk PUBLIC Threads::Threads)
-target_link_libraries(gbVk PUBLIC Ghulbus::gbBase)
-target_link_libraries(gbVk PUBLIC Vulkan::Vulkan)
-
-if(NOT GB_GENERATE_COVERAGE_INFO)
-    target_compile_definitions(gbVk PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
-endif()
-target_compile_definitions(gbVk PUBLIC $<$<PLATFORM_ID:Windows>:GHULBUS_CONFIG_VULKAN_PLATFORM_WIN32>)
-target_compile_options(gbVk PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
-target_compile_options(gbVk PUBLIC $<$<STREQUAL:$<CXX_COMPILER_ID>,MSVC>:/permissive->)
-target_compile_options(gbVk PUBLIC $<$<STREQUAL:$<CXX_COMPILER_ID>,MSVC>:/std:c++latest>)
-target_compile_options(gbVk PRIVATE
-    $<$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>>:-pedantic -Wall>)
-target_compile_options(gbVk PRIVATE $<$<CXX_COMPILER_ID:GNU>:-pedantic -Wall>)
+add_library(gbVk)
 
 include(GenerateExportHeader)
 generate_export_header(gbVk
     EXPORT_FILE_NAME ${PROJECT_BINARY_DIR}/generated/gbVk/gbVk_Export.hpp
     PREFIX_NAME GHULBUS_LIBRARY_
 )
-set(GB_VK_GENERATED_HEADER_FILES ${PROJECT_BINARY_DIR}/generated/gbVk/gbVk_Export.hpp)
-target_include_directories(gbVk PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated>)
+
+target_sources(gbVk
+    PRIVATE
+    ${GB_VK_SOURCE_FILES}
+    PUBLIC
+    FILE_SET HEADERS
+    BASE_DIRS ${GB_VK_INCLUDE_DIR} ${PROJECT_BINARY_DIR}/generated
+    FILES
+    ${GB_VK_HEADER_FILES}
+    ${PROJECT_BINARY_DIR}/generated/gbVk/gbVk_Export.hpp
+)
+target_compile_features(gbVk PUBLIC cxx_std_23)
+target_link_libraries(gbVk
+    PUBLIC
+    Ghulbus::gbBase
+    Threads::Threads
+    Vulkan::Vulkan
+)
+
 if(BUILD_SHARED_LIBS)
     set_property(TARGET gbVk PROPERTY CXX_VISIBILITY_PRESET hidden)
     set_property(TARGET gbVk PROPERTY VISIBILITY_INLINES_HIDDEN ON)
@@ -266,6 +255,17 @@ endif()
 set_property(TARGET gbVk PROPERTY VERSION ${GB_VK_VERSION})
 set_property(TARGET gbVk PROPERTY SOVERSION ${GB_VK_VERSION_MAJOR})
 set_property(TARGET gbVk PROPERTY DEBUG_POSTFIX d)
+
+if(NOT GB_GENERATE_COVERAGE_INFO)
+    target_compile_definitions(gbVk PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
+endif()
+target_compile_definitions(gbVk PUBLIC $<$<PLATFORM_ID:Windows>:GHULBUS_CONFIG_VULKAN_PLATFORM_WIN32>)
+target_compile_options(gbVk
+    PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4>
+    $<$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>>:-pedantic -Wall>
+    $<$<CXX_COMPILER_ID:GNU>:-pedantic -Wall>
+)
 
 # Copy dlls
 if(WIN32 AND BUILD_SHARED_LIBS)
@@ -572,10 +572,9 @@ install(TARGETS gbVk EXPORT gbVkTargets
     RUNTIME DESTINATION bin/$<CONFIG>
     LIBRARY DESTINATION lib/$<CONFIG>
     ARCHIVE DESTINATION lib/$<CONFIG>
+    FILE_SET HEADERS
     INCLUDES DESTINATION include
 )
-target_include_directories(gbVk PUBLIC $<INSTALL_INTERFACE:include>)
-install(FILES ${GB_VK_HEADER_FILES} ${GB_VK_GENERATED_HEADER_FILES} DESTINATION include/gbVk)
 if(MSVC AND BUILD_SHARED_LIBS)
     install(FILES $<TARGET_PDB_FILE:gbVk> DESTINATION bin/Debug CONFIGURATIONS Debug)
     install(FILES $<TARGET_PDB_FILE:gbVk> DESTINATION bin/RelWithDebInfo CONFIGURATIONS RelWithDebInfo)
