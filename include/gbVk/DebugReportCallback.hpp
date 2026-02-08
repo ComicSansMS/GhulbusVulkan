@@ -35,6 +35,7 @@ private:
     PFN_vkCreateDebugReportCallbackEXT m_vkCreateDebugReportCallback;
     PFN_vkDestroyDebugReportCallbackEXT m_vkDestroyDebugReportCallback;
 public:
+    explicit DebugReportCallback(Instance& instance);
     explicit DebugReportCallback(Instance& instance, VkDebugReportFlagsEXT flags);
     ~DebugReportCallback();
 
@@ -45,6 +46,8 @@ public:
     DebugReportCallback& operator=(DebugReportCallback&&) = delete;
 
     void addCallback(Callback callback_function);
+
+    static VkDebugReportFlagsEXT allFlags() noexcept;
 
     static char const* translateFlags(VkDebugReportFlagsEXT flags);
 

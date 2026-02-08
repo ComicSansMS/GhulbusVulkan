@@ -70,6 +70,7 @@ public:
         bool enable_surface_extension;
         bool enable_platform_specific_surface_extension;
         bool enable_debug_report_extension;
+        bool enable_debug_utils_extension;
         std::vector<char const*> additional_extensions;
 
         Extensions()
@@ -101,9 +102,15 @@ public:
                 requested_extensions.push_back("VK_KHR_win32_surface");
 #               endif
             }
-            if (enable_debug_report_extension) { requested_extensions.push_back("VK_EXT_debug_report"); }
-            /// @todo support for VK_EXT_debug_utils
-            ///       https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VK_EXT_debug_utils
+            if (enable_debug_report_extension) {
+                // @todo deprecated by VK_EXT_debug_utils
+                // https://docs.vulkan.org/refpages/latest/refpages/source/VK_EXT_debug_report.html
+                requested_extensions.push_back("VK_EXT_debug_report");
+            }
+            if (enable_debug_utils_extension) {
+                // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VK_EXT_debug_utils
+                requested_extensions.push_back("VK_EXT_debug_utils");
+            }
             requested_extensions.insert(end(requested_extensions),
                                         begin(additional_extensions), end(additional_extensions));
             removeDuplicates(requested_extensions);
@@ -115,6 +122,7 @@ public:
     static std::vector<VkExtensionProperties> enumerateInstanceExtensionProperties();
     static std::vector<VkExtensionProperties> enumerateInstanceExtensionProperties(VkLayerProperties const& layer);
     [[nodiscard]] static Instance createInstance();
+    [[nodiscard]] static Instance createInstance(Extensions const& enabled_extensions);
     [[nodiscard]] static Instance createInstance(char const* application_name, Version const& application_version,
                                                  Layers const& enabled_layers, Extensions const& enabled_extensions);
 

@@ -49,9 +49,14 @@ void DeviceBuilder::addExtension(std::string extension)
 Device DeviceBuilder::create()
 {
     GHULBUS_PRECONDITION(queue_create_infos.size() == queue_create_priorities.size());
+    VkPhysicalDeviceSynchronization2Features synchronization2;
+    synchronization2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
+    synchronization2.pNext = nullptr;
+    synchronization2.synchronization2 = true;
+    
     VkDeviceCreateInfo dev_create_info;
     dev_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    dev_create_info.pNext = nullptr;
+    dev_create_info.pNext = &synchronization2;
     dev_create_info.flags = 0;  // reserved
 
     dev_create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());

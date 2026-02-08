@@ -5,6 +5,10 @@
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
+DebugReportCallback::DebugReportCallback(Instance& instance)
+    :DebugReportCallback(instance, allFlags())
+{ }
+
 DebugReportCallback::DebugReportCallback(Instance& instance, VkDebugReportFlagsEXT flags)
     :m_debugReportCallback(nullptr), m_instance(instance.getVkInstance())
 {
@@ -63,6 +67,14 @@ VkBool32 DebugReportCallback::static_callback(VkDebugReportFlagsEXT flags, VkDeb
 {
     DebugReportCallback* thisptr = reinterpret_cast<DebugReportCallback*>(user_data);
     return thisptr->callback(flags, object_type, object, location, message_code, layer_prefix, message);
+}
+
+VkDebugReportFlagsEXT DebugReportCallback::allFlags() noexcept {
+    return VK_DEBUG_REPORT_INFORMATION_BIT_EXT |
+           VK_DEBUG_REPORT_WARNING_BIT_EXT |
+           VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
+           VK_DEBUG_REPORT_ERROR_BIT_EXT |
+           VK_DEBUG_REPORT_DEBUG_BIT_EXT;
 }
 
 char const* DebugReportCallback::translateFlags(VkDebugReportFlagsEXT flags)

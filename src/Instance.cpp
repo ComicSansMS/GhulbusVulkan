@@ -53,13 +53,18 @@ std::vector<VkExtensionProperties> Instance::enumerateInstanceExtensionPropertie
 
 Instance Instance::createInstance()
 {
+    return createInstance(Extensions());
+}
+
+Instance Instance::createInstance(Extensions const& enabled_extensions)
+{
     return createInstance(nullptr, Version(),
 #ifdef NDEBUG
         Layers(),
 #else
         Layers(Layers::ActivateValidationLayers()),
 #endif
-        Extensions());
+        enabled_extensions);
 }
 
 Instance Instance::createInstance(char const* application_name, Version const& application_version,
@@ -156,7 +161,10 @@ uint32_t Instance::getMaximumSupportedVulkanApiVersion()
 
 uint32_t Instance::getVulkanApiVersion()
 {
-    return (getMaximumSupportedVulkanApiVersion() >= VK_API_VERSION_1_1) ? VK_API_VERSION_1_1 : VK_API_VERSION_1_0;
+    if (getMaximumSupportedVulkanApiVersion() < VK_API_VERSION_1_3) {
+        GHULBUS_THROW(Exceptions::ProtocolViolation(), "Vulkan 1.3 is not supported.");
+    }
+    return VK_API_VERSION_1_3;
 }
 
 }
