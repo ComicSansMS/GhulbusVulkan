@@ -89,12 +89,11 @@ DeviceMemoryAllocator_VMA::DeviceMemoryAllocator_VMA(GhulbusVulkan::Instance& in
     create_info.preferredLargeHeapBlockSize = 0;
     create_info.pAllocationCallbacks = nullptr;
     create_info.pDeviceMemoryCallbacks = nullptr;
-    create_info.frameInUseCount = 0;
     create_info.pHeapSizeLimit = nullptr;
     create_info.pVulkanFunctions = nullptr;
-    create_info.pRecordSettings = nullptr;
     create_info.instance = instance.getVkInstance();
     create_info.vulkanApiVersion = instance.getVulkanApiVersion();
+    create_info.pTypeExternalMemoryHandleTypes = nullptr;
     VkResult const res = vmaCreateAllocator(&create_info, &m_allocator);
     GhulbusVulkan::checkVulkanError(res, "Error in vmaCreateAllocator.");
 }
