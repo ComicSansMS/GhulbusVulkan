@@ -365,13 +365,12 @@ int main()
     GhulbusVulkan::ImageView texture_image_view = texture.createImageView();
     GhulbusVulkan::Sampler texture_sampler = device.createSampler();
 
-    auto vert_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/vert_textured.spv");
-    auto frag_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/frag_textured.spv");
+    auto vert_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/demo_graphics_vert.spv");
+    auto frag_textured_spirv_code = GhulbusVulkan::SpirvCode::load("shaders/demo_graphics_frag.spv");
     GhulbusGraphics::Program shader_program(graphics_instance, vert_textured_spirv_code, frag_textured_spirv_code);
     shader_program.addVertexBinding(0, vertex_data.getFormat());
     shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Position, 0, 0);
-    //shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Color, 0, 1);
-    shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Texture, 0, 2);
+    shader_program.bindVertexInput(GhulbusGraphics::VertexFormatBase::ComponentSemantics::Texture, 0, 1);
 
     // ubo
     GhulbusVulkan::DescriptorSetLayout ubo_layout = [&device]() {
@@ -459,8 +458,7 @@ int main()
             vkCmdBindIndexBuffer(command_buffer.getVkCommandBuffer(), index_buffer.getBuffer().getVkBuffer(),
                 0, VK_INDEX_TYPE_UINT32);
             auto const nindices = mesh.getNumberOfIndices();
-            auto const nvertices = mesh.getNumberOfVertices();
-            vkCmdDrawIndexed(command_buffer.getVkCommandBuffer(), mesh.getNumberOfIndices(), 1, 0, 0, 0);
+            vkCmdDrawIndexed(command_buffer.getVkCommandBuffer(), nindices, 1, 0, 0, 0);
         });
     renderer.copyDrawCommands(0, 0, 1);
     renderer.setClearColor(GhulbusMath::Color4f(0.8f, 0.8f, 0.8f));

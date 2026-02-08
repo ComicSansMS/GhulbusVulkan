@@ -532,6 +532,9 @@ file(COPY ${PROJECT_SOURCE_DIR}/demo/textures/statue.jpg DESTINATION ${PROJECT_B
 add_executable(demo_graphics ${PROJECT_SOURCE_DIR}/demo/demo_graphics.cpp)
 target_link_libraries(demo_graphics PUBLIC gbGraphics)
 target_include_directories(demo_graphics PUBLIC ${PROJECT_SOURCE_DIR}/demo)
+add_shader(demo_graphics ${PROJECT_BINARY_DIR}/shaders/demo_graphics_vert.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_graphics.vert) # COMPILE_OPTIONS -O)
+add_shader(demo_graphics ${PROJECT_BINARY_DIR}/shaders/demo_graphics_frag.spv ${PROJECT_SOURCE_DIR}/demo/shaders/demo_graphics.frag)
+
 
 add_executable(demo_draw2d ${PROJECT_SOURCE_DIR}/demo/demo_draw2d.cpp)
 target_link_libraries(demo_draw2d PUBLIC gbGraphics)
