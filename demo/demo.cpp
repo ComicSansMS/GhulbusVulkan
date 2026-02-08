@@ -13,6 +13,7 @@
 #include <gbVk/CommandBuffer.hpp>
 #include <gbVk/CommandBuffers.hpp>
 #include <gbVk/CommandPool.hpp>
+#include <gbVk/DebugReportCallback.hpp>
 #include <gbVk/DescriptorPool.hpp>
 #include <gbVk/DescriptorPoolBuilder.hpp>
 #include <gbVk/DescriptorSet.hpp>
@@ -118,7 +119,26 @@ int main()
     }
     GHULBUS_LOG(Trace, "GLFW " << glfwGetVersionString() << " up and running.");
 
-    GhulbusVulkan::Instance instance = GhulbusVulkan::Instance::createInstance();
+    GhulbusVulkan::Instance::Extensions extensions;
+    extensions.enable_debug_report_extension = true;
+    extensions.enable_debug_utils_extension = true;
+    GhulbusVulkan::Instance instance = GhulbusVulkan::Instance::createInstance(extensions);
+
+    GhulbusVulkan::DebugReportCallback debug_callback(instance, VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT);
+    debug_callback.addCallback([](VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT object_type,
+        uint64_t object, size_t location, int32_t message_code,
+        const char* layer_prefix, const char* message)
+        -> GhulbusVulkan::DebugReportCallback::Return
+        {
+            GHULBUS_UNUSED_VARIABLE(location);
+            GHULBUS_UNUSED_VARIABLE(message_code);
+            GHULBUS_LOG(Debug, layer_prefix << " [" <<
+                GhulbusVulkan::DebugReportCallback::translateFlags(flags) << "] - (" <<
+                GhulbusVulkan::DebugReportCallback::translateObjectType(object_type) << ") " <<
+                "0x" << std::hex << object << std::dec << ": " << message);
+            return GhulbusVulkan::DebugReportCallback::Return::Continue;
+        });
+
 
     auto phys_devices = instance.enumeratePhysicalDevices();
     auto& physical_device = phys_devices.front();
@@ -409,20 +429,34 @@ int main()
         vkCmdCopyBuffer(transfer_command_buffer.getVkCommandBuffer(), staging_buffer.getVkBuffer(),
                         vertex_buffer.getVkBuffer(), 1, &buffer_copy);
 
-        VkBufferMemoryBarrier barrier;
-        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        /*
+        // not needed here, because we have a fence;
+        // but in case we would need to synchronize with the graphics queue, see
+        // https://docs.vulkan.org/guide/latest/synchronization_examples.html#_upload_data_from_the_cpu_to_a_vertex_buffer
+        VkBufferMemoryBarrier2 barrier;
+        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
         barrier.pNext = nullptr;
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+        barrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+        barrier.dstStageMask = 0;
+        barrier.dstAccessMask = 0;
         barrier.srcQueueFamilyIndex = transfer_queue_family;
         barrier.dstQueueFamilyIndex = queue_family;
         barrier.buffer = vertex_buffer.getVkBuffer();
         barrier.offset = 0;
         barrier.size = VK_WHOLE_SIZE;
-        vkCmdPipelineBarrier(transfer_command_buffer.getVkCommandBuffer(),
-            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_DEPENDENCY_BY_REGION_BIT,
-            0, nullptr, 1, &barrier, 0, nullptr);
-
+        VkDependencyInfo dep_info;
+        dep_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+        dep_info.pNext = nullptr;
+        dep_info.dependencyFlags = 0;
+        dep_info.memoryBarrierCount = 0;
+        dep_info.pMemoryBarriers = nullptr;
+        dep_info.bufferMemoryBarrierCount = 1;
+        dep_info.pBufferMemoryBarriers = &barrier;
+        dep_info.imageMemoryBarrierCount = 0;
+        dep_info.pImageMemoryBarriers = nullptr;
+        vkCmdPipelineBarrier2(transfer_command_buffer.getVkCommandBuffer(), &dep_info);
+        */
         transfer_command_buffer.end();
     }
 
@@ -458,21 +492,6 @@ int main()
 
         vkCmdCopyBuffer(transfer_command_buffer.getVkCommandBuffer(), index_staging_buffer.getVkBuffer(),
                         index_buffer.getVkBuffer(), 1, &buffer_copy);
-
-        VkBufferMemoryBarrier barrier;
-        barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-        barrier.pNext = nullptr;
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_INDEX_READ_BIT;
-        barrier.srcQueueFamilyIndex = transfer_queue_family;
-        barrier.dstQueueFamilyIndex = queue_family;
-        barrier.buffer = index_buffer.getVkBuffer();
-        barrier.offset = 0;
-        barrier.size = VK_WHOLE_SIZE;
-        vkCmdPipelineBarrier(transfer_command_buffer.getVkCommandBuffer(),
-                             VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-                             VK_DEPENDENCY_BY_REGION_BIT,
-                             0, nullptr, 1, &barrier, 0, nullptr);
 
         transfer_command_buffer.end();
     }
