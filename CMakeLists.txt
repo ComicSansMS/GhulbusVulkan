@@ -367,7 +367,7 @@ add_library(gbGraphics
 target_include_directories(gbGraphics PUBLIC $<BUILD_INTERFACE:${GB_GRAPHICS_INCLUDE_DIR}>)
 target_link_libraries(gbGraphics PUBLIC Ghulbus::gbBase Ghulbus::gbMath gbVk glfw)
 target_link_libraries(gbGraphics PRIVATE VulkanMemoryAllocator::VulkanMemoryAllocator spirv-cross-reflect stb::stb)
-target_link_libraries(gbGraphics PRIVATE VulkanMemoryAllocator::VulkanMemoryAllocator spirv-cross-reflect stb::stb)
+target_link_options(gbGraphics PUBLIC $<$<CXX_COMPILER_ID:MSVC>:/NODEFAULTLIB:MSVCRT>)
 
 add_shader(gbGraphics
     ${PROJECT_BINARY_DIR}/generated/gbGraphics/detail/shader/draw2d.vert.h
@@ -388,10 +388,9 @@ if(NOT GB_GENERATE_COVERAGE_INFO)
     target_compile_definitions(gbGraphics PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
 endif()
 target_compile_options(gbGraphics PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4>)
-target_compile_options(gbGraphics PUBLIC $<$<STREQUAL:$<CXX_COMPILER_ID>,MSVC>:/permissive->)
-target_compile_options(gbGraphics PUBLIC $<$<STREQUAL:$<CXX_COMPILER_ID>,MSVC>:/std:c++latest>)
+target_compile_options(gbGraphics PUBLIC $<$<CXX_COMPILER_ID:MSVC>:/permissive->)
 target_compile_options(gbGraphics PRIVATE
-    $<$<OR:$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:Clang>>:-pedantic -Wall>)
+    $<$<CXX_COMPILER_ID:AppleClang,Clang>:-pedantic -Wall>)
 target_compile_options(gbGraphics PRIVATE $<$<CXX_COMPILER_ID:GNU>:-pedantic -Wall>)
 
 include(GenerateExportHeader)
