@@ -53,8 +53,8 @@ void Queue::submit(CommandBuffers& command_buffers, Fence& fence)
 void Queue::stageSubmission(SubmitStaging staging)
 {
     m_staged.emplace_back(std::move(staging));
-    VkSubmitInfo const submit_info = staging.getVkSubmitInfo();
-    VkResult const res = vkQueueSubmit(m_queue, 1, &submit_info, nullptr);
+    VkSubmitInfo2 const submit_info = staging.getVkSubmitInfo();
+    VkResult const res = vkQueueSubmit2(m_queue, 1, &submit_info, nullptr);
     checkVulkanError(res, "Error in vkQueueSubmit.");
 }
 
@@ -65,7 +65,7 @@ void Queue::submitAllStaged()
     for (uint32_t i = 0; i < n_stages; ++i) {
         m_cachedSubmitInfo[i] = m_staged[i].getVkSubmitInfo();
     }
-    VkResult const res = vkQueueSubmit(m_queue, n_stages, m_cachedSubmitInfo.data(), nullptr);
+    VkResult const res = vkQueueSubmit2(m_queue, n_stages, m_cachedSubmitInfo.data(), nullptr);
     checkVulkanError(res, "Error in vkQueueSubmit.");
 }
 
@@ -76,7 +76,7 @@ void Queue::submitAllStaged(Fence& fence)
     for (uint32_t i = 0; i < n_stages; ++i) {
         m_cachedSubmitInfo[i] = m_staged[i].getVkSubmitInfo();
     }
-    VkResult const res = vkQueueSubmit(m_queue, n_stages, m_cachedSubmitInfo.data(), fence.getVkFence());
+    VkResult const res = vkQueueSubmit2(m_queue, n_stages, m_cachedSubmitInfo.data(), fence.getVkFence());
     checkVulkanError(res, "Error in vkQueueSubmit.");
 }
 

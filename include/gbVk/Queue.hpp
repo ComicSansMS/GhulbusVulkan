@@ -26,7 +26,8 @@ class Queue {
 private:
     VkQueue m_queue;
     std::vector<SubmitStaging> m_staged;
-    std::vector<VkSubmitInfo> m_cachedSubmitInfo;       /// this is only kept around so we don't have to reallocate the vector on each submitAllStaged()
+    std::vector<VkSubmitInfo2> m_cachedSubmitInfo;      ///< this is only kept around so we don't have to reallocate
+                                                        ///  the vector on each submitAllStaged()
 public:
     Queue(VkQueue queue);
 

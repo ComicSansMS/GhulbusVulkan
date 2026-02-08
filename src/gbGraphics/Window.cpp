@@ -262,12 +262,7 @@ WindowEventReactor& Window::getEventReactor()
     return m_glfw->event_reactor;
 }
 
-Window::PresentStatus Window::present()
-{
-    return present(m_backBuffer->semaphore);
-}
-
-Window::PresentStatus Window::present(GhulbusVulkan::Semaphore& semaphore)
+Window::PresentStatus Window::present(GhulbusVulkan::Semaphore& render_finished_semaphore)
 {
     GHULBUS_PRECONDITION(m_backBuffer);
     m_backBuffer->fence.wait();
@@ -277,7 +272,7 @@ Window::PresentStatus Window::present(GhulbusVulkan::Semaphore& semaphore)
     m_presentFence.reset();
     m_presentQueue->submitAllStaged(m_presentFence);
     try {
-        m_swapchain.present(m_presentQueue->getVkQueue(), semaphore, std::move(m_backBuffer->image));
+        m_swapchain.present(m_presentQueue->getVkQueue(), render_finished_semaphore, std::move(m_backBuffer->image));
     } catch(GhulbusVulkan::Exceptions::VulkanError const& e) {
         VkResult const* const res = Ghulbus::getErrorInfo<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
         if(!res || ((*res != VK_ERROR_OUT_OF_DATE_KHR) && (*res != VK_SUBOPTIMAL_KHR))) { throw; }

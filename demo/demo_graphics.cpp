@@ -68,7 +68,8 @@
 #include <memory>
 #include <vector>
 
-void drawToBackbuffer(GhulbusGraphics::GraphicsInstance& graphics_instance, GhulbusGraphics::Window& main_window)
+[[nodiscard]]
+GhulbusVulkan::Semaphore drawToBackbuffer(GhulbusGraphics::GraphicsInstance& graphics_instance, GhulbusGraphics::Window& main_window)
 {
     auto command_buffers = graphics_instance.getCommandPoolRegistry().allocateCommandBuffersGraphics_Transient(1);
     auto& command_buffer = command_buffers.getCommandBuffer(0);
@@ -123,7 +124,12 @@ void drawToBackbuffer(GhulbusGraphics::GraphicsInstance& graphics_instance, Ghul
     GhulbusVulkan::SubmitStaging submission;
     submission.addCommandBuffers(command_buffers);
     submission.adoptResources(std::move(source_image), std::move(command_buffers));
+    submission.addWaitingSemaphore(main_window.getCurrentImageAcquireSemaphore(),
+                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+    GhulbusVulkan::Semaphore render_completed_semaphore = graphics_instance.getVulkanDevice().createSemaphore();
+    submission.addSignalingSemaphore(render_completed_semaphore, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
     graphics_instance.getGraphicsQueue().stageSubmission(std::move(submission));
+    return render_completed_semaphore;
 }
 
 void fullBarrier(GhulbusVulkan::CommandBuffer& command_buffer)
@@ -227,10 +233,10 @@ int main()
 
     perflog.tick(Ghulbus::LogLevel::Debug, "Window creation");
 
-    drawToBackbuffer(graphics_instance, main_window);
+    GhulbusVulkan::Semaphore render_completed_semaphore = drawToBackbuffer(graphics_instance, main_window);
 
     // presentation
-    if(main_window.present() != GhulbusGraphics::Window::PresentStatus::Ok) {
+    if(main_window.present(render_completed_semaphore) != GhulbusGraphics::Window::PresentStatus::Ok) {
         GHULBUS_LOG(Error, "Error during initial present.");
         return 1;
     }
@@ -493,6 +499,7 @@ int main()
 
     while(!main_window.isDone()) {
         graphics_instance.pollEvents();
+        graphics_instance.getReactor().pump();
 
         uint32_t frame_image_idx = main_window.getCurrentImageSwapchainIndex();
         update_uniform_buffer(frame_image_idx);

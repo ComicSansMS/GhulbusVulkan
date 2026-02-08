@@ -108,11 +108,13 @@ void Renderer::recreateAllPipelines()
             render_pass_info.pClearValues = clear_color.data();
 
             vkCmdBeginRenderPass(command_buffer.getVkCommandBuffer(), &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdBindPipeline(command_buffer.getVkCommandBuffer(),
-                              VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelines[pipeline_index].getVkPipeline());
+            if (!m_drawRecordings[pipeline_index].empty()) {
+                vkCmdBindPipeline(command_buffer.getVkCommandBuffer(),
+                                  VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelines[pipeline_index].getVkPipeline());
 
-            for(auto const& draw_cb : m_drawRecordings[pipeline_index]) {
-                draw_cb(command_buffer, target_index);
+                for (auto const& draw_cb : m_drawRecordings[pipeline_index]) {
+                    draw_cb(command_buffer, target_index);
+                }
             }
 
             vkCmdEndRenderPass(command_buffer.getVkCommandBuffer());
@@ -127,12 +129,12 @@ void Renderer::render(uint32_t pipeline_index, Window& target_window)
     GHULBUS_ASSERT(m_pipelines.size() == m_drawRecordings.size());
     GhulbusVulkan::SubmitStaging loop_stage;
     loop_stage.addWaitingSemaphore(target_window.getCurrentImageAcquireSemaphore(),
-                                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+                                   VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
     uint32_t const frame_image_index = target_window.getCurrentImageSwapchainIndex();
     auto& command_buffer = m_commandBuffers.getCommandBuffer(getCommandBufferIndex(pipeline_index, frame_image_index));
 
     loop_stage.addCommandBuffer(command_buffer);
-    loop_stage.addSignalingSemaphore(m_renderFinishedSemaphore);
+    loop_stage.addSignalingSemaphore(m_renderFinishedSemaphore, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
     m_instance->getGraphicsQueue().stageSubmission(std::move(loop_stage));
 
     Window::PresentStatus const present_status = target_window.present(m_renderFinishedSemaphore);

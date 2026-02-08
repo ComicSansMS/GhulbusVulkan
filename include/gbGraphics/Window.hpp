@@ -72,9 +72,7 @@ public:
 
     WindowEventReactor& getEventReactor();
 
-    PresentStatus present();
-
-    PresentStatus present(GhulbusVulkan::Semaphore& semaphore);
+    PresentStatus present(GhulbusVulkan::Semaphore& render_finished_semaphore);
 
     void disableCursor(bool do_disable);
     bool isCursorDisabled() const;

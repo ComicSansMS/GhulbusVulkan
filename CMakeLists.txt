@@ -515,6 +515,7 @@ endif()
 add_executable(demo ${PROJECT_SOURCE_DIR}/demo/demo.cpp ${PROJECT_SOURCE_DIR}/demo/external/stb_image_impl.cpp)
 target_link_libraries(demo PUBLIC gbVk glfw Ghulbus::gbMath stb::stb)
 target_include_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/demo)
+target_link_options(demo PUBLIC $<$<CXX_COMPILER_ID:MSVC>:/NODEFAULTLIB:MSVCRT>)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT demo)
 
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/shaders)
