@@ -7,6 +7,7 @@
 #include <gbGraphics/detail/QueueSelection.hpp>
 
 #include <gbVk/DebugReportCallback.hpp>
+#include <gbVk/DebugUtilsMessenger.hpp>
 #include <gbVk/Device.hpp>
 #include <gbVk/DeviceBuilder.hpp>
 #include <gbVk/Instance.hpp>
@@ -38,7 +39,7 @@ struct GraphicsInstance::Pimpl {
     GhulbusVulkan::Queue queue_graphics;
     GhulbusVulkan::Queue queue_compute;
     GhulbusVulkan::Queue queue_transfer;
-    std::optional<GhulbusVulkan::DebugReportCallback> debug_logging;
+    std::optional<GhulbusVulkan::DebugUtilsMessenger> debug_logging;
 
     Pimpl(GhulbusVulkan::Instance&& i, GhulbusVulkan::Device&& d, detail::DeviceQueues&& q,
           detail::DeviceMemoryAllocator_VMA && a)
@@ -70,6 +71,7 @@ std::unique_ptr<GraphicsInstance::Pimpl> initializeVulkanInstance(char const* ap
 
 #ifndef NDEBUG
     extensions.enable_debug_report_extension = true;
+    extensions.enable_debug_utils_extension = true;
 #endif
 
     GhulbusVulkan::Instance instance =
@@ -320,19 +322,30 @@ void GraphicsInstance::setDebugLoggingEnabled(bool enabled)
         if (!m_pimpl->debug_logging) {
             m_pimpl->debug_logging.emplace(m_pimpl->instance);
             m_pimpl->debug_logging->addCallback(
-                [](VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT object_type,
-                   uint64_t object, size_t location, int32_t message_code,
-                   const char* layer_prefix, const char* message)
-                -> GhulbusVulkan::DebugReportCallback::Return
+                [](VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                   VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+                   VkDebugUtilsMessengerCallbackDataEXT const* pCallbackData)
+                -> GhulbusVulkan::DebugUtilsMessenger::Return
                 {
-                    GHULBUS_UNUSED_VARIABLE(location);
-                    GHULBUS_UNUSED_VARIABLE(message_code);
-                    GHULBUS_LOG(Debug, layer_prefix << " [" <<
-                        GhulbusVulkan::DebugReportCallback::translateFlags(flags) << "] - (" <<
-                        GhulbusVulkan::DebugReportCallback::translateObjectType(object_type) << ") " <<
-                        "0x" << std::hex << object << std::dec << ": " << message);
-                    return GhulbusVulkan::DebugReportCallback::Return::Continue;
-                });
+                    VkDebugUtilsMessengerCallbackDataEXT const& data = *pCallbackData;
+                    Ghulbus::LogLevel const log_level = [=]() {
+                        switch (messageSeverity) {
+                        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT: return Ghulbus::LogLevel::Debug;
+                        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:    return Ghulbus::LogLevel::Info;
+                        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: return Ghulbus::LogLevel::Warning;
+                        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:   return Ghulbus::LogLevel::Error;
+                        };
+                        GHULBUS_UNREACHABLE_MESSAGE("Invalid message severity ");
+                    }();
+
+                    GHULBUS_LOG_QUALIFIED(log_level, "["
+                        << GhulbusVulkan::DebugUtilsMessenger::translateMessageTypeFlags(messageTypes) << "] "
+                        << (data.pMessageIdName ? data.pMessageIdName : "") << (data.pMessageIdName ? " - " : "")
+                        << (data.pMessage ? data.pMessage : "")
+                    );
+                    return GhulbusVulkan::DebugUtilsMessenger::Return::Continue;
+                }
+            );
         }
     } else {
         m_pimpl->debug_logging = std::nullopt;

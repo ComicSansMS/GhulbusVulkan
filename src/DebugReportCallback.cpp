@@ -3,6 +3,8 @@
 #include <gbVk/Exceptions.hpp>
 #include <gbVk/Instance.hpp>
 
+#include <utility>
+
 namespace GHULBUS_VULKAN_NAMESPACE
 {
 DebugReportCallback::DebugReportCallback(Instance& instance)
@@ -39,10 +41,12 @@ DebugReportCallback::~DebugReportCallback()
 }
 
 DebugReportCallback::DebugReportCallback(DebugReportCallback&& rhs)
-    :m_debugReportCallback(rhs.m_debugReportCallback), m_instance(rhs.m_instance)
-{
-    rhs.m_debugReportCallback = nullptr;
-}
+    :m_debugReportCallback(std::exchange(rhs.m_debugReportCallback, nullptr)),
+     m_instance(std::exchange(rhs.m_instance, nullptr)),
+     m_userCallbacks(std::exchange(rhs.m_userCallbacks, std::vector<Callback>{})),
+     m_vkCreateDebugReportCallback(rhs.m_vkCreateDebugReportCallback),
+     m_vkDestroyDebugReportCallback(rhs.m_vkDestroyDebugReportCallback)
+{}
 
 void DebugReportCallback::addCallback(Callback callback_function)
 {
