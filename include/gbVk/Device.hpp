@@ -99,6 +99,7 @@ public:
 
     CommandPool createCommandPool(VkCommandPoolCreateFlags requested_flags, uint32_t queue_family_index);
 
+    void setQueueDebugName(uint32_t queue_family, uint32_t queue_index, char const* name);
     Queue getQueue(uint32_t queue_family, uint32_t queue_index);
 
     ShaderModule createShaderModule(SpirvCode const& code);

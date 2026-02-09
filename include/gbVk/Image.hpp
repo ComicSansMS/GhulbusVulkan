@@ -44,6 +44,8 @@ public:
     Image(Image&& rhs);
     Image& operator=(Image&& rhs) = delete;
 
+    void setDebugName(char const* name);
+
     VkImage getVkImage();
 
     VkMemoryRequirements getMemoryRequirements();

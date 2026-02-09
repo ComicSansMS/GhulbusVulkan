@@ -2,6 +2,7 @@
 
 #include <gbVk/Buffer.hpp>
 #include <gbVk/CommandBuffer.hpp>
+#include <gbVk/DebugUtilsObjectName.hpp>
 #include <gbVk/DeviceMemory.hpp>
 #include <gbVk/Exceptions.hpp>
 #include <gbVk/ImageView.hpp>
@@ -40,6 +41,11 @@ Image::Image(Image&& rhs)
     rhs.m_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     rhs.m_currentQueue = VK_QUEUE_FAMILY_IGNORED;
     rhs.m_hasOwnership = false;
+}
+
+void Image::setDebugName(char const* name)
+{
+    DebugUtils::setObjectName(m_device, name, m_image, VK_OBJECT_TYPE_IMAGE);
 }
 
 VkImage Image::getVkImage()

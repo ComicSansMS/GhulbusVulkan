@@ -1,5 +1,6 @@
 #include <gbVk/Fence.hpp>
 
+#include <gbVk/DebugUtilsObjectName.hpp>
 #include <gbVk/Exceptions.hpp>
 
 #include <gbBase/Assert.hpp>
@@ -21,6 +22,11 @@ Fence::Fence(Fence&& rhs)
 {
     rhs.m_fence = nullptr;
     rhs.m_device = nullptr;
+}
+
+void Fence::setDebugName(char const* name)
+{
+    DebugUtils::setObjectName(m_device, name, m_fence, VK_OBJECT_TYPE_FENCE);
 }
 
 VkFence Fence::getVkFence()

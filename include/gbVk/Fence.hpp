@@ -36,6 +36,8 @@ public:
     Fence(Fence&& rhs);
     Fence& operator=(Fence&&) = delete;
 
+    void setDebugName(char const* name);
+
     VkFence getVkFence();
 
     Status getStatus();

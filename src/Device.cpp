@@ -324,6 +324,13 @@ CommandPool Device::createCommandPool(VkCommandPoolCreateFlags requested_flags, 
     return CommandPool(m_device, command_pool, queue_family_index);
 }
 
+void Device::setQueueDebugName(uint32_t queue_family, uint32_t queue_index, char const* name)
+{
+    VkQueue queue;
+    vkGetDeviceQueue(m_device, queue_family, queue_index, &queue);
+    DebugUtils::setObjectName(m_device, name, queue, VK_OBJECT_TYPE_QUEUE);
+}
+
 Queue Device::getQueue(uint32_t queue_family, uint32_t queue_index)
 {
     VkQueue queue;

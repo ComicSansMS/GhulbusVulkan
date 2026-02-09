@@ -88,7 +88,21 @@ struct GraphicsInstance::Pimpl {
         queue_graphics(device.getQueue(queues.primary_queue.queue_family_index, queues.primary_queue.queue_index)),
         queue_compute(device.getQueue(queues.compute_queues.front().queue_family_index, queues.compute_queues.front().queue_index)),
         queue_transfer(device.getQueue(queues.transfer_queues.front().queue_family_index, queues.transfer_queues.front().queue_index))
-    {}
+    {
+        device.setQueueDebugName(queues.primary_queue.queue_family_index, queues.primary_queue.queue_index, "gbGraphics.Graphics");
+        if ((queues.compute_queues.front().queue_family_index != queues.primary_queue.queue_family_index) ||
+            (queues.compute_queues.front().queue_index != queues.primary_queue.queue_family_index))
+        {
+            device.setQueueDebugName(queues.primary_queue.queue_family_index, queues.primary_queue.queue_index, "gbGraphics.Compute");
+        }
+        if (((queues.transfer_queues.front().queue_family_index != queues.primary_queue.queue_family_index) &&
+            (queues.transfer_queues.front().queue_family_index != queues.compute_queues.front().queue_family_index)) ||
+            ((queues.transfer_queues.front().queue_index != queues.primary_queue.queue_family_index) &&
+            (queues.transfer_queues.front().queue_index != queues.compute_queues.front().queue_index)))
+        {
+            device.setQueueDebugName(queues.primary_queue.queue_family_index, queues.primary_queue.queue_index, "gbGraphics.Transfer");
+        }
+    }
 };
 
 namespace

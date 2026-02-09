@@ -68,6 +68,8 @@ public:
     Swapchain(Swapchain&& rhs);
     Swapchain& operator=(Swapchain&& rhs);
 
+    void setDebugName(char const* name);
+
     VkSwapchainKHR getVkSwapchainKHR();
 
     uint32_t getNumberOfImages() const;

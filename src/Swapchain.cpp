@@ -1,5 +1,6 @@
 #include <gbVk/Swapchain.hpp>
 
+#include <gbVk/DebugUtilsObjectName.hpp>
 #include <gbVk/Device.hpp>
 #include <gbVk/Exceptions.hpp>
 #include <gbVk/Fence.hpp>
@@ -116,6 +117,11 @@ Swapchain& Swapchain::operator=(Swapchain&& rhs)
         rhs.m_queueFamily = VK_QUEUE_FAMILY_IGNORED;
     }
     return *this;
+}
+
+void Swapchain::setDebugName(char const* name)
+{
+    DebugUtils::setObjectName(m_device, name, m_swapchain, VK_OBJECT_TYPE_SWAPCHAIN_KHR);
 }
 
 VkSwapchainKHR Swapchain::getVkSwapchainKHR()
