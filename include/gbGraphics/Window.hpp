@@ -46,7 +46,6 @@ public:
 private:
     struct Backbuffer {
         GhulbusVulkan::Swapchain::AcquiredImage image;
-        GhulbusVulkan::Fence fence;
         std::vector<GhulbusVulkan::Semaphore> semaphores;
         size_t currentSemaphoreIndex;
     };

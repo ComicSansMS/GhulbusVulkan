@@ -236,9 +236,7 @@ Window::Window(GraphicsInstance& instance, int width, int height, char8_t const*
 }
 
 Window::~Window()
-{
-    if (m_backBuffer) { m_backBuffer->fence.wait(); }
-}
+{}
 
 void Window::close()
 {
@@ -268,7 +266,6 @@ WindowEventReactor& Window::getEventReactor()
 Window::PresentStatus Window::present(GhulbusVulkan::Semaphore& render_finished_semaphore)
 {
     GHULBUS_PRECONDITION(m_backBuffer);
-    m_backBuffer->fence.wait();
 
     m_presentQueue->stageSubmission(std::move(m_windowSubmits));
     m_windowSubmits = GhulbusVulkan::SubmitStaging{};
@@ -367,7 +364,6 @@ void Window::recreateSwapchain()
 void Window::prepareBackbuffer()
 {
     if (!m_backBuffer) {
-        GhulbusVulkan::Fence f = m_glfw->graphics_instance->getVulkanDevice().createFence();
         std::vector<GhulbusVulkan::Semaphore> backbuffer_semaphores;
         uint32_t const n_swapchain_images = m_swapchain.getNumberOfImages();
         if (n_swapchain_images == 0) { return; }
@@ -376,14 +372,13 @@ void Window::prepareBackbuffer()
             backbuffer_semaphores.emplace_back(m_glfw->graphics_instance->getVulkanDevice().createSemaphore());
             backbuffer_semaphores.back().setDebugName(std::format("gbGraphics.ImageAcquire#{}", i).c_str());
         }
-        GhulbusVulkan::Swapchain::AcquiredImage image = m_swapchain.acquireNextImage(f, backbuffer_semaphores.front());
-        m_backBuffer.emplace(Backbuffer{ std::move(image), std::move(f), std::move(backbuffer_semaphores), 0 });
+        GhulbusVulkan::Swapchain::AcquiredImage image = m_swapchain.acquireNextImage(backbuffer_semaphores.front());
+        m_backBuffer.emplace(Backbuffer{ std::move(image), std::move(backbuffer_semaphores), 0 });
     } else {
-        m_backBuffer->fence.reset();
         try {
             m_backBuffer->currentSemaphoreIndex = (m_backBuffer->currentSemaphoreIndex + 1) % m_backBuffer->semaphores.size();
             auto& current_semaphore = m_backBuffer->semaphores[m_backBuffer->currentSemaphoreIndex];
-            m_backBuffer->image = m_swapchain.acquireNextImage(m_backBuffer->fence, current_semaphore);
+            m_backBuffer->image = m_swapchain.acquireNextImage(current_semaphore);
         } catch(GhulbusVulkan::Exceptions::VulkanError const& e) {
             VkResult const* const res = Ghulbus::getErrorInfo<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
             if(!res || ((*res != VK_ERROR_OUT_OF_DATE_KHR) && (*res != VK_SUBOPTIMAL_KHR))) { throw; }
