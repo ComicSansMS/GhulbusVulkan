@@ -55,6 +55,8 @@ public:
     Device(Device&& rhs);
     Device& operator=(Device&&) = delete;
 
+    void setDebugName(char const* name);
+
     VkDevice getVkDevice();
 
     PhysicalDevice getPhysicalDevice();

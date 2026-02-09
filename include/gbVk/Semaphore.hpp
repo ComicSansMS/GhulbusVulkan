@@ -29,6 +29,8 @@ public:
     Semaphore(Semaphore&& rhs);
     Semaphore& operator=(Semaphore&&) = delete;
 
+    void setDebugName(char const* name);
+
     VkSemaphore getVkSemaphore();
 };
 }

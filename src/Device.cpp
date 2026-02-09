@@ -2,6 +2,7 @@
 
 #include <gbVk/Buffer.hpp>
 #include <gbVk/CommandPool.hpp>
+#include <gbVk/DebugUtilsObjectName.hpp>
 #include <gbVk/DescriptorPoolBuilder.hpp>
 #include <gbVk/DescriptorSetLayoutBuilder.hpp>
 #include <gbVk/DeviceMemory.hpp>
@@ -49,6 +50,11 @@ Device::Device(Device&& rhs)
 {
     rhs.m_device = nullptr;
     rhs.m_physicalDevice = nullptr;
+}
+
+void Device::setDebugName(char const* name)
+{
+    DebugUtils::setObjectName(m_device, name, m_device, VK_OBJECT_TYPE_DEVICE);
 }
 
 VkDevice Device::getVkDevice()

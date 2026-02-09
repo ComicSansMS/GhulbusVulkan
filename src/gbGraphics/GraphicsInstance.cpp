@@ -27,8 +27,49 @@
 
 #include <algorithm>
 #include <array>
+#include <format>
 #include <iterator>
+#include <span>
 #include <tuple>
+
+template <>
+struct std::formatter<VkDebugUtilsObjectNameInfoEXT> : std::formatter<std::string_view>
+{
+    auto format(VkDebugUtilsObjectNameInfoEXT const& obj, std::format_context& ctx) const
+    {
+        if (obj.pObjectName) {
+            return std::format_to(ctx.out(), "{}:{}",
+                GhulbusVulkan::DebugUtilsMessenger::translateObjectType(obj.objectType),
+                obj.pObjectName
+            );
+        } else {
+            return std::format_to(ctx.out(), "{}:0x{:x}",
+                GhulbusVulkan::DebugUtilsMessenger::translateObjectType(obj.objectType),
+                obj.objectHandle
+            );
+        }
+    }
+};
+
+template <>
+struct std::formatter<std::span<const VkDebugUtilsObjectNameInfoEXT>> : std::formatter<std::string_view>
+{
+    auto format(std::span<const VkDebugUtilsObjectNameInfoEXT> objects, std::format_context& ctx) const
+    {
+        std::format_to(ctx.out(), "{{");
+        bool is_first = true;
+        for (auto const& obj : objects) {
+            if (!is_first) {
+                std::format_to(ctx.out(), ",");
+            } else {
+                is_first = false;
+            }
+            std::format_to(ctx.out(), "{}", obj);
+        }
+        return std::format_to(ctx.out(), "}}");
+    }
+};
+
 
 namespace GHULBUS_GRAPHICS_NAMESPACE {
 struct GraphicsInstance::Pimpl {
@@ -337,10 +378,10 @@ void GraphicsInstance::setDebugLoggingEnabled(bool enabled)
                         };
                         GHULBUS_UNREACHABLE_MESSAGE("Invalid message severity ");
                     }();
-
                     GHULBUS_LOG_QUALIFIED(log_level, "["
                         << GhulbusVulkan::DebugUtilsMessenger::translateMessageTypeFlags(messageTypes) << "] "
                         << (data.pMessageIdName ? data.pMessageIdName : "") << (data.pMessageIdName ? " - " : "")
+                        << (data.objectCount > 0 ? std::format("{} ", std::span{data.pObjects, data.objectCount}).c_str() : "")
                         << (data.pMessage ? data.pMessage : "")
                     );
                     return GhulbusVulkan::DebugUtilsMessenger::Return::Continue;

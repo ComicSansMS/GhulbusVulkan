@@ -27,6 +27,7 @@ Renderer::Renderer(GraphicsInstance& instance, Program& program, GhulbusVulkan::
      m_renderFinishedSemaphore(instance.getVulkanDevice().createSemaphore()),
      m_clearColor(0.5f, 0.f, 0.5f, 1.f)
 {
+    m_renderFinishedSemaphore.setDebugName("gbGraphics.Renderer.RenderFinished");
 }
 
 uint32_t Renderer::addPipelineBuilder(GhulbusVulkan::PipelineLayout&& layout)

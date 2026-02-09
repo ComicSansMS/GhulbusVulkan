@@ -55,7 +55,7 @@ public:
 
     static char const* translateMessageTypeFlags(VkDebugUtilsMessageTypeFlagsEXT flags);
 
-    static char const* translateObjectType(VkDebugReportObjectTypeEXT object_type);
+    static char const* translateObjectType(VkObjectType object_type);
 private:
     static VkBool32 static_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                     VkDebugUtilsMessageTypeFlagsEXT messageTypes,

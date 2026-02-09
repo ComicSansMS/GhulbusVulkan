@@ -1,4 +1,5 @@
 #include <gbVk/Semaphore.hpp>
+#include <gbVk/DebugUtilsObjectName.hpp>
 
 namespace GHULBUS_VULKAN_NAMESPACE
 {
@@ -18,6 +19,11 @@ Semaphore::Semaphore(Semaphore&& rhs)
 {
     rhs.m_semaphore = nullptr;
     rhs.m_device    = nullptr;
+}
+
+void Semaphore::setDebugName(char const* name)
+{
+    DebugUtils::setObjectName(m_device, name, m_semaphore, VK_OBJECT_TYPE_SEMAPHORE);
 }
 
 VkSemaphore Semaphore::getVkSemaphore()
