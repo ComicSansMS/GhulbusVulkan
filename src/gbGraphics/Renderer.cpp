@@ -18,16 +18,27 @@
 
 #include <gbBase/Assert.hpp>
 
+#include <format>
+
 namespace GHULBUS_GRAPHICS_NAMESPACE
 {
 
 Renderer::Renderer(GraphicsInstance& instance, Program& program, GhulbusVulkan::Swapchain& swapchain)
     :m_instance(&instance), m_program(&program), m_swapchain(&swapchain),
      m_state(createRendererState(instance, swapchain)),
-     m_renderFinishedSemaphore(instance.getVulkanDevice().createSemaphore()),
      m_clearColor(0.5f, 0.f, 0.5f, 1.f)
 {
-    m_renderFinishedSemaphore.setDebugName("gbGraphics.Renderer.RenderFinished");
+    uint32_t const n_swapchain_images = m_swapchain->getNumberOfImages();
+    m_renderFinishedSemaphores.reserve(n_swapchain_images);
+    for (uint32_t i = 0; i < m_swapchain->getNumberOfImages(); ++i) {
+        m_renderFinishedSemaphores.push_back(instance.getVulkanDevice().createSemaphore());
+        m_renderFinishedSemaphores.back().setDebugName(std::format("gbGraphics.Renderer.RenderFinished{:02}", i).c_str());
+    }
+}
+
+Renderer::~Renderer()
+{
+    m_instance->getGraphicsQueue().waitIdle();
 }
 
 uint32_t Renderer::addPipelineBuilder(GhulbusVulkan::PipelineLayout&& layout)
@@ -135,10 +146,11 @@ void Renderer::render(uint32_t pipeline_index, Window& target_window)
     auto& command_buffer = m_commandBuffers.getCommandBuffer(getCommandBufferIndex(pipeline_index, frame_image_index));
 
     loop_stage.addCommandBuffer(command_buffer);
-    loop_stage.addSignalingSemaphore(m_renderFinishedSemaphore, VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+    loop_stage.addSignalingSemaphore(m_renderFinishedSemaphores[frame_image_index],
+                                     VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
     m_instance->getGraphicsQueue().stageSubmission(std::move(loop_stage));
 
-    Window::PresentStatus const present_status = target_window.present(m_renderFinishedSemaphore);
+    Window::PresentStatus const present_status = target_window.present(m_renderFinishedSemaphores[frame_image_index]);
 
     if(present_status != Window::PresentStatus::Ok) {
         target_window.recreateSwapchain();

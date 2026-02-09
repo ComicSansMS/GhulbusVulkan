@@ -22,6 +22,7 @@
 #endif
 #include <GLFW/glfw3.h>
 
+#include <format>
 #include <limits>
 
 namespace GHULBUS_GRAPHICS_NAMESPACE
@@ -229,6 +230,8 @@ Window::Window(GraphicsInstance& instance, int width, int height, char8_t const*
     m_presentQueue(&m_glfw->graphics_instance->getGraphicsQueue()),
     m_presentFence(m_glfw->graphics_instance->getVulkanDevice().createFence())
 {
+    m_swapchain.setDebugName(std::format("gbGraphics.Window.('{}')", reinterpret_cast<char const*>(window_title)).c_str());
+    m_presentFence.setDebugName(std::format("gbGraphics.Present.('{}')", reinterpret_cast<char const*>(window_title)).c_str());
     prepareBackbuffer();
 }
 
@@ -330,7 +333,7 @@ uint32_t Window::getCurrentImageSwapchainIndex() const
 
 GhulbusVulkan::Semaphore& Window::getCurrentImageAcquireSemaphore()
 {
-    return m_backBuffer->semaphore;
+    return m_backBuffer->semaphores[m_backBuffer->currentSemaphoreIndex];
 }
 
 GhulbusVulkan::Swapchain& Window::getSwapchain()
@@ -365,13 +368,22 @@ void Window::prepareBackbuffer()
 {
     if (!m_backBuffer) {
         GhulbusVulkan::Fence f = m_glfw->graphics_instance->getVulkanDevice().createFence();
-        GhulbusVulkan::Semaphore s = m_glfw->graphics_instance->getVulkanDevice().createSemaphore();
-        GhulbusVulkan::Swapchain::AcquiredImage image = m_swapchain.acquireNextImage(f, s);
-        m_backBuffer.emplace(Backbuffer{ std::move(image), std::move(f), std::move(s) });
+        std::vector<GhulbusVulkan::Semaphore> backbuffer_semaphores;
+        uint32_t const n_swapchain_images = m_swapchain.getNumberOfImages();
+        if (n_swapchain_images == 0) { return; }
+        backbuffer_semaphores.reserve(n_swapchain_images);
+        for (uint32_t i = 0; i < n_swapchain_images; ++i) {
+            backbuffer_semaphores.emplace_back(m_glfw->graphics_instance->getVulkanDevice().createSemaphore());
+            backbuffer_semaphores.back().setDebugName(std::format("gbGraphics.ImageAcquire#{}", i).c_str());
+        }
+        GhulbusVulkan::Swapchain::AcquiredImage image = m_swapchain.acquireNextImage(f, backbuffer_semaphores.front());
+        m_backBuffer.emplace(Backbuffer{ std::move(image), std::move(f), std::move(backbuffer_semaphores), 0 });
     } else {
         m_backBuffer->fence.reset();
         try {
-            m_backBuffer->image = m_swapchain.acquireNextImage(m_backBuffer->fence, m_backBuffer->semaphore);
+            m_backBuffer->currentSemaphoreIndex = (m_backBuffer->currentSemaphoreIndex + 1) % m_backBuffer->semaphores.size();
+            auto& current_semaphore = m_backBuffer->semaphores[m_backBuffer->currentSemaphoreIndex];
+            m_backBuffer->image = m_swapchain.acquireNextImage(m_backBuffer->fence, current_semaphore);
         } catch(GhulbusVulkan::Exceptions::VulkanError const& e) {
             VkResult const* const res = Ghulbus::getErrorInfo<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
             if(!res || ((*res != VK_ERROR_OUT_OF_DATE_KHR) && (*res != VK_SUBOPTIMAL_KHR))) { throw; }

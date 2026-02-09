@@ -65,13 +65,14 @@ private:
     std::optional<RendererState> m_state;
     std::vector<PipelineBuildingBlocks> m_pipelineBuilders;
     std::vector<GhulbusVulkan::Pipeline> m_pipelines;
-    GhulbusVulkan::Semaphore m_renderFinishedSemaphore;
+    std::vector<GhulbusVulkan::Semaphore> m_renderFinishedSemaphores;
 
     std::vector<std::vector<DrawRecordingCallback>> m_drawRecordings;   ///< one vector per pipeline
 
     GhulbusMath::Color4f m_clearColor;
 public:
     Renderer(GraphicsInstance& instance, Program& program, GhulbusVulkan::Swapchain& swapchain);
+    ~Renderer();
 
     uint32_t addPipelineBuilder(GhulbusVulkan::PipelineLayout&& layout);
     uint32_t clonePipelineBuilder(uint32_t source_index);

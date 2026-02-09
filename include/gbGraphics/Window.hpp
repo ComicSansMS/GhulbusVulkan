@@ -26,6 +26,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 struct GLFWwindow;
 
@@ -46,7 +47,8 @@ private:
     struct Backbuffer {
         GhulbusVulkan::Swapchain::AcquiredImage image;
         GhulbusVulkan::Fence fence;
-        GhulbusVulkan::Semaphore semaphore;
+        std::vector<GhulbusVulkan::Semaphore> semaphores;
+        size_t currentSemaphoreIndex;
     };
 private:
     int m_width;
