@@ -277,12 +277,12 @@ Window::PresentStatus Window::present(GhulbusVulkan::Semaphore& render_finished_
         VkResult const* const res = Ghulbus::getErrorInfo<GhulbusVulkan::Exception_Info::vulkan_error_code>(e);
         if(!res || ((*res != VK_ERROR_OUT_OF_DATE_KHR) && (*res != VK_SUBOPTIMAL_KHR))) { throw; }
         // we lost the back buffer; we'll have to recreate everything
-        m_backBuffer.reset();
+        m_backBuffer->is_invalid = true;
         return PresentStatus::InvalidBackbufferLostFrame;
     }
 
     m_presentFence.wait();
-    if (m_glfw->resized_to) { m_backBuffer.reset(); return PresentStatus::InvalidBackbuffer; }
+    if (m_glfw->resized_to) { m_backBuffer->is_invalid = true; return PresentStatus::InvalidBackbuffer; }
     prepareBackbuffer();
     if(!m_backBuffer) { return PresentStatus::InvalidBackbuffer; }
     return PresentStatus::Ok;
@@ -363,7 +363,7 @@ void Window::recreateSwapchain()
 
 void Window::prepareBackbuffer()
 {
-    if (!m_backBuffer) {
+    if (!m_backBuffer || m_backBuffer->is_invalid) {
         std::vector<GhulbusVulkan::Semaphore> backbuffer_semaphores;
         uint32_t const n_swapchain_images = m_swapchain.getNumberOfImages();
         if (n_swapchain_images == 0) { return; }
@@ -373,7 +373,7 @@ void Window::prepareBackbuffer()
             backbuffer_semaphores.back().setDebugName(std::format("gbGraphics.ImageAcquire#{}", i).c_str());
         }
         GhulbusVulkan::Swapchain::AcquiredImage image = m_swapchain.acquireNextImage(backbuffer_semaphores.front());
-        m_backBuffer.emplace(Backbuffer{ std::move(image), std::move(backbuffer_semaphores), 0 });
+        m_backBuffer.emplace(std::move(image), std::move(backbuffer_semaphores), 0, false);
     } else {
         try {
             m_backBuffer->currentSemaphoreIndex = (m_backBuffer->currentSemaphoreIndex + 1) % m_backBuffer->semaphores.size();

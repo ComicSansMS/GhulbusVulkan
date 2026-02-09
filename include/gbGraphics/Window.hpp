@@ -48,6 +48,7 @@ private:
         GhulbusVulkan::Swapchain::AcquiredImage image;
         std::vector<GhulbusVulkan::Semaphore> semaphores;
         size_t currentSemaphoreIndex;
+        bool is_invalid;
     };
 private:
     int m_width;
