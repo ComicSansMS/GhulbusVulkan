@@ -490,7 +490,7 @@ if(GB_BUILD_TESTS)
             CONFIGURE_COMMAND ""
             BUILD_COMMAND ""
             INSTALL_COMMAND
-            ${CMAKE_COMMAND} -E copy
+            ${CMAKE_COMMAND} -E copy_if_different
             ${CMAKE_BINARY_DIR}/external/Catch/src/Catch-External/single_include/catch2/catch.hpp
             ${CMAKE_BINARY_DIR}/external/Catch/include/catch.hpp
         )
