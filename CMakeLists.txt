@@ -483,26 +483,16 @@ if(GB_BUILD_TESTS)
 
     if(NOT TARGET Catch)
         include(ExternalProject)
-        if(IS_TRAVIS_BUILD)     # on travis, use git for fetching instead of wget
-            set(GB_FETCH_EXTERNAL_CATCH
-                GIT_REPOSITORY https://github.com/philsquared/Catch.git
-                GIT_TAG v2.1.2)
-        elseif(WIN32)
-            set(GB_FETCH_EXTERNAL_CATCH
-                URL https://github.com/catchorg/Catch2/archive/v2.1.2.zip
-                URL_HASH MD5=54d2785d7e5549907421e8db5c1b3817)
-        else()
-            set(GB_FETCH_EXTERNAL_CATCH
-                URL https://github.com/catchorg/Catch2/archive/v2.1.2.tar.gz
-                URL_HASH MD5=4c5740d7446d9b4e3735dcff0951aaca)
-        endif()
         ExternalProject_Add(Catch-External
             PREFIX ${CMAKE_BINARY_DIR}/external/Catch
-            ${GB_FETCH_EXTERNAL_CATCH}
+            GIT_REPOSITORY https://github.com/catchorg/Catch2
+            GIT_TAG v2.13.10
             CONFIGURE_COMMAND ""
             BUILD_COMMAND ""
-            INSTALL_COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/external/Catch/src/Catch-External/single_include/catch.hpp
-                                                     ${CMAKE_BINARY_DIR}/external/Catch/include/catch.hpp
+            INSTALL_COMMAND
+            ${CMAKE_COMMAND} -E copy
+            ${CMAKE_BINARY_DIR}/external/Catch/src/Catch-External/single_include/catch2/catch.hpp
+            ${CMAKE_BINARY_DIR}/external/Catch/include/catch.hpp
         )
         add_library(Catch INTERFACE)
         add_dependencies(Catch Catch-External)
