@@ -30,7 +30,7 @@ class Queue;
 class RenderPass;
 class ShaderModule;
 class SpirvCode;
-class [[nodiscard]] SubmitStaging;
+class SubmitStaging;
 class Swapchain;
 }
 #endif

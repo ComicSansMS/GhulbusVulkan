@@ -98,19 +98,19 @@ void ObjParser::readFile(char const* filename)
 
 bool ObjParser::groupHasTexCoord(IndexType i) const
 {
-    GHULBUS_PRECONDITION((i >= 0) && (i < m_faceGroups.size()));
+    GHULBUS_PRECONDITION((i >= 0) && (static_cast<std::size_t>(i) < m_faceGroups.size()));
     return m_faceGroups[i].hasTexCoord;
 }
 
 bool ObjParser::groupHasNormal(IndexType i) const
 {
-    GHULBUS_PRECONDITION((i >= 0) && (i < m_faceGroups.size()));
+    GHULBUS_PRECONDITION((i >= 0) && (static_cast<std::size_t>(i) < m_faceGroups.size()));
     return m_faceGroups.at(i).hasNormal;
 }
 
 int ObjParser::groupVerticesPerFace(IndexType i) const
 {
-    GHULBUS_PRECONDITION((i >= 0) && (i < m_faceGroups.size()));
+    GHULBUS_PRECONDITION((i >= 0) && (static_cast<std::size_t>(i) < m_faceGroups.size()));
     return m_faceGroups.at(i).verticesPerFace;
 }
 
@@ -140,7 +140,7 @@ ObjParser::IndexType ObjParser::numberOfNormals() const
 
 ObjParser::IndexType ObjParser::numberOfFacesInGroup(IndexType i) const
 {
-    GHULBUS_PRECONDITION((i >= 0) && (i < m_faceGroups.size()));
+    GHULBUS_PRECONDITION((i >= 0) && (static_cast<std::size_t>(i) < m_faceGroups.size()));
     GHULBUS_ASSERT(m_faceGroups[i].faceVertex.size() < std::numeric_limits<IndexType>::max());
     return static_cast<IndexType>(m_faceGroups[i].faceVertex.size() / m_faceGroups[i].verticesPerFace);
 }
@@ -150,7 +150,7 @@ ObjParser::IndexType ObjParser::numberOfFacesTotal() const
     return std::accumulate(m_faceGroups.begin(), m_faceGroups.end(), 0,
             [](IndexType init, FaceData const& group) -> IndexType
             {
-                GHULBUS_ASSERT(group.faceVertex.size() < std::numeric_limits<IndexType>::max() - init);
+                GHULBUS_ASSERT(group.faceVertex.size() < static_cast<std::size_t>(std::numeric_limits<IndexType>::max() - init));
                 return init + static_cast<IndexType>(group.faceVertex.size() / group.verticesPerFace);
             }
         );
@@ -181,7 +181,7 @@ ObjParser::IndexDataFlat const& ObjParser::getFlatIndices() const
 
 char const* ObjParser::getGroupName(IndexType i) const
 {
-    GHULBUS_PRECONDITION((i >= 0) && (i < m_faceGroupNames.size()));
+    GHULBUS_PRECONDITION((i >= 0) && (static_cast<std::size_t>(i) < m_faceGroupNames.size()));
     return m_faceGroupNames[i].c_str();
 }
 
@@ -528,9 +528,11 @@ inline void addFlattenedFaces(std::vector<IndexTuple> const& index_tuples,
 {
     auto const it_end = index_tuples.end();
     for (auto it = index_tuples.begin(); it != it_end; ++it) {
-        GHULBUS_ASSERT((it->vertexIndex > 0) && (it->vertexIndex <= vertex_data.vertex.size()));
-        GHULBUS_ASSERT((vertex_data.normal.empty()) || (it->normalIndex <= vertex_data.normal.size()));
-        GHULBUS_ASSERT(it->textureIndex <= vertex_data.texCoord.size());
+        GHULBUS_ASSERT((it->vertexIndex > 0) && (static_cast<std::size_t>(it->vertexIndex) <= vertex_data.vertex.size()));
+        GHULBUS_ASSERT((vertex_data.normal.empty()) ||
+                       ((it->normalIndex >= 0) && (static_cast<std::size_t>(it->normalIndex) <= vertex_data.normal.size())));
+        GHULBUS_ASSERT((vertex_data.texCoord.empty()) ||
+                       ((it->textureIndex >= 0) && (static_cast<std::size_t>(it->textureIndex) <= vertex_data.texCoord.size())));
         IndexTupleMap::iterator map_it = index_tuple_map.find(*it);
         if (map_it == index_tuple_map.end()) {
             /// index tuple does not exist; create a new vertex

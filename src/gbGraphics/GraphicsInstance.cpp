@@ -393,6 +393,8 @@ void GraphicsInstance::setDebugLoggingEnabled(bool enabled)
                         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:    return Ghulbus::LogLevel::Info;
                         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: return Ghulbus::LogLevel::Warning;
                         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:   return Ghulbus::LogLevel::Error;
+                        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
+                        break;
                         };
                         GHULBUS_UNREACHABLE_MESSAGE("Invalid message severity ");
                     }();
