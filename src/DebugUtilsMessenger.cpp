@@ -70,8 +70,7 @@ VkDebugUtilsMessageSeverityFlagsEXT DebugUtilsMessenger::allSeverities() {
 VkDebugUtilsMessageTypeFlagsEXT DebugUtilsMessenger::allTypes() {
     return VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
            VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-           VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
-           VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT;
+           VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 }
 
 /* static */ char const* DebugUtilsMessenger::translateMessageTypeFlags(VkDebugUtilsMessageTypeFlagsEXT flags)
