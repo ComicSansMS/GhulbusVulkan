@@ -10,9 +10,9 @@
 #include <gbGraphics/config.hpp>
 
 #include <gbGraphics/GraphicsInstance.hpp>
+#include <gbGraphics/GenericIndexData.hpp>
 #include <gbGraphics/Image2d.hpp>
 #include <gbGraphics/ImageLoader.hpp>
-#include <gbGraphics/IndexData.hpp>
 #include <gbGraphics/MemoryBuffer.hpp>
 #include <gbGraphics/ObjParser.hpp>
 #include <gbGraphics/VertexData.hpp>
@@ -34,7 +34,7 @@ template<typename VertexData_T = VertexData<
         VertexComponent<GhulbusMath::Point3f, VertexComponentSemantics::Position>,
         VertexComponent<GhulbusMath::Normal3f, VertexComponentSemantics::Normal>,
         VertexComponent<GhulbusMath::Vector2f, VertexComponentSemantics::Texture>>,
-    typename IndexData_T = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, uint32_t>>
+    typename IndexData_T = GenericIndexData<IndexFormatBase::PrimitiveTopology::TriangleList, uint32_t>>
 class Mesh {
 public:
     using VertexData = VertexData_T;
@@ -131,12 +131,10 @@ inline GhulbusGraphics::Image2d& Mesh<VertexData_T, IndexData_T>::getTexture()
 
 class AnyMesh {
 private:
-    using Storage = std::byte alignas(Mesh<>)[sizeof(Mesh<>)];
-
     class MeshConcept {
     public:
         virtual ~MeshConcept() = default;
-        virtual MeshConcept* moveInto(Storage*) = 0;
+        virtual MeshConcept* moveInto(std::byte*) = 0;
         virtual uint32_t getNumberOfIndices() const = 0;
         virtual uint32_t getNumberOfVertices() const = 0;
         virtual GhulbusGraphics::MemoryBuffer& getVertexBuffer() = 0;
@@ -148,6 +146,8 @@ private:
     private:
         static_assert(sizeof(Mesh<VertexData_T, IndexData_T>) == sizeof(Mesh<>),
                       "All Mesh types must have same size.");
+        static_assert(alignof(Mesh<VertexData_T, IndexData_T>) == alignof(Mesh<>),
+                      "All Mesh types must have same alignment.");
         Mesh<VertexData_T, IndexData_T> m_mesh;
     public:
         MeshModel(Mesh<VertexData_T, IndexData_T>&& mesh)
@@ -155,7 +155,7 @@ private:
         {}
         ~MeshModel() override = default;
 
-        MeshConcept* moveInto(Storage* s) override {
+        MeshConcept* moveInto(std::byte* s) override {
             return new (s) MeshModel<VertexData_T, IndexData_T>(std::move(m_mesh));
         }
         uint32_t getNumberOfIndices() const override {
@@ -175,7 +175,8 @@ private:
         }
     };
 
-    Storage m_storage;
+    using Storage = std::byte[sizeof(MeshModel<Mesh<>::VertexData, Mesh<>::IndexData>)];
+    alignas(MeshModel<Mesh<>::VertexData, Mesh<>::IndexData>) Storage m_storage;
     MeshConcept* m_mesh;
 public:
     AnyMesh()
@@ -188,7 +189,7 @@ public:
     {}
 
     AnyMesh(AnyMesh&& rhs) noexcept
-        :m_mesh(rhs.m_mesh->moveInto(&m_storage))
+        :m_mesh(rhs.m_mesh->moveInto(m_storage))
     {
         rhs.m_mesh = nullptr;
     }
@@ -201,7 +202,7 @@ public:
     AnyMesh& operator=(AnyMesh&& rhs) noexcept {
         if (&rhs != this) {
             m_mesh->~MeshConcept();
-            m_mesh = rhs.m_mesh->moveInto(&m_storage);
+            m_mesh = rhs.m_mesh->moveInto(m_storage);
             rhs.m_mesh = nullptr;
         }
         return *this;

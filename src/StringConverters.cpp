@@ -137,7 +137,7 @@ std::string uuid_to_string(uint8_t uuid[VK_UUID_SIZE])
            return (i <= 9) ? static_cast<char>('0' + i) : static_cast<char>('a' + (i-10));
         };
 
-    for(int i = 0; i < VK_UUID_SIZE; ++i) {
+    for(decltype(VK_UUID_SIZE) i = 0; i < VK_UUID_SIZE; ++i) {
         auto const hi = (uuid[i] >> 4) & 0x0F;
         auto const lo = uuid[i] & 0x0F;
         res.push_back(to_char(hi));

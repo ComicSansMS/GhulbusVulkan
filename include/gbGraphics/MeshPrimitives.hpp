@@ -9,7 +9,7 @@
 
 #include <gbGraphics/config.hpp>
 
-#include <gbGraphics/IndexData.hpp>
+#include <gbGraphics/GenericIndexData.hpp>
 #include <gbGraphics/VertexData.hpp>
 
 #include <gbMath/AABB3.hpp>
@@ -32,7 +32,7 @@ public:
     using Format = typename VertexData::Format;
     using Storage = typename VertexData::Storage;
     using IndexType = IndexType_T;
-    using IndexData = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
+    using IndexData = GenericIndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
 private:
     static auto constexpr PositionIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Position);
     static auto constexpr ColorIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Color);
@@ -104,7 +104,7 @@ public:
     using Format = typename VertexData::Format;
     using Storage = typename VertexData::Storage;
     using IndexType = IndexType_T;
-    using IndexData = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
+    using IndexData = GenericIndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
 private:
     static auto constexpr PositionIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Position);
     static auto constexpr ColorIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Color);
@@ -186,7 +186,7 @@ public:
     using Format = typename VertexData::Format;
     using Storage = typename VertexData::Storage;
     using IndexType = IndexType_T;
-    using IndexData = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
+    using IndexData = GenericIndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
 private:
     static auto constexpr PositionIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Position);
     static auto constexpr ColorIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Color);
@@ -279,7 +279,7 @@ public:
     using Format = typename VertexData::Format;
     using Storage = typename VertexData::Storage;
     using IndexType = IndexType_T;
-    using IndexData = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
+    using IndexData = GenericIndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
 private:
     static auto constexpr PositionIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Position);
     static auto constexpr ColorIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Color);
@@ -362,7 +362,7 @@ public:
     using Format = typename VertexData::Format;
     using Storage = typename VertexData::Storage;
     using IndexType = IndexType_T;
-    using IndexData = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
+    using IndexData = GenericIndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
 private:
     static auto constexpr PositionIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Position);
     static auto constexpr ColorIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Color);
@@ -445,7 +445,7 @@ public:
     using Format = typename VertexData::Format;
     using Storage = typename VertexData::Storage;
     using IndexType = IndexType_T;
-    using IndexData = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
+    using IndexData = GenericIndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
 private:
     static auto constexpr PositionIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Position);
     static auto constexpr ColorIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Color);
@@ -538,7 +538,7 @@ public:
     using Format = typename VertexData::Format;
     using Storage = typename VertexData::Storage;
     using IndexType = IndexType_T;
-    using IndexData = IndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
+    using IndexData = GenericIndexData<IndexFormatBase::PrimitiveTopology::TriangleList, IndexType>;
 private:
     static auto constexpr PositionIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Position);
     static auto constexpr ColorIndex = Format::getIndexForSemantics(VertexFormatBase::ComponentSemantics::Color);

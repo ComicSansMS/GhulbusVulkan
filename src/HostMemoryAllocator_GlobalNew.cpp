@@ -91,9 +91,11 @@ void* HostMemoryAllocator_GlobalNew::reallocate(void* pOriginal, std::size_t siz
 }
 
 void HostMemoryAllocator_GlobalNew::free(void* pMemory) {
-    GHULBUS_PRECONDITION(m_activeAllocations.contains(pMemory));
-    delete pMemory;
-    m_activeAllocations.erase(pMemory);
+    auto const alloc_info_it = m_activeAllocations.find(pMemory);
+    GHULBUS_PRECONDITION(alloc_info_it != m_activeAllocations.end());
+    AllocationInfo const& alloc_info = alloc_info_it->second;
+    ::operator delete(pMemory, alloc_info.size, std::align_val_t{ alloc_info.alignment });
+    m_activeAllocations.erase(alloc_info_it);
 }
 
 void HostMemoryAllocator_GlobalNew::internalAllocationNotification(std::size_t size, VkInternalAllocationType allocationType,

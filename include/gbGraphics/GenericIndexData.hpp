@@ -1,5 +1,5 @@
-#ifndef GHULBUS_LIBRARY_INCLUDE_GUARD_GRAPHICS_INDEX_DATA_HPP
-#define GHULBUS_LIBRARY_INCLUDE_GUARD_GRAPHICS_INDEX_DATA_HPP
+#ifndef GHULBUS_LIBRARY_INCLUDE_GUARD_GRAPHICS_GENERIC_INDEX_DATA_HPP
+#define GHULBUS_LIBRARY_INCLUDE_GUARD_GRAPHICS_GENERIC_INDEX_DATA_HPP
 
 /** @file
 *
@@ -39,25 +39,25 @@ struct Triangle {
 }
 
 template<IndexFormatBase::PrimitiveTopology Topology, typename T>
-class IndexFormat;
+class IndexFormatImpl;
 
 template<typename T>
-class IndexFormat<IndexFormatBase::PrimitiveTopology::TriangleList, T> {
+class IndexFormatImpl<IndexFormatBase::PrimitiveTopology::TriangleList, T> {
 public:
     using IndexType = IndexComponent::Triangle<T>;
 };
 
 template<IndexFormatBase::PrimitiveTopology Topology, typename T>
-class IndexData {
+class GenericIndexData {
 public:
-    using IndexFormat = IndexFormat<Topology, T>;
+    using IndexFormat = IndexFormatImpl<Topology, T>;
     using IndexType = typename IndexFormat::IndexType;
 private:
     std::vector<IndexType> m_data;
 public:
-    IndexData() = default;
+    GenericIndexData() = default;
 
-    IndexData(std::initializer_list<IndexType> init)
+    GenericIndexData(std::initializer_list<IndexType> init)
         : m_data(init)
     {}
 

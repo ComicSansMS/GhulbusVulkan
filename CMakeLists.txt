@@ -309,9 +309,9 @@ set(GB_GRAPHICS_SOURCE_FILES
     ${GB_GRAPHICS_SOURCE_DIR}/GenericImage.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Graphics.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/GraphicsInstance.cpp
+    ${GB_GRAPHICS_SOURCE_DIR}/GenericIndexData.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Image2d.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/ImageLoader.cpp
-    ${GB_GRAPHICS_SOURCE_DIR}/IndexData.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/InputCameraSpherical.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/MemoryBuffer.cpp
     ${GB_GRAPHICS_SOURCE_DIR}/Mesh.cpp
@@ -336,9 +336,9 @@ set(GB_GRAPHICS_HEADER_FILES
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/GenericImage.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Graphics.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/GraphicsInstance.hpp
+    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/GenericIndexData.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Image2d.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/ImageLoader.hpp
-    ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/IndexData.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/InputCameraSpherical.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/MemoryBuffer.hpp
     ${GB_GRAPHICS_INCLUDE_DIR}/gbGraphics/Mesh.hpp
