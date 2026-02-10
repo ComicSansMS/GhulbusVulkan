@@ -1,8 +1,10 @@
 
 find_path(STB_INCLUDE_DIR NAMES stb_image.h
-    HINTS ${STB_ROOT}
-          ${PROJECT_BINARY_DIR}/dependencies/stb/install
+    HINTS
+    ${PROJECT_BINARY_DIR}/dependencies/stb/install
+    ${STB_ROOT}
     PATH_SUFFIXES src
+    NO_DEFAULT_PATH
 )
 mark_as_advanced(STB_INCLUDE_DIR)
 

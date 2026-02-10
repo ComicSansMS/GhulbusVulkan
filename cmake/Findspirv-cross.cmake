@@ -1,13 +1,13 @@
 
 set(FIND_SPIRV_CROSS_HINTS
-    ${SPIRV_CROSS_ROOT}
     ${PROJECT_BINARY_DIR}/dependencies/spirv-cross/install
+    ${SPIRV_CROSS_ROOT}
     $ENV{spirv_cross_ROOT}
     $ENV{spirv_cross_core_ROOT}
 )
 
-find_package(spirv_cross_core HINTS ${FIND_SPIRV_CROSS_HINTS})
-find_package(spirv_cross_reflect HINTS ${FIND_SPIRV_CROSS_HINTS})
+find_package(spirv_cross_core HINTS ${FIND_SPIRV_CROSS_HINTS} NO_DEFAULT_PATH)
+find_package(spirv_cross_reflect HINTS ${FIND_SPIRV_CROSS_HINTS} NO_DEFAULT_PATH)
 #find_package(spirv_cross_glsl HINTS ${FIND_SPIRV_CROSS_HINTS})
 #find_package(spirv_cross_cpp HINTS ${FIND_SPIRV_CROSS_HINTS})
 

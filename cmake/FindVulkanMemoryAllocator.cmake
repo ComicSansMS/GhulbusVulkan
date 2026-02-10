@@ -1,8 +1,10 @@
 
 find_path(VULKAN_MEMORY_ALLOCATOR_INCLUDE_DIR NAMES vk_mem_alloc.h
-    HINTS ${VULKAN_MEMORY_ALLOCATOR_ROOT}
-          ${PROJECT_BINARY_DIR}/dependencies/vulkan-memory-allocator/install
+    HINTS
+    ${PROJECT_BINARY_DIR}/dependencies/vulkan-memory-allocator/install
+    ${VULKAN_MEMORY_ALLOCATOR_ROOT}
     PATH_SUFFIXES src
+    NO_DEFAULT_PATH
 )
 mark_as_advanced(VULKAN_MEMORY_ALLOCATOR_INCLUDE_DIR)
 

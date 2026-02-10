@@ -39,15 +39,25 @@ if(GB_AUTO_BUILD_DEPENDENCIES)
             message(FATAL_ERROR "Error cloning dependencies repo.")
         endif()
         message("Building dependencies (this may take a while)...")
-        list(APPEND options -DGENERATOR=${CMAKE_GENERATOR})
-        if(CMAKE_GENERATOR_TOOLSET)
-            list(APPEND options )
-        endif()
         if(CMAKE_GENERATOR_PLATFORM)
+            set(CMD_GENERATOR_PLATFORM "-DPLATFORM=${CMAKE_GENERATOR_PLATFORM}")
+        else()
+            set(CMD_GENERATOR_PLATFORM "")
+        endif()
+        if(CMAKE_GENERATOR_TOOLSET)
+            set(CMD_GENERATOR_TOOLSET "-DTOOLSET=${CMAKE_GENERATOR_TOOLSET}")
+        else()
+            set(CMD_GENERATOR_TOOLSET "")
+        endif()
+        get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+        if(is_multi_config)
+            set(CMD_MULTICONFIG "-DBUILD_MULTICONFIG=ON")
+        else()
+            set(CMD_MULTICONFIG "")
         endif()
         execute_process(COMMAND ${CMAKE_COMMAND}
-            -DGENERATOR=${CMAKE_GENERATOR} -DPLATFORM=${CMAKE_GENERATOR_PLATFORM}
-            -DTOOLSET=${CMAKE_GENERATOR_TOOLSET} -P build_dependencies.cmake
+            -DGENERATOR=${CMAKE_GENERATOR} ${CMD_GENERATOR_PLATFORM}
+            ${CMD_GENERATOR_TOOLSET} ${CMD_MULTICONFIG} -P build_dependencies.cmake
             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/dependencies
             OUTPUT_QUIET
             RESULT_VARIABLE result
@@ -93,7 +103,7 @@ function(add_shader target_name output_file source_file)
     target_sources(${target_name} PRIVATE ${output_file})
 endfunction()
 
-find_package(glfw3 REQUIRED HINTS ${PROJECT_BINARY_DIR}/dependencies/glfw3/install)
+find_package(glfw3 REQUIRED HINTS ${PROJECT_BINARY_DIR}/dependencies/glfw3/install NO_DEFAULT_PATH)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -107,12 +117,12 @@ set(GHULBUS_BASE_ROOT "" CACHE PATH "GhulbusBase installation root directory.")
 if(GHULBUS_BASE_ROOT)
     list(APPEND CMAKE_PREFIX_PATH ${GHULBUS_BASE_ROOT}/cmake)
 endif()
-find_package(gbBase REQUIRED)
+find_package(gbBase REQUIRED HINTS ${PROJECT_BINARY_DIR}/dependencies/gbBase/install NO_DEFAULT_PATH)
 if(NOT ((GB_BASE_IS_SHARED AND BUILD_SHARED_LIBS) OR ((NOT GB_BASE_IS_SHARED) AND (NOT BUILD_SHARED_LIBS))))
     message(STATUS "gbBase is shared " ${GB_BASE_IS_SHARED} "; gbVk is shared " ${BUILD_SHARED_LIBS} ".")
     message(FATAL_ERROR "Mixing shared and static builds of Ghulbus libraries is not supported.")
 endif()
-find_package(gbMath REQUIRED)
+find_package(gbMath REQUIRED HINTS ${PROJECT_BINARY_DIR}/dependencies/gbMath/install NO_DEFAULT_PATH)
 get_property(gbMath_SOURCES TARGET Ghulbus::gbMath PROPERTY INTERFACE_SOURCES)
 source_group(gbMath FILES ${gbMath_SOURCES})
 
@@ -375,7 +385,7 @@ add_library(gbGraphics
 target_include_directories(gbGraphics PUBLIC $<BUILD_INTERFACE:${GB_GRAPHICS_INCLUDE_DIR}>)
 target_link_libraries(gbGraphics PUBLIC Ghulbus::gbBase Ghulbus::gbMath gbVk glfw)
 target_link_libraries(gbGraphics PRIVATE VulkanMemoryAllocator::VulkanMemoryAllocator spirv-cross-reflect stb::stb)
-target_link_options(gbGraphics PUBLIC $<$<CXX_COMPILER_ID:MSVC>:/NODEFAULTLIB:MSVCRT>)
+target_link_options(gbGraphics PUBLIC $<$<CXX_COMPILER_ID:MSVC>:$<$<CONFIG:Debug>:/NODEFAULTLIB:MSVCRT>>)
 
 add_shader(gbGraphics
     ${PROJECT_BINARY_DIR}/generated/gbGraphics/detail/shader/draw2d.vert.h
@@ -523,7 +533,7 @@ endif()
 add_executable(demo ${PROJECT_SOURCE_DIR}/demo/demo.cpp ${PROJECT_SOURCE_DIR}/demo/external/stb_image_impl.cpp)
 target_link_libraries(demo PUBLIC gbVk glfw Ghulbus::gbMath stb::stb)
 target_include_directories(demo PUBLIC ${PROJECT_SOURCE_DIR}/demo)
-target_link_options(demo PUBLIC $<$<CXX_COMPILER_ID:MSVC>:/NODEFAULTLIB:MSVCRT>)
+target_link_options(demo PUBLIC $<$<CXX_COMPILER_ID:MSVC>:$<$<CONFIG:Debug>:/NODEFAULTLIB:MSVCRT>>)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT demo)
 
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/shaders)

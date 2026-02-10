@@ -1,7 +1,9 @@
 
 find_path(DEAR_IMGUI_ROOT_DIR NAMES imgui.cpp
-    HINTS ${DEAR_IMGUI_ROOT}
-          ${PROJECT_BINARY_DIR}/dependencies/imgui/install
+    HINTS
+    ${PROJECT_BINARY_DIR}/dependencies/imgui/install
+    ${DEAR_IMGUI_ROOT}
+    NO_DEFAULT_PATH
 )
 mark_as_advanced(DEAR_IMGUI_ROOT_DIR)
 
