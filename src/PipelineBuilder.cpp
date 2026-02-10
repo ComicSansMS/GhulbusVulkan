@@ -256,7 +256,7 @@ Pipeline PipelineBuilder::create(PipelineLayout& layout, VkPipelineShaderStageCr
                                                            nullptr;
         stage.vertex_input->vertexAttributeDescriptionCount = static_cast<uint32_t>(stage.vertex_attributes.size());
     }
-    auto value_ptr = [](auto opt) { return (opt.has_value()) ? (&opt.value()) : nullptr; };
+    auto value_ptr = [](auto& opt) { return (opt.has_value()) ? (&opt.value()) : nullptr; };
     VkGraphicsPipelineCreateInfo create_info;
     create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     create_info.pNext = nullptr;
