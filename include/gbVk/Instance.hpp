@@ -101,6 +101,9 @@ public:
 #               ifdef GHULBUS_CONFIG_VULKAN_PLATFORM_WIN32
                 requested_extensions.push_back("VK_KHR_win32_surface");
 #               endif
+#               ifdef GHULBUS_CONFIG_VULKAN_PLATFORM_LINUX
+                requested_extensions.push_back("VK_KHR_xcb_surface");
+#               endif
             }
             if (enable_debug_report_extension) {
                 // @todo deprecated by VK_EXT_debug_utils

@@ -277,7 +277,11 @@ set_property(TARGET gbVk PROPERTY DEBUG_POSTFIX d)
 if(NOT GB_GENERATE_COVERAGE_INFO)
     target_compile_definitions(gbVk PRIVATE $<$<CONFIG:Debug>:GHULBUS_CONFIG_ASSERT_LEVEL_DEBUG>)
 endif()
-target_compile_definitions(gbVk PUBLIC $<$<PLATFORM_ID:Windows>:GHULBUS_CONFIG_VULKAN_PLATFORM_WIN32>)
+target_compile_definitions(gbVk
+    PUBLIC
+    $<$<PLATFORM_ID:Windows>:GHULBUS_CONFIG_VULKAN_PLATFORM_WIN32>
+    $<$<PLATFORM_ID:Linux>:GHULBUS_CONFIG_VULKAN_PLATFORM_LINUX>
+)
 target_compile_options(gbVk
     PRIVATE
     $<$<CXX_COMPILER_ID:MSVC>:/W4>

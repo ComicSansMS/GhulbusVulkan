@@ -34,5 +34,8 @@
 #      define NOMINMAX
 #   endif
 #endif
+#ifdef GHULBUS_CONFIG_VULKAN_PLATFORM_LINUX
+#   define VK_USE_PLATFORM_XCB_KHR
+#endif
 
 #endif
