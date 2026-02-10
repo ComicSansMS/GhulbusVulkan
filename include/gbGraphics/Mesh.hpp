@@ -80,9 +80,9 @@ inline Mesh<V_T, I_T>::Mesh(GraphicsInstance& instance, ObjParser const& obj, Im
 template<typename V_T, typename I_T>
 inline Mesh<V_T, I_T>::Mesh(GraphicsInstance& instance, VertexData const& vertex_data,
                             IndexData const& index_data, ImageLoader const& texture_loader)
-    :m_vertexBuffer(instance, vertex_data.size() * sizeof(VertexData::Storage),
+    :m_vertexBuffer(instance, vertex_data.size() * sizeof(typename VertexData::Storage),
                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, MemoryUsage::GpuOnly),
-    m_indexBuffer(instance, index_data.size() * sizeof(IndexData::IndexType),
+    m_indexBuffer(instance, index_data.size() * sizeof(typename IndexData::IndexType),
                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, MemoryUsage::GpuOnly),
     m_texture(instance, texture_loader.getWidth(), texture_loader.getHeight())
 {
@@ -101,13 +101,13 @@ inline Mesh<V_T, I_T>::Mesh(GraphicsInstance& instance, VertexData const& vertex
 template<typename VertexData_T, typename IndexData_T>
 inline uint32_t Mesh<VertexData_T, IndexData_T>::getNumberOfIndices() const
 {
-    return static_cast<uint32_t>(m_indexBuffer.getSize() / sizeof(IndexData::IndexType::ValueType));
+    return static_cast<uint32_t>(m_indexBuffer.getSize() / sizeof(typename IndexData::IndexType::ValueType));
 }
 
 template<typename VertexData_T, typename IndexData_T>
 inline uint32_t Mesh<VertexData_T, IndexData_T>::getNumberOfVertices() const
 {
-    return static_cast<uint32_t>(m_vertexBuffer.getSize() / sizeof(VertexData::Storage));
+    return static_cast<uint32_t>(m_vertexBuffer.getSize() / sizeof(typename VertexData::Storage));
 }
 
 template<typename VertexData_T, typename IndexData_T>
